@@ -14,7 +14,7 @@
 <meta property="og:description" content="TCP-0-概览概览Reference：TCP&#x2F;IP Illustrated, Volume 1  Second Edition Chapter 12 Page 579~ 在通信过程中，信道中的比特可能受损。 IP和UDP没有提供差错纠正，校验和和CRC只负责检查是否有差错，不尝试纠正。 解决信道中的比特可能受损的问题（分组问题），一般有两种解决方法：  使用差错校正码 error-co">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2023-07-20T16:20:36.000Z">
-<meta property="article:modified_time" content="2023-07-20T16:29:28.126Z">
+<meta property="article:modified_time" content="2023-07-20T16:39:43.452Z">
 <meta property="article:author" content="zhenjies hao">
 <meta property="article:tag" content="tcp">
 <meta name="twitter:card" content="summary">
@@ -216,7 +216,7 @@
 <li>ACK丢失了怎么办？<br>对发送方而言，无法区分自己发送的分组丢失和ACK丢失，所以简单地处理即重新发送原分组，这样可能导致接收方分组重复。可以使用序列号(sequence number)，发送方为每一个分组添加序列号，接收方可以根据序列号判断是否为重复的分组，重复则直接丢弃。</li>
 <li>如果分组被接收到了，但是有错怎么办？<br>校验和、CRC可以解决，他们使用比分组自身小很多的比特位可以检测到错误。(TCP使用校验和？)，当接收方检测到分组有错误时，不发送ACK</li>
 </ol>
-<p>to be continued</p>
+<p>to be continued …</p>
 
   </div>
 </article>

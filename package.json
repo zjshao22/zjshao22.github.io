@@ -1,0 +1,13 @@
+{
+  "name": "zjshao22-knowledge-base",
+  "version": "1.0.0",
+  "description": "Personal knowledge base",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}

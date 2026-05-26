@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D 迷宫 — DFS vs BFS 第一人称演示</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d2991d;
+    --purple: #a371f7;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #000;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #three-canvas { display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+
+  /* ---- Overlay UI ---- */
+  #ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+  #ui > * { pointer-events: auto; }
+
+  /* Title */
+  #title-bar {
+    position: absolute; top: 16px; left: 16px;
+    background: rgba(13,17,23,0.85); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 16px; color: var(--text);
+  }
+  #title-bar h1 { font-size: 1.1rem; color: #f0f6fc; white-space: nowrap; }
+  #title-bar .sub { font-size: 0.8rem; color: var(--text-dim); }
+
+  /* Minimap */
+  #minimap-wrap {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(13,17,23,0.85); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 6px;
+  }
+  #minimap { display: block; border-radius: 4px; }
+
+  /* Legend */
+  #legend {
+    position: absolute; bottom: 120px; left: 16px;
+    background: rgba(13,17,23,0.8); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 14px; font-size: 0.75rem; color: var(--text-dim);
+    display: grid; grid-template-columns: auto auto; gap: 4px 12px;
+  }
+  #legend .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 6px; vertical-align: middle; }
+  #legend span { white-space: nowrap; }
+
+  /* Instructions */
+  #instructions {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(13,17,23,0.9); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 20px; color: var(--text); font-size: 0.9rem;
+    text-align: center; transition: opacity 0.8s; pointer-events: none;
+  }
+
+  /* Controls bar */
+  #controls {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: rgba(13,17,23,0.9); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap; justify-content: center;
+  }
+  #controls button {
+    font-size: 0.8rem; padding: 6px 12px;
+    border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); color: var(--text); cursor: pointer;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  #controls button:hover { background: #1f2937; }
+  #controls button.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+  #controls button.primary:hover { opacity: 0.85; }
+  #controls button:disabled { opacity: 0.35; cursor: not-allowed; }
+  #controls button.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+
+  #controls label { font-size: 0.75rem; color: var(--text-dim); white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+  #controls select, #controls input[type=range] { accent-color: var(--accent); }
+  #controls input[type=range] { width: 60px; }
+
+  .algo-btns { display: flex; gap: 4px; }
+  .divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+  /* Stats row */
+  #stats {
+    position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-dim);
+  }
+  #stats .stat { text-align: center; }
+  #stats .stat-num { font-size: 1.2rem; color: var(--text); font-weight: 600; }
+
+  /* Mobile warning */
+  #mobile-warn { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: var(--yellow); font-size: 0.9rem; text-align: center; }
+
+  @media (max-width: 768px) {
+    #legend { display: none; }
+    #controls { gap: 6px; padding: 8px 10px; }
+    #controls button { font-size: 0.7rem; padding: 4px 8px; }
+    #stats { bottom: 90px; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="three-canvas"></canvas>
+
+<div id="ui">
+  <div id="title-bar">
+    <h1>3D 迷宫 — DFS vs BFS</h1>
+    <div class="sub" id="algo-label">算法：深度优先搜索 (DFS)</div>
+  </div>
+
+  <div id="minimap-wrap">
+    <canvas id="minimap" width="150" height="150"></canvas>
+  </div>
+
+  <div id="legend">
+    <span><span class="dot" style="background:#6c63ff"></span>起点</span>
+    <span><span class="dot" style="background:#22c55e"></span>终点</span>
+    <span><span class="dot" style="background:#fbbf24"></span>当前位置</span>
+    <span><span class="dot" style="background:#93c5fd"></span>已探索</span>
+    <span><span class="dot" style="background:#e9d5ff"></span>DFS 回溯</span>
+    <span><span class="dot" style="background:#4ade80"></span>最终路径</span>
+  </div>
+
+  <div id="instructions">点击"开始"观看算法探索，或切换到"手动"模式自行走迷宫</div>
+
+  <div id="stats">
+    <div class="stat"><div class="stat-num" id="stepCount">0</div><div class="stat-label">步数</div></div>
+    <div class="stat"><div class="stat-num" id="visitedCount">0</div><div class="stat-label">已访问格子</div></div>
+    <div class="stat"><div class="stat-num" id="frontierSize">0</div><div class="stat-label" id="frontierLabel">栈深度</div></div>
+  </div>
+
+  <div id="controls">
+    <div class="algo-btns">
+      <button id="btnDFS" class="active" onclick="setAlgo('dfs')">DFS</button>
+      <button id="btnBFS" onclick="setAlgo('bfs')">BFS</button>
+    </div>
+    <span class="divider"></span>
+    <button id="btnStart" class="primary" onclick="startAuto()">▶ 开始</button>
+    <button id="btnPause" onclick="togglePause()" disabled>⏸ 暂停</button>
+    <button id="btnStep" onclick="startStepMode()">⏭ 单步</button>
+    <button id="btnPrev" onclick="stepBackward()" disabled>◀</button>
+    <button id="btnNext" onclick="stepForward()" disabled>▶</button>
+    <button id="btnReset" onclick="resetAll()">↺ 重置</button>
+    <span class="divider"></span>
+    <button id="btnMode" onclick="toggleMode()">切换手动</button>
+    <span class="divider"></span>
+    <label>速度 <input type="range" id="speed" min="1" max="5" value="3" oninput="updateSpeed()"></label>
+  </div>
+</div>
+
+<script src="https://unpkg.com/three@0.157.0/build/three.min.js"></script>
+
+<script>
+// THREE is loaded globally via UMD build
+const ROWS = 15;
+const COLS = 15;
+const CELL_SIZE = 3;
+const WALL_HEIGHT = 2.2;
+const WALL_THICKNESS = 0.2;
+const EYE_HEIGHT = 1.6;
+const WALL = 1;
+const PATH = 0;
+
+const COLORS = {
+  unvisited: '#1a1a2e',
+  visited: '#93c5fd',
+  backtrack: '#e9d5ff',
+  current: '#fbbf24',
+  path: '#4ade80',
+  start: '#6c63ff',
+  goal: '#22c55e'
+};
+
+const SPEED_MAP = { 1: 1.0, 2: 0.55, 3: 0.28, 4: 0.14, 5: 0.07 };
+
+// ==================== DOM REFS ====================
+const canvas3d = document.getElementById('three-canvas');
+const minimapCanvas = document.getElementById('minimap');
+const minimapCtx = minimapCanvas.getContext('2d');
+const instructionsEl = document.getElementById('instructions');
+const algoLabel = document.getElementById('algo-label');
+const frontierLabel = document.getElementById('frontierLabel');
+
+// ==================== STATE ====================
+let maze = [];
+let dfsFrames = [];
+let bfsFrames = [];
+let activeAlgo = 'dfs';
+let animIdx = 0;
+let currentState = { visited: {}, current: null, path: null, backtracks: null };
+let isRunning = false;
+let isPaused = false;
+let stepMode = false;
+let mode = 'auto'; // 'auto' | 'manual'
+let speed = 3;
+let stepInterval = SPEED_MAP[3];
+let elapsedSinceStep = 0;
+let completed = false;
+
+// ==================== THREE.JS SETUP ====================
+const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#1a1a2e');
+scene.fog = new THREE.Fog('#1a1a2e', 25, 55);
+
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 80);
+camera.position.set(0, EYE_HEIGHT, 18);
+camera.lookAt(0, EYE_HEIGHT, 0);
+
+// Lighting
+const ambient = new THREE.AmbientLight('#404060', 0.5);
+scene.add(ambient);
+
+const sun = new THREE.DirectionalLight('#ffffff', 1.5);
+sun.position.set(25, 35, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 1024;
+sun.shadow.mapSize.height = 1024;
+sun.shadow.camera.near = 0.5;
+sun.shadow.camera.far = 100;
+sun.shadow.camera.left = -35;
+sun.shadow.camera.right = 35;
+sun.shadow.camera.top = 35;
+sun.shadow.camera.bottom = -35;
+sun.shadow.bias = -0.0005;
+scene.add(sun);
+
+// Ground
+const groundGeo = new THREE.PlaneGeometry(200, 200);
+const groundMat = new THREE.MeshStandardMaterial({ color: '#111122', roughness: 0.95 });
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.02;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Groups for dynamic geometry
+const wallsGroup = new THREE.Group();
+const floorsGroup = new THREE.Group();
+const markersGroup = new THREE.Group();
+scene.add(wallsGroup);
+scene.add(floorsGroup);
+scene.add(markersGroup);
+
+// Materials
+const wallMaterial = new THREE.MeshStandardMaterial({ color: '#4a5568', roughness: 0.55, metalness: 0.1 });
+const wallMaterialOuter = new THREE.MeshStandardMaterial({ color: '#5a6578', roughness: 0.5, metalness: 0.15 });
+const floorTileGeo = new THREE.PlaneGeometry(CELL_SIZE * 0.96, CELL_SIZE * 0.96);
+
+// ==================== MAZE GENERATION ====================
+function genMaze() {
+  maze = Array.from({ length: ROWS }, () => Array(COLS).fill(WALL));
+
+  function carve(r, c) {
+    const dirs = [[-2, 0], [2, 0], [0, -2], [0, 2]];
+    // Shuffle
+    for (let i = dirs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [dirs[i], dirs[j]] = [dirs[j], dirs[i]];
+    }
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr > 0 && nr < ROWS - 1 && nc > 0 && nc < COLS - 1 && maze[nr][nc] === WALL) {
+        maze[r + dr / 2][c + dc / 2] = PATH;
+        maze[nr][nc] = PATH;
+        carve(nr, nc);
+      }
+    }
+  }
+
+  maze[1][1] = PATH;
+  carve(1, 1);
+  // Ensure goal area is open
+  maze[ROWS - 2][COLS - 2] = PATH;
+  maze[ROWS - 2][COLS - 3] = PATH;
+  maze[ROWS - 3][COLS - 2] = PATH;
+
+  return maze;
+}
+
+// ==================== 3D GEOMETRY BUILDING ====================
+function cellCenterX(c) { return (c + 0.5) * CELL_SIZE - (COLS * CELL_SIZE) / 2; }
+function cellCenterZ(r) { return (r + 0.5) * CELL_SIZE - (ROWS * CELL_SIZE) / 2; }
+
+function buildWalls() {
+  // Clear
+  while (wallsGroup.children.length > 0) {
+    const child = wallsGroup.children[0];
+    child.geometry?.dispose();
+    wallsGroup.remove(child);
+  }
+
+  const vertWallGeo = new THREE.BoxGeometry(WALL_THICKNESS, WALL_HEIGHT, CELL_SIZE);
+  const horzWallGeo = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, WALL_THICKNESS);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      // Vertical wall: between (r,c) and (r,c+1)
+      if (c < COLS - 1 && maze[r][c] !== maze[r][c + 1]) {
+        const x = (c + 1) * CELL_SIZE - (COLS * CELL_SIZE) / 2;
+        const z = cellCenterZ(r);
+        const isOuter = (c === 0 || c === COLS - 2);
+        const mesh = new THREE.Mesh(vertWallGeo, isOuter ? wallMaterialOuter : wallMaterial);
+        mesh.position.set(x, WALL_HEIGHT / 2, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        wallsGroup.add(mesh);
+      }
+      // Horizontal wall: between (r,c) and (r+1,c)
+      if (r < ROWS - 1 && maze[r][c] !== maze[r + 1][c]) {
+        const x = cellCenterX(c);
+        const z = (r + 1) * CELL_SIZE - (ROWS * CELL_SIZE) / 2;
+        const isOuter = (r === 0 || r === ROWS - 2);
+        const mesh = new THREE.Mesh(horzWallGeo, isOuter ? wallMaterialOuter : wallMaterial);
+        mesh.position.set(x, WALL_HEIGHT / 2, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        wallsGroup.add(mesh);
+      }
+    }
+  }
+}
+
+// Floor tile lookup: key "r,c" -> mesh
+const floorTileMap = {};
+
+function buildFloorTiles() {
+  while (floorsGroup.children.length > 0) {
+    const child = floorsGroup.children[0];
+    child.geometry?.dispose();
+    child.material?.dispose();
+    floorsGroup.remove(child);
+  }
+  for (const key in floorTileMap) delete floorTileMap[key];
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (maze[r][c] !== PATH) continue;
+      const mat = new THREE.MeshStandardMaterial({ color: COLORS.unvisited, roughness: 0.85, metalness: 0.05, emissive: COLORS.unvisited, emissiveIntensity: 0.3 });
+      const mesh = new THREE.Mesh(floorTileGeo, mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(cellCenterX(c), 0.005, cellCenterZ(r));
+      mesh.receiveShadow = true;
+      mesh.userData = { r, c };
+      floorsGroup.add(mesh);
+      floorTileMap[`${r},${c}`] = mesh;
+    }
+  }
+}
+
+function buildMarkers() {
+  while (markersGroup.children.length > 0) {
+    const child = markersGroup.children[0];
+    child.geometry?.dispose();
+    child.material?.dispose();
+    markersGroup.remove(child);
+  }
+
+  // Start beacon
+  const startGeo = new THREE.CylinderGeometry(0.15, 0.25, 0.6, 8);
+  const startMat = new THREE.MeshStandardMaterial({ color: COLORS.start, emissive: COLORS.start, emissiveIntensity: 0.6, roughness: 0.3 });
+  const startBeacon = new THREE.Mesh(startGeo, startMat);
+  startBeacon.position.set(cellCenterX(1), 0.3, cellCenterZ(1));
+  markersGroup.add(startBeacon);
+
+  // Goal beacon
+  const goalGeo = new THREE.CylinderGeometry(0.15, 0.25, 0.6, 8);
+  const goalMat = new THREE.MeshStandardMaterial({ color: COLORS.goal, emissive: COLORS.goal, emissiveIntensity: 0.6, roughness: 0.3 });
+  const goalBeacon = new THREE.Mesh(goalGeo, goalMat);
+  goalBeacon.position.set(cellCenterX(COLS - 2), 0.3, cellCenterZ(ROWS - 2));
+  markersGroup.add(goalBeacon);
+
+  // Point lights
+  const startLight = new THREE.PointLight(COLORS.start, 1.5, 8, 1.5);
+  startLight.position.set(cellCenterX(1), 1.0, cellCenterZ(1));
+  markersGroup.add(startLight);
+
+  const goalLight = new THREE.PointLight(COLORS.goal, 1.5, 8, 1.5);
+  goalLight.position.set(cellCenterX(COLS - 2), 1.0, cellCenterZ(ROWS - 2));
+  markersGroup.add(goalLight);
+}
+
+function fullBuild() {
+  genMaze();
+  buildWalls();
+  buildFloorTiles();
+  buildMarkers();
+  dfsFrames = dfsTrace();
+  bfsFrames = bfsTrace();
+}
+
+// ==================== ALGORITHM TRACES ====================
+function dfsTrace() {
+  const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+  const frames = [];
+  const prev = {};
+  const stack = [[1, 1]];
+  visited[1][1] = true;
+  const goalR = ROWS - 2, goalC = COLS - 2;
+  let found = false;
+  let visitCount = 0;
+  const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
+  while (stack.length > 0 && !found) {
+    const [r, c] = stack[stack.length - 1];
+    visitCount++;
+    frames.push({ type: 'visit', r, c, stackSize: stack.length, visitCount });
+
+    if (r === goalR && c === goalC) { found = true; break; }
+
+    let pushed = false;
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && maze[nr][nc] === PATH && !visited[nr][nc]) {
+        visited[nr][nc] = true;
+        prev[`${nr},${nc}`] = [r, c];
+        stack.push([nr, nc]);
+        pushed = true;
+        break;
+      }
+    }
+
+    if (!pushed) {
+      frames.push({ type: 'backtrack', r, c, stackSize: stack.length });
+      stack.pop();
+    }
+  }
+
+  if (found) {
+    const pathCells = [];
+    let cur = [goalR, goalC];
+    while (cur) {
+      pathCells.push(cur);
+      const key = `${cur[0]},${cur[1]}`;
+      cur = prev[key] || null;
+    }
+    pathCells.reverse();
+    frames.push({ type: 'path', path: pathCells, visitCount });
+  }
+
+  return frames;
+}
+
+function bfsTrace() {
+  const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+  const frames = [];
+  const prev = {};
+  const queue = [[1, 1]];
+  visited[1][1] = true;
+  let head = 0;
+  const goalR = ROWS - 2, goalC = COLS - 2;
+  let found = false;
+  let visitCount = 0;
+  const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
+  while (head < queue.length && !found) {
+    const [r, c] = queue[head++];
+    visitCount++;
+    frames.push({ type: 'visit', r, c, queueSize: queue.length - head, visitCount });
+
+    if (r === goalR && c === goalC) { found = true; break; }
+
+    for (const [dr, dc] of dirs) {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && maze[nr][nc] === PATH && !visited[nr][nc]) {
+        visited[nr][nc] = true;
+        prev[`${nr},${nc}`] = [r, c];
+        queue.push([nr, nc]);
+      }
+    }
+  }
+
+  if (found) {
+    const pathCells = [];
+    let cur = [goalR, goalC];
+    while (cur) {
+      pathCells.push(cur);
+      const key = `${cur[0]},${cur[1]}`;
+      cur = prev[key] || null;
+    }
+    pathCells.reverse();
+    frames.push({ type: 'path', path: pathCells, visitCount });
+  }
+
+  return frames;
+}
+
+function computeState(frames, endIdx) {
+  const state = { visited: {}, current: null, path: null, backtracks: null };
+  if (activeAlgo === 'dfs') state.backtracks = new Set();
+
+  for (let i = 0; i <= endIdx && i < frames.length; i++) {
+    const f = frames[i];
+    if (f.type === 'visit') {
+      state.visited[`${f.r},${f.c}`] = true;
+      state.current = [f.r, f.c];
+    } else if (f.type === 'backtrack') {
+      state.backtracks?.add(`${f.r},${f.c}`);
+      state.current = null;
+    } else if (f.type === 'path') {
+      state.path = f.path;
+      state.current = null;
+    }
+  }
+  return state;
+}
+
+// ==================== FLOOR COLOR UPDATE ====================
+function updateFloorColors(state) {
+  const startKey = '1,1';
+  const goalKey = `${ROWS - 2},${COLS - 2}`;
+  const currentKey = state.current ? `${state.current[0]},${state.current[1]}` : null;
+  const pathSet = state.path ? new Set(state.path.map(([r, c]) => `${r},${c}`)) : null;
+
+  for (const [key, mesh] of Object.entries(floorTileMap)) {
+    let color = COLORS.unvisited;
+    if (key === startKey) {
+      color = COLORS.start;
+    } else if (key === goalKey) {
+      color = COLORS.goal;
+    } else if (pathSet && pathSet.has(key)) {
+      color = COLORS.path;
+    } else if (key === currentKey) {
+      color = COLORS.current;
+    } else if (state.backtracks && state.backtracks.has(key)) {
+      color = COLORS.backtrack;
+    } else if (state.visited[key]) {
+      color = COLORS.visited;
+    }
+    mesh.material.color.set(color);
+    mesh.material.emissive?.set(color);
+  }
+}
+
+// ==================== CAMERA ====================
+const cameraTarget = new THREE.Vector3();
+const cameraLookTarget = new THREE.Vector3();
+const lastAlgoPos = new THREE.Vector3();
+
+function getCellWorldPos(r, c) {
+  return new THREE.Vector3(cellCenterX(c), EYE_HEIGHT, cellCenterZ(r));
+}
+
+function updateCameraTarget() {
+  const frames = activeAlgo === 'dfs' ? dfsFrames : bfsFrames;
+
+  if (completed && currentState.path) {
+    // Elevated view showing the path
+    const mid = Math.floor(currentState.path.length / 2);
+    const [mr, mc] = currentState.path[mid];
+    cameraTarget.set(cellCenterX(mc), 8, cellCenterZ(mr) + 5);
+    cameraLookTarget.set(cellCenterX(mc), 0, cellCenterZ(mr));
+    return;
+  }
+
+  if (currentState.current) {
+    const [r, c] = currentState.current;
+    cameraTarget.copy(getCellWorldPos(r, c));
+    lastAlgoPos.copy(cameraTarget);
+
+    // Look toward next unvisited neighbor or movement direction
+    if (animIdx + 1 < frames.length) {
+      const nextFrame = frames[animIdx + 1];
+      if (nextFrame.type === 'visit') {
+        cameraLookTarget.copy(getCellWorldPos(nextFrame.r, nextFrame.c));
+        cameraLookTarget.y = EYE_HEIGHT * 0.8;
+      } else if (nextFrame.type === 'backtrack') {
+        cameraLookTarget.copy(getCellWorldPos(nextFrame.r, nextFrame.c));
+        cameraLookTarget.y = EYE_HEIGHT * 0.8;
+      } else {
+        cameraLookTarget.copy(cameraTarget);
+        cameraLookTarget.z += 3;
+      }
+    } else {
+      cameraLookTarget.copy(cameraTarget);
+      cameraLookTarget.z += 3;
+    }
+  } else if (animIdx > 0 && animIdx - 1 < frames.length) {
+    // Backtrack frame: stay at last position, look back
+    cameraTarget.copy(lastAlgoPos);
+    const f = frames[animIdx];
+    if (f && f.type === 'backtrack') {
+      cameraLookTarget.copy(getCellWorldPos(f.r, f.c));
+      cameraLookTarget.y = EYE_HEIGHT * 0.7;
+    }
+  }
+}
+
+function updateAutoCamera(deltaTime) {
+  updateCameraTarget();
+  const lerpFactor = 1 - Math.exp(-5.5 * deltaTime);
+  camera.position.lerp(cameraTarget, lerpFactor);
+
+  // Smooth look-at
+  const currentLook = new THREE.Vector3();
+  camera.getWorldDirection(currentLook);
+  currentLook.normalize().multiplyScalar(5).add(camera.position);
+
+  currentLook.lerp(cameraLookTarget, lerpFactor * 0.8);
+  camera.lookAt(currentLook);
+}
+
+// ==================== MANUAL FPS CONTROLS ====================
+const keys = {};
+let pointerLocked = false;
+let manualYaw = 0;
+let manualPitch = 0;
+const manualPosTarget = new THREE.Vector3();
+const manualLookTarget = new THREE.Vector3();
+
+function initManualState() {
+  // Derive yaw/pitch from camera's current look direction
+  // yaw = 0 means facing -Z (Three.js default forward)
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  manualYaw = Math.atan2(dir.x, -dir.z);
+  manualPitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+  manualPosTarget.copy(camera.position);
+  manualLookTarget.copy(camera.position).add(dir);
+}
+
+function setupManualControls() {
+  document.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'KeyM' && mode === 'manual') toggleMode();
+    if (e.code === 'Escape' && pointerLocked) {
+      document.exitPointerLock();
+    }
+  });
+  document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+  canvas3d.addEventListener('click', () => {
+    if (mode === 'manual' && !pointerLocked) {
+      canvas3d.requestPointerLock();
+    }
+  });
+
+  document.addEventListener('pointerlockchange', () => {
+    pointerLocked = document.pointerLockElement === canvas3d;
+    if (pointerLocked) {
+      showInstructions('WASD 移动 | 鼠标转向 | ESC 释放光标 | M 切换模式');
+    }
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!pointerLocked || mode !== 'manual') return;
+    const sensitivity = 0.002;
+    manualYaw += e.movementX * sensitivity;
+    manualPitch -= e.movementY * sensitivity;
+    manualPitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, manualPitch));
+  });
+}
+
+function isWalkable(x, z) {
+  const col = Math.round(x / CELL_SIZE + COLS / 2 - 0.5);
+  const row = Math.round(z / CELL_SIZE + ROWS / 2 - 0.5);
+  if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return false;
+  return maze[row][col] === PATH;
+}
+
+function updateManualCamera(deltaTime) {
+  if (!pointerLocked) return;
+
+  // Movement direction from yaw
+  const moveSpeed = 5.5;
+  const moveDir = new THREE.Vector3();
+  if (keys['KeyW'] || keys['ArrowUp']) moveDir.z -= 1;
+  if (keys['KeyS'] || keys['ArrowDown']) moveDir.z += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) moveDir.x -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) moveDir.x += 1;
+
+  if (moveDir.length() > 0) {
+    moveDir.normalize();
+    // yaw=0 → -Z (forward), yaw=π/2 → +X (right)
+    const forward = new THREE.Vector3(Math.sin(manualYaw), 0, -Math.cos(manualYaw));
+    const right = new THREE.Vector3(Math.cos(manualYaw), 0, Math.sin(manualYaw));
+    const worldMove = forward.clone().multiplyScalar(-moveDir.z).add(right.clone().multiplyScalar(moveDir.x));
+    worldMove.y = 0;
+    worldMove.normalize();
+    const delta = worldMove.multiplyScalar(moveSpeed * deltaTime);
+    const radius = 0.35;
+
+    // Try X
+    const newX = manualPosTarget.x + delta.x;
+    if (isWalkable(newX - radius, manualPosTarget.z - radius) &&
+        isWalkable(newX - radius, manualPosTarget.z + radius) &&
+        isWalkable(newX + radius, manualPosTarget.z - radius) &&
+        isWalkable(newX + radius, manualPosTarget.z + radius)) {
+      manualPosTarget.x = newX;
+    }
+    // Try Z
+    const newZ = manualPosTarget.z + delta.z;
+    if (isWalkable(manualPosTarget.x - radius, newZ - radius) &&
+        isWalkable(manualPosTarget.x - radius, newZ + radius) &&
+        isWalkable(manualPosTarget.x + radius, newZ - radius) &&
+        isWalkable(manualPosTarget.x + radius, newZ + radius)) {
+      manualPosTarget.z = newZ;
+    }
+  }
+
+  manualPosTarget.y = EYE_HEIGHT;
+
+  // Smooth position interpolation (same lerp style as auto mode)
+  const lerpFactor = 1 - Math.exp(-8.0 * deltaTime);
+  camera.position.lerp(manualPosTarget, lerpFactor);
+
+  // Look direction from yaw/pitch: yaw=0 → -Z, yaw=π/2 → +X
+  const lookDir = new THREE.Vector3(
+    Math.sin(manualYaw) * Math.cos(manualPitch),
+    Math.sin(manualPitch),
+    -Math.cos(manualYaw) * Math.cos(manualPitch)
+  );
+  manualLookTarget.copy(camera.position).add(lookDir);
+  camera.lookAt(manualLookTarget);
+
+  // Sync position target to camera if gap is small (prevents drift)
+  if (camera.position.distanceTo(manualPosTarget) < 0.01) {
+    manualPosTarget.copy(camera.position);
+  }
+
+  updateMinimap();
+}
+
+// ==================== MINIMAP ====================
+function updateMinimap() {
+  const size = 150;
+  const scale = size / Math.max(ROWS, COLS);
+  const ctx = minimapCtx;
+  ctx.clearRect(0, 0, size, size);
+
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, size, size);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = c * scale, y = r * scale, w = scale, h = scale;
+      if (maze[r][c] === WALL) {
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(x, y, w, h);
+      } else {
+        const key = `${r},${c}`;
+        let color = COLORS.unvisited;
+        if (key === '1,1') color = COLORS.start;
+        else if (key === `${ROWS - 2},${COLS - 2}`) color = COLORS.goal;
+        else if (currentState.path && currentState.path.some(([pr, pc]) => pr === r && pc === c)) color = COLORS.path;
+        else if (currentState.backtracks && currentState.backtracks.has(key)) color = COLORS.backtrack;
+        else if (currentState.visited[key]) color = COLORS.visited;
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      }
+    }
+  }
+
+  // Camera indicator (triangle)
+  const camX = (camera.position.x / CELL_SIZE + COLS / 2) * scale;
+  const camZ = (camera.position.z / CELL_SIZE + ROWS / 2) * scale;
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+
+  ctx.save();
+  ctx.translate(camX, camZ);
+  ctx.rotate(Math.atan2(dir.x, dir.z));
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(0, -5);
+  ctx.lineTo(-3, 3);
+  ctx.lineTo(3, 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ==================== ANIMATION LOOP ====================
+let lastTime = performance.now();
+let minimapTimer = 0;
+
+function animate(timestamp) {
+  requestAnimationFrame(animate);
+
+  let deltaTime = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+  if (deltaTime > 0.15) deltaTime = 0.15; // Cap for tab-switch
+
+  if (mode === 'auto') {
+    if (isRunning && !isPaused && !completed) {
+      elapsedSinceStep += deltaTime;
+      let stepsThisFrame = 0;
+      const maxSteps = 3;
+      while (elapsedSinceStep >= stepInterval && stepsThisFrame < maxSteps) {
+        elapsedSinceStep -= stepInterval;
+        advanceStep();
+        stepsThisFrame++;
+      }
+    }
+
+    if (isRunning || completed) {
+      updateAutoCamera(deltaTime);
+    }
+  } else {
+    updateManualCamera(deltaTime);
+  }
+
+  renderer.render(scene, camera);
+
+  // Throttle minimap updates
+  minimapTimer += deltaTime;
+  if (minimapTimer > 0.1) {
+    minimapTimer = 0;
+    updateMinimap();
+  }
+}
+
+// ==================== STEP LOGIC ====================
+function advanceStep() {
+  const frames = activeAlgo === 'dfs' ? dfsFrames : bfsFrames;
+  if (animIdx >= frames.length) {
+    completed = true;
+    isRunning = false;
+    updateUIState();
+    return;
+  }
+
+  animIdx++;
+  if (animIdx >= frames.length) {
+    animIdx = frames.length;
+    completed = true;
+    isRunning = false;
+  }
+  currentState = computeState(frames, animIdx - 1);
+
+  updateFloorColors(currentState);
+  updateStats(frames);
+  updateMinimap();
+  updateUIState();
+}
+
+function stepBackwardInternal() {
+  if (animIdx <= 0) return;
+  animIdx--;
+  completed = false;
+  const frames = activeAlgo === 'dfs' ? dfsFrames : bfsFrames;
+  currentState = computeState(frames, animIdx - 1);
+  updateFloorColors(currentState);
+  updateStats(frames);
+  updateMinimap();
+  updateUIState();
+}
+
+function updateStats(frames) {
+  const f = frames[Math.min(animIdx - 1, frames.length - 1)];
+  document.getElementById('stepCount').textContent = animIdx;
+  document.getElementById('visitedCount').textContent = f ? (f.visitCount || 0) : 0;
+
+  if (activeAlgo === 'dfs') {
+    document.getElementById('frontierSize').textContent = f ? (f.stackSize || 0) : 0;
+    document.getElementById('frontierLabel').textContent = '栈深度';
+  } else {
+    document.getElementById('frontierSize').textContent = f ? (f.queueSize || 0) : 0;
+    document.getElementById('frontierLabel').textContent = '队列长度';
+  }
+}
+
+function updateUIState() {
+  const btnStart = document.getElementById('btnStart');
+  const btnPause = document.getElementById('btnPause');
+  const btnStep = document.getElementById('btnStep');
+  const btnPrev = document.getElementById('btnPrev');
+  const btnNext = document.getElementById('btnNext');
+
+  if (completed) {
+    btnStart.disabled = true;
+    btnPause.disabled = true;
+    btnStep.disabled = true;
+    btnPrev.disabled = false;
+    btnNext.disabled = true;
+  } else if (isRunning && !isPaused) {
+    btnStart.disabled = true;
+    btnPause.disabled = false;
+    btnStep.disabled = true;
+    btnPrev.disabled = true;
+    btnNext.disabled = true;
+  } else if (isPaused || stepMode) {
+    btnStart.disabled = false;
+    btnPause.disabled = !isPaused;
+    btnStep.disabled = false;
+    btnPrev.disabled = animIdx <= 0;
+    btnNext.disabled = animIdx >= (activeAlgo === 'dfs' ? dfsFrames : bfsFrames).length;
+  } else {
+    btnStart.disabled = false;
+    btnPause.disabled = true;
+    btnStep.disabled = false;
+    btnPrev.disabled = animIdx <= 0;
+    btnNext.disabled = false;
+  }
+}
+
+// ==================== UI ACTIONS ====================
+window.setAlgo = function(algo) {
+  if (isRunning && !isPaused) return;
+  activeAlgo = algo;
+  document.getElementById('btnDFS').classList.toggle('active', algo === 'dfs');
+  document.getElementById('btnBFS').classList.toggle('active', algo === 'bfs');
+  algoLabel.textContent = algo === 'dfs' ? '算法：深度优先搜索 (DFS) — 一路走到黑' : '算法：广度优先搜索 (BFS) — 逐层扩散';
+  animIdx = 0;
+  completed = false;
+  const frames = activeAlgo === 'dfs' ? dfsFrames : bfsFrames;
+  currentState = { visited: {}, current: null, path: null, backtracks: algo === 'dfs' ? new Set() : null };
+  updateFloorColors(currentState);
+  updateStats(frames);
+  updateMinimap();
+  updateUIState();
+  // Place camera at start
+  const startPos = getCellWorldPos(1, 1);
+  camera.position.copy(startPos);
+  camera.position.y = EYE_HEIGHT;
+  cameraTarget.copy(startPos);
+  lastAlgoPos.copy(startPos);
+  cameraLookTarget.copy(getCellWorldPos(1, 2));
+  camera.lookAt(cameraLookTarget);
+};
+
+window.startAuto = function() {
+  if (isRunning && !isPaused) return;
+  if (completed) { resetAll(); }
+  isRunning = true;
+  isPaused = false;
+  stepMode = false;
+  completed = false;
+  updateUIState();
+  showInstructions('观看算法探索中...');
+};
+
+window.togglePause = function() {
+  if (!isRunning) return;
+  isPaused = !isPaused;
+  updateUIState();
+  if (isPaused) {
+    showInstructions('已暂停 — 使用单步按钮或继续播放');
+  }
+};
+
+window.startStepMode = function() {
+  if (isRunning && !isPaused) {
+    isPaused = true;
+  }
+  stepMode = true;
+  isRunning = true;
+  isPaused = true;
+  updateUIState();
+  showInstructions('单步模式 — 点击 ▶/◀ 逐步查看');
+};
+
+window.stepForward = function() {
+  stepMode = true;
+  isRunning = true;
+  isPaused = true;
+  advanceStep();
+  updateUIState();
+};
+
+window.stepBackward = function() {
+  stepMode = true;
+  isRunning = true;
+  isPaused = true;
+  stepBackwardInternal();
+  updateUIState();
+};
+
+window.toggleMode = function() {
+  const btnMode = document.getElementById('btnMode');
+  if (mode === 'auto') {
+    mode = 'manual';
+    btnMode.textContent = '切换自动';
+    btnMode.classList.add('active');
+    isRunning = false;
+    isPaused = false;
+    updateUIState();
+    // Place camera at current algo position or start, orient toward first open path
+    let camR = 1, camC = 1;
+    if (currentState.current) {
+      [camR, camC] = currentState.current;
+    }
+    camera.position.copy(getCellWorldPos(camR, camC));
+    // Find a walkable neighbor to look toward
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+    let lookR = camR, lookC = camC + 1; // default: look +Z
+    for (const [dr, dc] of dirs) {
+      const nr = camR + dr, nc = camC + dc;
+      if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && maze[nr][nc] === PATH) {
+        lookR = nr; lookC = nc; break;
+      }
+    }
+    camera.lookAt(getCellWorldPos(lookR, lookC));
+    initManualState();
+    showInstructions('点击画面锁定鼠标 | WASD 移动 | 鼠标转向 | M 切换模式');
+    canvas3d.requestPointerLock();
+  } else {
+    mode = 'auto';
+    btnMode.textContent = '切换手动';
+    btnMode.classList.remove('active');
+    if (pointerLocked) document.exitPointerLock();
+    animIdx = 0;
+    completed = false;
+    currentState = { visited: {}, current: null, path: null, backtracks: activeAlgo === 'dfs' ? new Set() : null };
+    updateFloorColors(currentState);
+    const frames = activeAlgo === 'dfs' ? dfsFrames : bfsFrames;
+    updateStats(frames);
+    updateUIState();
+    const startPos = getCellWorldPos(1, 1);
+    cameraTarget.copy(startPos);
+    lastAlgoPos.copy(startPos);
+    cameraLookTarget.copy(getCellWorldPos(1, 2));
+    showInstructions('点击"开始"观看算法探索');
+  }
+};
+
+window.resetAll = function() {
+  isRunning = false;
+  isPaused = false;
+  stepMode = false;
+  completed = false;
+  animIdx = 0;
+  elapsedSinceStep = 0;
+  fullBuild();
+  currentState = { visited: {}, current: null, path: null, backtracks: activeAlgo === 'dfs' ? new Set() : null };
+  updateFloorColors(currentState);
+  const frames = activeAlgo === 'dfs' ? dfsFrames : bfsFrames;
+  updateStats(frames);
+  updateMinimap();
+  updateUIState();
+  const startPos = getCellWorldPos(1, 1);
+  camera.position.copy(startPos);
+  cameraTarget.copy(startPos);
+  lastAlgoPos.copy(startPos);
+  cameraLookTarget.copy(getCellWorldPos(1, 2));
+  camera.lookAt(cameraLookTarget);
+  showInstructions('点击"开始"观看算法探索，或切换到"手动"模式自行走迷宫');
+};
+
+window.updateSpeed = function() {
+  speed = parseInt(document.getElementById('speed').value);
+  stepInterval = SPEED_MAP[speed];
+};
+
+// ==================== INSTRUCTIONS FADE ====================
+let instructionsTimeout;
+function showInstructions(msg) {
+  instructionsEl.textContent = msg;
+  instructionsEl.style.opacity = '1';
+  clearTimeout(instructionsTimeout);
+  instructionsTimeout = setTimeout(() => {
+    instructionsEl.style.opacity = '0';
+  }, 3500);
+}
+
+// ==================== RESIZE ====================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ==================== INIT ====================
+setupManualControls();
+fullBuild();
+updateMinimap();
+
+// Start camera at overview position, then animate to start
+camera.position.set(0, 12, 20);
+camera.lookAt(0, 0, 0);
+cameraTarget.set(0, 12, 20);
+cameraLookTarget.set(0, 0, 0);
+
+// Initial floor colors
+updateFloorColors({ visited: {}, current: null, path: null, backtracks: activeAlgo === 'dfs' ? new Set() : null });
+
+requestAnimationFrame(animate);
+showInstructions('3D 迷宫 — 点击"开始"观看 DFS/BFS 算法探索', 0);
+</script>
+
+</body>
+</html>

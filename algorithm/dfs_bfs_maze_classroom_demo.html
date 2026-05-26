@@ -1,0 +1,517 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.panel{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:1rem 0}
+.maze-wrap{display:flex;flex-direction:column;align-items:center;gap:8px}
+.maze-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);letter-spacing:.3px}
+canvas{border:2px solid var(--color-border-secondary);border-radius:6px;display:block}
+.controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.btn{font-size:13px;padding:6px 14px;border:0.5px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--color-background-secondary)}
+.btn.primary{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.btn.primary:hover{opacity:.85}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.legend{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--color-text-secondary)}
+.dot{width:12px;height:12px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:4px}
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat-card{background:var(--color-background-secondary);border-radius:8px;padding:10px 14px;text-align:center}
+.stat-num{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.stat-label{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.speed-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--color-text-secondary);justify-content:center}
+.phase-hint{font-size:12px;color:var(--color-text-secondary);text-align:center;min-height:18px;padding:0 8px}
+#stepCounter{font-size:13px;color:var(--color-text-secondary);min-width:80px;text-align:center;line-height:32px}
+#drawPanel{display:none;flex-direction:column;align-items:center;gap:12px;padding:1rem 0}
+#drawPanel .maze-title{margin-bottom:4px}
+</style>
+
+<div style="padding:1rem 0">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+  <div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">迷宫探索：深度优先 vs 广度优先</div>
+  <div class="legend">
+    <span><span class="dot" style="background:#6c63ff"></span>起点</span>
+    <span><span class="dot" style="background:#22c55e"></span>终点</span>
+    <span><span class="dot" style="background:#ef4444"></span>墙</span>
+    <span><span class="dot" style="background:#fbbf24"></span>探索中</span>
+    <span><span class="dot" style="background:#93c5fd"></span>已访问</span>
+    <span><span class="dot" style="background:#4ade80"></span>最终路径</span>
+  </div>
+</div>
+
+<!-- Normal mode: two canvases side by side -->
+<div class="panel" id="algoPanel">
+  <div class="maze-wrap">
+    <div class="maze-title">🔦 深度优先搜索（DFS）— 一路走到黑</div>
+    <canvas id="cvDFS" width="300" height="300"></canvas>
+    <div class="phase-hint" id="hintDFS">点击"同步开始"或"单步执行"</div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stepsDFS">0</div><div class="stat-label">步数</div></div>
+      <div class="stat-card"><div class="stat-num" id="visitedDFS">0</div><div class="stat-label">访问格子数</div></div>
+    </div>
+  </div>
+  <div class="maze-wrap">
+    <div class="maze-title">🌊 广度优先搜索（BFS）— 逐层扩散</div>
+    <canvas id="cvBFS" width="300" height="300"></canvas>
+    <div class="phase-hint" id="hintBFS">点击"同步开始"或"单步执行"</div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num" id="stepsBFS">0</div><div class="stat-label">步数</div></div>
+      <div class="stat-card"><div class="stat-num" id="visitedBFS">0</div><div class="stat-label">访问格子数</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawing mode: single large canvas -->
+<div id="drawPanel">
+  <div class="maze-title">✏️ 绘制自定义迷宫 — 点击或拖拽格子切换墙壁/通道（起点和终点受保护）</div>
+  <canvas id="cvDraw" width="300" height="300"></canvas>
+  <div class="controls">
+    <button class="btn primary" onclick="applyDrawing()">✅ 应用迷宫</button>
+    <button class="btn" onclick="cancelDrawing()">取消</button>
+  </div>
+</div>
+
+<!-- Step controls: shown during manual step mode or paused -->
+<div class="controls" id="stepControls" style="display:none">
+  <button class="btn" id="btnPrev" onclick="stepBackward()">◀ 上一步</button>
+  <span id="stepCounter">0 / 0</span>
+  <button class="btn" id="btnNext" onclick="stepForward()">下一步 ▶</button>
+</div>
+
+<div class="controls">
+  <button class="btn primary" id="btnStart" onclick="startBoth()">▶ 同步开始</button>
+  <button class="btn" id="btnStep" onclick="startStepMode()">👣 单步执行</button>
+  <button class="btn" id="btnPause" onclick="togglePause()" disabled>⏸ 暂停</button>
+  <button class="btn" id="btnDraw" onclick="enterDrawMode()">✏️ 绘制迷宫</button>
+  <button class="btn" onclick="resetAll()">↺ 换一个迷宫</button>
+</div>
+<div class="speed-row">
+  <span>速度</span>
+  <input type="range" min="1" max="5" value="3" id="speedSlider" style="width:120px">
+  <span id="speedLabel">中</span>
+</div>
+</div>
+
+<script>
+const ROWS=15,COLS=15,CELL=20;
+const WALL=1,PATH=0;
+let maze=[];
+let dfsAnim=[],bfsAnim=[];
+let animIdx=0,timer=null,paused=false,drawMode=false,stepMode=false;
+let isDrawing=false;
+
+const speedMap={1:200,2:100,3:50,4:20,5:8};
+const speedLabel={1:'慢',2:'较慢',3:'中',4:'快',5:'极快'};
+
+document.getElementById('speedSlider').addEventListener('input',function(){
+  document.getElementById('speedLabel').textContent=speedLabel[this.value];
+  if(timer){clearInterval(timer);if(!paused)timer=setInterval(autoStep,speedMap[this.value]);}
+});
+
+function genMaze(){
+  maze=Array.from({length:ROWS},()=>Array(COLS).fill(WALL));
+  function carve(r,c){
+    const dirs=[[0,2],[2,0],[0,-2],[-2,0]].sort(()=>Math.random()-.5);
+    for(const[dr,dc]of dirs){
+      const nr=r+dr,nc=c+dc;
+      if(nr>0&&nr<ROWS-1&&nc>0&&nc<COLS-1&&maze[nr][nc]===WALL){
+        maze[r+dr/2][c+dc/2]=PATH;
+        maze[nr][nc]=PATH;
+        carve(nr,nc);
+      }
+    }
+  }
+  maze[1][1]=PATH; carve(1,1);
+  maze[1][1]=PATH; maze[ROWS-2][COLS-2]=PATH;
+  maze[ROWS-2][COLS-3]=PATH; maze[ROWS-3][COLS-2]=PATH;
+}
+
+function dfsTrace(){
+  const visited=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+  const frames=[],prev={};
+  const stack=[[1,1]];
+  visited[1][1]=true;
+  const goal=[ROWS-2,COLS-2];
+  let found=false;
+  while(stack.length&&!found){
+    const[r,c]=stack[stack.length-1];
+    frames.push({type:'visit',r,c,stackSize:stack.length,visitCount:Object.keys(prev).length+1});
+    if(r===goal[0]&&c===goal[1]){found=true;break;}
+    const dirs=[[0,1],[1,0],[0,-1],[-1,0]];
+    let pushed=false;
+    for(const[dr,dc]of dirs){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!visited[nr][nc]&&maze[nr][nc]===PATH){
+        visited[nr][nc]=true;
+        prev[`${nr},${nc}`]=`${r},${c}`;
+        stack.push([nr,nc]);
+        pushed=true;
+        break;
+      }
+    }
+    if(!pushed){frames.push({type:'backtrack',r,c,stackSize:stack.length});stack.pop();}
+  }
+  if(found){
+    const path=[];let cur=`${goal[0]},${goal[1]}`;
+    while(cur){path.unshift(cur.split(',').map(Number));cur=prev[cur];}
+    path.unshift([1,1]);
+    frames.push({type:'path',path,visitCount:Object.keys(prev).length});
+  }
+  return frames;
+}
+
+function bfsTrace(){
+  const visited=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+  const frames=[],prev={};
+  const queue=[[1,1]],goal=[ROWS-2,COLS-2];
+  visited[1][1]=true;
+  let found=false,head=0;
+  while(head<queue.length&&!found){
+    const[r,c]=queue[head++];
+    frames.push({type:'visit',r,c,queueSize:queue.length-head+1,visitCount:head});
+    if(r===goal[0]&&c===goal[1]){found=true;break;}
+    for(const[dr,dc]of[[0,1],[1,0],[0,-1],[-1,0]]){
+      const nr=r+dr,nc=c+dc;
+      if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&!visited[nr][nc]&&maze[nr][nc]===PATH){
+        visited[nr][nc]=true;
+        prev[`${nr},${nc}`]=`${r},${c}`;
+        queue.push([nr,nc]);
+      }
+    }
+  }
+  if(found){
+    const path=[];let cur=`${goal[0]},${goal[1]}`;
+    while(cur){path.unshift(cur.split(',').map(Number));cur=prev[cur];}
+    path.unshift([1,1]);
+    frames.push({type:'path',path,visitCount:head});
+  }
+  return frames;
+}
+
+function computeState(frames,endIdx,hasBacktracks){
+  const state={visited:{},path:null,current:null,backtracks:hasBacktracks?new Set():undefined};
+  const limit=Math.min(endIdx,frames.length);
+  for(let i=0;i<limit;i++){
+    const f=frames[i];
+    if(f.type==='visit'){
+      state.current=[f.r,f.c];
+      state.visited[`${f.r},${f.c}`]=true;
+    }else if(f.type==='backtrack'){
+      if(state.backtracks)state.backtracks.add(`${f.r},${f.c}`);
+      state.current=null;
+    }else if(f.type==='path'){
+      state.path=f.path;
+      state.current=null;
+    }
+  }
+  return state;
+}
+
+let dfsState={visited:{},path:null,current:null,backtracks:new Set()};
+let bfsState={visited:{},path:null,current:null};
+
+function drawMaze(cvId,state){
+  const cv=document.getElementById(cvId);
+  const ctx=cv.getContext('2d');
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=c*CELL,y=r*CELL;
+    if(maze[r][c]===WALL){ctx.fillStyle=dark?'#2a2a2a':'#1e1e2e';}
+    else{ctx.fillStyle=dark?'#1a1a1a':'#f8f8fc';}
+    ctx.fillRect(x,y,CELL,CELL);
+  }
+  for(const k of Object.keys(state.visited)){
+    const[r,c]=k.split(',').map(Number);
+    ctx.fillStyle='#bfdbfe';ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+  }
+  if(state.backtracks){
+    for(const k of state.backtracks){
+      const[r,c]=k.split(',').map(Number);
+      ctx.fillStyle='#e9d5ff';ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+    }
+  }
+  if(state.path){
+    for(const[r,c]of state.path){
+      ctx.fillStyle='#4ade80';ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+    }
+  }
+  if(state.current&&!state.path){
+    const[r,c]=state.current;
+    ctx.fillStyle='#fbbf24';ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+  }
+  ctx.fillStyle='#6c63ff';ctx.fillRect(1*CELL+2,1*CELL+2,CELL-4,CELL-4);
+  ctx.fillStyle='#22c55e';ctx.fillRect((COLS-2)*CELL+2,(ROWS-2)*CELL+2,CELL-4,CELL-4);
+}
+
+function drawDrawCanvas(){
+  const cv=document.getElementById('cvDraw');
+  const ctx=cv.getContext('2d');
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=c*CELL,y=r*CELL;
+    if(maze[r][c]===WALL){ctx.fillStyle=dark?'#2a2a2a':'#1e1e2e';}
+    else{ctx.fillStyle=dark?'#1a1a1a':'#f8f8fc';}
+    ctx.fillRect(x,y,CELL,CELL);
+  }
+  ctx.strokeStyle=dark?'#444':'#ccc';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<=ROWS;i++){ctx.beginPath();ctx.moveTo(0,i*CELL);ctx.lineTo(COLS*CELL,i*CELL);ctx.stroke();}
+  for(let i=0;i<=COLS;i++){ctx.beginPath();ctx.moveTo(i*CELL,0);ctx.lineTo(i*CELL,ROWS*CELL);ctx.stroke();}
+  ctx.fillStyle='#6c63ff';ctx.fillRect(1*CELL+2,1*CELL+2,CELL-4,CELL-4);
+  ctx.fillStyle='#22c55e';ctx.fillRect((COLS-2)*CELL+2,(ROWS-2)*CELL+2,CELL-4,CELL-4);
+}
+
+function renderCurrentFrame(){
+  dfsState=computeState(dfsAnim,animIdx,true);
+  bfsState=computeState(bfsAnim,animIdx,false);
+  drawMaze('cvDFS',dfsState);
+  drawMaze('cvBFS',bfsState);
+  updateStats();updateHints();
+  updateStepUI();
+}
+
+function updateStats(){
+  if(animIdx>0&&animIdx<=dfsAnim.length){
+    const f=dfsAnim[animIdx-1];
+    if(f&&f.visitCount!=null)document.getElementById('visitedDFS').textContent=f.visitCount;
+    document.getElementById('stepsDFS').textContent=animIdx;
+  }else if(animIdx===0){
+    document.getElementById('stepsDFS').textContent='0';
+    document.getElementById('visitedDFS').textContent='0';
+  }
+  if(animIdx>0&&animIdx<=bfsAnim.length){
+    const f=bfsAnim[animIdx-1];
+    if(f&&f.visitCount!=null)document.getElementById('visitedBFS').textContent=f.visitCount;
+    document.getElementById('stepsBFS').textContent=animIdx;
+  }else if(animIdx===0){
+    document.getElementById('stepsBFS').textContent='0';
+    document.getElementById('visitedBFS').textContent='0';
+  }
+}
+
+function updateHints(){
+  if(animIdx===0||dfsAnim.length===0){
+    document.getElementById('hintDFS').textContent='点击"同步开始"或"单步执行"';
+    document.getElementById('hintBFS').textContent='点击"同步开始"或"单步执行"';
+    return;
+  }
+  const df=dfsAnim[Math.min(animIdx-1,dfsAnim.length-1)];
+  const bf=bfsAnim[Math.min(animIdx-1,bfsAnim.length-1)];
+  if(df){
+    if(df.type==='path')document.getElementById('hintDFS').textContent='✅ 找到出口！（不保证最短路径）';
+    else if(df.type==='backtrack')document.getElementById('hintDFS').textContent='⬅️ 死路，回头换方向';
+    else document.getElementById('hintDFS').textContent='➡️ 一直往前走...';
+  }
+  if(bf){
+    if(bf.type==='path')document.getElementById('hintBFS').textContent='✅ 找到出口！（保证最短路径）';
+    else document.getElementById('hintBFS').textContent='🌊 向四周扩散一层...';
+  }
+}
+
+function updateStepUI(){
+  const total=Math.max(dfsAnim.length,bfsAnim.length);
+  document.getElementById('stepCounter').textContent=animIdx+' / '+total;
+  document.getElementById('btnPrev').disabled=(animIdx===0);
+  document.getElementById('btnNext').disabled=(animIdx>=total);
+}
+
+function stepForward(){
+  const maxLen=Math.max(dfsAnim.length,bfsAnim.length);
+  if(animIdx>=maxLen)return;
+  animIdx++;
+  renderCurrentFrame();
+}
+
+function stepBackward(){
+  if(animIdx<=0)return;
+  animIdx--;
+  renderCurrentFrame();
+}
+
+function autoStep(){
+  const maxLen=Math.max(dfsAnim.length,bfsAnim.length);
+  if(animIdx>=maxLen){
+    clearInterval(timer);timer=null;paused=false;
+    document.getElementById('btnPause').disabled=true;
+    document.getElementById('btnPause').textContent='⏸ 暂停';
+    document.getElementById('stepControls').style.display='flex';
+    updateStepUI();
+    return;
+  }
+  animIdx++;
+  renderCurrentFrame();
+}
+
+function setRunningUI(){
+  document.getElementById('btnStart').disabled=true;
+  document.getElementById('btnStep').disabled=true;
+  document.getElementById('btnDraw').disabled=true;
+}
+
+function setIdleUI(){
+  document.getElementById('btnStart').disabled=false;
+  document.getElementById('btnStep').disabled=false;
+  document.getElementById('btnDraw').disabled=false;
+  document.getElementById('btnPause').disabled=true;
+  document.getElementById('btnPause').textContent='⏸ 暂停';
+  document.getElementById('stepControls').style.display='none';
+}
+
+function startBoth(){
+  if(drawMode)return;
+  clearInterval(timer);paused=false;stepMode=false;
+  resetState();
+  dfsAnim=dfsTrace();bfsAnim=bfsTrace();
+  animIdx=0;
+  setRunningUI();
+  document.getElementById('btnPause').disabled=false;
+  document.getElementById('stepControls').style.display='none';
+  renderCurrentFrame();
+  const spd=speedMap[document.getElementById('speedSlider').value];
+  timer=setInterval(autoStep,spd);
+}
+
+function startStepMode(){
+  if(drawMode)return;
+  clearInterval(timer);paused=false;
+  stepMode=true;
+  resetState();
+  dfsAnim=dfsTrace();bfsAnim=bfsTrace();
+  animIdx=0;
+  setRunningUI();
+  document.getElementById('btnPause').disabled=true;
+  document.getElementById('stepControls').style.display='flex';
+  renderCurrentFrame();
+}
+
+function togglePause(){
+  if(stepMode)return;
+  if(paused){
+    paused=false;
+    document.getElementById('btnPause').textContent='⏸ 暂停';
+    document.getElementById('stepControls').style.display='none';
+    const spd=speedMap[document.getElementById('speedSlider').value];
+    timer=setInterval(autoStep,spd);
+  }else{
+    paused=true;clearInterval(timer);timer=null;
+    document.getElementById('btnPause').textContent='▶ 继续';
+    document.getElementById('stepControls').style.display='flex';
+    updateStepUI();
+  }
+}
+
+function resetState(){
+  dfsState={visited:{},path:null,current:null,backtracks:new Set()};
+  bfsState={visited:{},path:null,current:null};
+  document.getElementById('stepsDFS').textContent='0';
+  document.getElementById('visitedDFS').textContent='0';
+  document.getElementById('stepsBFS').textContent='0';
+  document.getElementById('visitedBFS').textContent='0';
+  document.getElementById('hintDFS').textContent='点击"同步开始"或"单步执行"';
+  document.getElementById('hintBFS').textContent='点击"同步开始"或"单步执行"';
+}
+
+function resetAll(){
+  clearInterval(timer);timer=null;paused=false;stepMode=false;
+  resetState();
+  dfsAnim=[];bfsAnim=[];animIdx=0;
+  genMaze();
+  if(drawMode){
+    drawDrawCanvas();
+  }else{
+    setIdleUI();
+    drawMaze('cvDFS',dfsState);
+    drawMaze('cvBFS',bfsState);
+  }
+}
+
+// ---- Drawing mode ----
+
+function enterDrawMode(){
+  clearInterval(timer);timer=null;paused=false;stepMode=false;
+  resetState();
+  dfsAnim=[];bfsAnim=[];animIdx=0;
+  drawMode=true;
+  document.getElementById('algoPanel').style.display='none';
+  document.getElementById('drawPanel').style.display='flex';
+  setIdleUI();
+  document.getElementById('btnStart').disabled=true;
+  document.getElementById('btnStep').disabled=true;
+  document.getElementById('btnDraw').disabled=true;
+  document.getElementById('stepControls').style.display='none';
+  drawDrawCanvas();
+}
+
+function exitDrawMode(){
+  drawMode=false;
+  document.getElementById('algoPanel').style.display='';
+  document.getElementById('drawPanel').style.display='none';
+  setIdleUI();
+  drawMaze('cvDFS',dfsState);
+  drawMaze('cvBFS',bfsState);
+}
+
+function applyDrawing(){
+  exitDrawMode();
+}
+
+function cancelDrawing(){
+  genMaze();
+  exitDrawMode();
+}
+
+function getCellFromEvent(e,canvas){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=canvas.width/rect.width;
+  const scaleY=canvas.height/rect.height;
+  const x=(e.clientX-rect.left)*scaleX;
+  const y=(e.clientY-rect.top)*scaleY;
+  const col=Math.floor(x/CELL);
+  const row=Math.floor(y/CELL);
+  return{row,col};
+}
+
+function isProtected(r,c){
+  return (r===1&&c===1)||(r===ROWS-2&&c===COLS-2);
+}
+
+function toggleCell(r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS)return;
+  if(isProtected(r,c))return;
+  maze[r][c]=maze[r][c]===WALL?PATH:WALL;
+}
+
+function handleDrawStart(e){
+  if(!drawMode)return;
+  e.preventDefault();
+  isDrawing=true;
+  const{row,col}=getCellFromEvent(e,e.target);
+  toggleCell(row,col);
+  drawDrawCanvas();
+}
+
+function handleDrawMove(e){
+  if(!drawMode||!isDrawing)return;
+  e.preventDefault();
+  const{row,col}=getCellFromEvent(e,e.target);
+  toggleCell(row,col);
+  drawDrawCanvas();
+}
+
+function handleDrawEnd(e){
+  isDrawing=false;
+}
+
+const cvDraw=document.getElementById('cvDraw');
+cvDraw.addEventListener('mousedown',handleDrawStart);
+cvDraw.addEventListener('mousemove',handleDrawMove);
+cvDraw.addEventListener('mouseup',handleDrawEnd);
+cvDraw.addEventListener('mouseleave',handleDrawEnd);
+cvDraw.addEventListener('touchstart',function(e){e.preventDefault();isDrawing=true;const{row,col}=getCellFromEvent(e.touches[0],cvDraw);toggleCell(row,col);drawDrawCanvas();},{passive:false});
+cvDraw.addEventListener('touchmove',function(e){e.preventDefault();if(!isDrawing)return;const{row,col}=getCellFromEvent(e.touches[0],cvDraw);toggleCell(row,col);drawDrawCanvas();},{passive:false});
+cvDraw.addEventListener('touchend',function(e){e.preventDefault();isDrawing=false;});
+
+genMaze();
+drawMaze('cvDFS',dfsState);
+drawMaze('cvBFS',bfsState);
+</script>

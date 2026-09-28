@@ -1,0 +1,40 @@
+{
+  "name": "ai-course-pages",
+  "version": "0.0.14",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "types:check": "next typegen && tsc --noEmit",
+    "lint": "eslint",
+    "check": "prettier --check .",
+    "format": "prettier --write .",
+    "audit:presenter": "node scripts/presenter-audit.mjs"
+  },
+  "dependencies": {
+    "fumadocs-core": "16.14.3",
+    "fumadocs-mdx": "15.2.3",
+    "fumadocs-ui": "npm:@fumadocs/base-ui@16.14.3",
+    "katex": "^0.18.4",
+    "lucide-react": "^1.28.0",
+    "next": "16.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/mdx": "^2.0.14",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "16.3.0",
+    "postcss": "^8.5.25",
+    "prettier": "^3.9.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "playwright": "^1.63.0"
+  }
+}

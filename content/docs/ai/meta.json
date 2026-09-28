@@ -1,0 +1,17 @@
+{
+  "title": "人工智能",
+  "icon": "Bot",
+  "description": "信息技术 · 人工智能技术与应用",
+  "pages": [
+    "01-what-is-ai",
+    "02-history-of-ai",
+    "03-abilities-and-applications",
+    "04-challenges-and-future",
+    "05-data-for-ai",
+    "06-how-ai-decides",
+    "07-ways-machines-learn",
+    "05-how-machines-learn",
+    "06-how-neural-networks-work",
+    "07-how-language-models-answer"
+  ]
+}

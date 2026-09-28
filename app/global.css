@@ -1,0 +1,1156 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "katex/dist/katex.min.css";
+
+/* 顶部导航栏：加高 + 菜单字体放大 */
+#nd-nav {
+  height: 4rem;
+}
+#nd-nav [class*="h-14"] {
+  height: 4rem;
+}
+#nd-nav a {
+  font-size: 1rem;
+}
+
+/* docs 侧边栏折叠为图标栏时，隐藏左下角的用户菜单（空间不足） */
+aside[data-collapsed="true"] .sidebar-usermenu {
+  display: none;
+}
+
+/* 系统字体栈：不依赖任何外部字体，覆盖 Windows / macOS / Linux 各端中文字体
+   Windows 中文优先使用圆润的微软雅黑 UI，配合平滑渲染 */
+html {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "Microsoft YaHei UI",
+    "Microsoft YaHei",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "WenQuanYi Zen Hei",
+    "Noto Sans CJK SC",
+    "Droid Sans Fallback",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scrollbar-gutter: stable;
+}
+
+/* ===== 文章排版：大字号、宽松行高、圆滑渲染 ===== */
+.prose {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+.prose h1,
+h1.text-\[1\.75em\] {
+  font-size: 2.25rem;
+}
+.prose h2 {
+  font-size: 1.75rem;
+}
+.prose h3 {
+  font-size: 1.375rem;
+}
+.prose h4 {
+  font-size: 1.125rem;
+}
+.prose h5 {
+  font-size: 1rem;
+}
+.prose h6 {
+  font-size: 0.9375rem;
+}
+/* Markdown 表格：fumadocs 默认不提供表格样式，补浅色边框 + 表头底色；
+   首列（对比项）加粗。放映态再放大一档保证投影可读。 */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+.prose thead th {
+  background: var(--color-fd-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+.prose th,
+.prose td {
+  border: 1px solid var(--color-fd-border);
+  padding: 0.45rem 0.8rem;
+  vertical-align: top;
+}
+.prose td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+html.presenting .prose table {
+  font-size: 1.35rem;
+}
+html.presenting .prose td,
+html.presenting .prose th {
+  padding: 0.55rem 1rem;
+}
+/* 文档页描述（DocsDescription）字号对齐正文 */
+p.text-lg.text-fd-muted-foreground {
+  font-size: 1.125rem;
+}
+
+html > body[data-scroll-locked] {
+  margin-right: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* ===== 逐屏演示模式（PPT 式放映，纯显隐切换，不移动 DOM） ===== */
+html.presenting {
+  overflow: hidden;
+  /* 关掉全局 scrollbar-gutter 预留，否则 fixed 全屏区右缘会缺 15px */
+  scrollbar-gutter: auto;
+  /*
+   * 放映态的**基准字号**：以视口高度为准，而不是固定的 16px。
+   *
+   * PPT 之所以在 1080p 和 4K 上观感一致，是因为它把整张画布等比缩放到屏幕，
+   * 字号永远是画布高度的固定比例。而 CSS 的 rem 是绝对像素——同一份讲义在
+   * 希沃 4K 大屏（视口 3840×2160）上，字号占屏比例会掉到 1080p 的一半、
+   * 每屏塞进两倍内容，「字小 + 分页碎」两个抱怨同时出现。
+   *
+   * 这里把根字号定义成视口高度的百分比，于是**整个 rem 体系自动变成相对单位**：
+   * 正文 1.4rem、代码 1.05rem、表格 1.35rem，以及组件里所有 Tailwind 的
+   * text-xs/text-sm（都是 rem）全部等比跟随——不必再逐个组件去覆盖。
+   * 取 2.114vh 是为了让正文（1.4rem）在 1080p 下正好 32px ≈ 24pt，
+   * 即「后排学生能看清」的经验下限；上下限防止极端窗口比例下失控。
+   * 阅读态完全不受影响（只在放映态生效）。
+   */
+  font-size: clamp(17.1px, 2.114vh, 6.43vw);
+
+  /*
+   * —— 放映态配色：墨与朱 ——
+   * 暖白纸 + 暖近黑墨 + 一点朱砂做结构色（章节标记、进度、强调），不做装饰。
+   * 纯中性灰（#f5f5f5 / #0a0a0a）在 4K 大屏上又冷又平、层级全无；暖纸色柔和
+   * 不刺眼，且和中文讲义的气质一致。朱砂是「老师圈重点」的颜色，只出现在
+   * 需要学生注意结构的地方，不是点缀。
+   *
+   * 覆写 fumadocs 主题令牌是关键杠杆：组件里的 bg-fd-card / border-fd-border /
+   * text-fd-muted-foreground 等工具类会自动跟随，不必逐个组件改样式。
+   * 强制浅色：投影场景浅底深字的可读性远好于深色主题，且讲义应当与站点主题无关，
+   * 永远长同一个样。选择器 (0,1,1) 压过 .dark 的 (0,1,0)，深色模式下同样生效。
+   */
+  --pr-paper: #fcfcf9;
+  --pr-paper-2: #f0f4f3;
+  --pr-paper-3: #e3ece9;
+  --pr-ink: #162b30;
+  --pr-ink-2: #354e53;
+  --pr-ink-3: #607579;
+  --pr-rule: #dbe4e1;
+  --pr-rule-2: #b6cac3;
+  --pr-column: min(70vw, 126vh);
+  /*
+   * 靛：唯一强调色，只出现在结构位置（章节竖线、进度条、题号）。
+   * 试过朱砂红——但代码高亮（github-light）的关键字本身就是红，两个「差不多但
+   * 不一样」的红放在同一屏上是配色纪律的失误。靛蓝与暖纸是对比关系（暖底冷色），
+   * 又不与任何语法色竞争，观感更安静也更「墨」。
+   * 想换回朱砂只改这一行：#b23a2b。
+   */
+  --pr-accent: #006b60;
+
+  --color-fd-background: var(--pr-paper);
+  --color-fd-foreground: var(--pr-ink);
+  --color-fd-card: var(--pr-paper-2);
+  --color-fd-muted: var(--pr-paper-2);
+  --color-fd-muted-foreground: var(--pr-ink-3);
+  --color-fd-secondary: var(--pr-paper-2);
+  --color-fd-border: var(--pr-rule);
+  --color-fd-popover: var(--pr-paper);
+  --color-fd-accent: var(--pr-paper-3);
+  --color-fd-accent-foreground: var(--pr-ink);
+  /* 按钮保持墨色实心：朱砂是结构色，不当交互控件的填充色用（红=危险是通用语义） */
+  --color-fd-primary: var(--pr-ink);
+  --color-fd-primary-foreground: var(--pr-paper);
+}
+html.presenting body {
+  overflow: hidden;
+  background: var(--pr-paper);
+  color: var(--pr-ink);
+}
+/* 非当前屏 / 未揭示块一律隐藏；用 data 属性而非 class，避免 React 重渲染时覆盖 */
+[data-pr-hidden] {
+  display: none !important;
+}
+html.presenting [data-pr-row-hidden] {
+  display: none !important;
+}
+/* 正文容器提升为全屏放映区（上下避开顶栏/底栏）。
+   背景透明：整体底色由 .presenter-overlay 提供，否则会盖住下方的章节标题页。
+   内容按屏高自动分页，overflow hidden，不允许屏内滚动（单块超屏时缩放适配）。 */
+html.presenting #presenter-content {
+  position: fixed;
+  /* 紧凑顶栏下方留少量呼吸空间；底栏仍保留操作区高度 */
+  inset: 3.35rem 0 3.5rem;
+  z-index: 61;
+  overflow: hidden;
+  padding: 0.75rem clamp(1.25rem, 5vw, 4rem) 0.5rem;
+  /* 内容少的页垂直居中：由演示组件给页首块加 transform: translateY 实现，
+     不用 flex 居中（揭示时会重复居中、上下跳动）也不用 margin（污染重打包测量） */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+/* flex 子项默认会被压缩（flex-shrink:1）：代码框带 overflow:hidden，自动最小高度为 0，
+   会被压到几十像素、内容显示不出来；而且打包测量时所有块同时可见，
+   量到的也是被压扁的高度，分页依据跟着失真。这里禁止压缩。 */
+html.presenting #presenter-content > * {
+  flex: none;
+}
+/* 居中是把 translateY 加在**容器自身**上的（见 applyPageZoom），容器会因此下移、
+   空白的下半部分压到底栏上；它的 z-index(61) 高于遮罩层(60)，会把这些空白区域的
+   点击全部吞掉——表现为「底部按钮点不动」。
+   容器本身不接收指针事件，交互交回给内容块（Quiz 选项、CodeRunner 编辑器照常可点）。
+   实测：内容块按居中公式计算永远不会进入底栏区域（offset + fullH ≤ usable），
+   所以不存在「内容挡住按钮」的问题。 */
+html.presenting #presenter-content {
+  pointer-events: none;
+}
+html.presenting #presenter-content > * {
+  pointer-events: auto;
+}
+/* 单块超高（整表/大图）：按可用屏高/宽等比缩放并垂直居中。
+   位移与缩放都用 transform（不参与布局，避免污染重打包测量） */
+[data-pr-oversized] {
+  transform: translateY(var(--pr-mt, 0px)) scale(var(--pr-scale, 1));
+  transform-origin: top center;
+}
+/* —— 到达动效：新出现的段 ——
+   180ms 淡入 + 上移 6px。动效只在出现的一瞬间把视线牵过去，之后立刻回到静态纸面：
+   不留常驻强调底色，快速连按翻页也不会跳闪。
+   （做过常驻底色高亮的取舍：它标记的是「最新」而不是「重点」，而且每段轮流高亮一遍之后
+   高亮就不再有信息量；再者相当比例的屏只有 1~2 段，也没得可高亮。）
+   transform / opacity 都不参与布局，不会污染分页测量。 */
+@keyframes pr-fresh-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pr-fresh-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* :not([data-pr-oversized]) 是保险：重打包后块可能被移到单块屏而变成等比缩放，
+   此时动画残留的 transform: none 会盖掉缩放位移 */
+html.presenting
+  #presenter-content
+  > [data-pr-fresh="rise"]:not([data-pr-oversized]) {
+  animation: pr-fresh-rise 0.18s ease-out both;
+}
+/* 单块屏只淡入：单块超屏时块上有等比缩放的 transform，位移动画会覆盖它，
+   动画结束后再「啪」地跳回缩放位 */
+html.presenting #presenter-content > [data-pr-fresh="fade"] {
+  animation: pr-fresh-fade 0.18s ease-out both;
+}
+/* 系统开了「减弱动态效果」：只保留淡入，不做位移 */
+@media (prefers-reduced-motion: reduce) {
+  html.presenting #presenter-content > [data-pr-fresh="rise"] {
+    animation: pr-fresh-fade 0.18s ease-out both;
+  }
+}
+/* 演示时放大正文与标题字号。
+   --pr-zoom：稀少页静态字号倍率（打包时按页判定并写入，页内恒定、无动画） */
+html.presenting .prose {
+  font-size: calc(1.4rem * var(--pr-zoom, 1));
+  line-height: 1.6;
+}
+html.presenting .prose h1 {
+  /* 标题的放大倍率打折：标题本身已经很大，再线性放大会喧宾夺主 */
+  font-size: calc(2.6rem * (1 + (var(--pr-zoom, 1) - 1) * 0.4));
+}
+html.presenting .prose h2 {
+  font-size: calc(2.3rem * (1 + (var(--pr-zoom, 1) - 1) * 0.45));
+}
+html.presenting .prose h3 {
+  font-size: calc(1.8rem * (1 + (var(--pr-zoom, 1) - 1) * 0.5));
+}
+html.presenting .prose h4 {
+  font-size: calc(1.45rem * (1 + (var(--pr-zoom, 1) - 1) * 0.55));
+}
+/* 标题字距收紧：中文大字号下默认字距偏松，视觉上散架 */
+html.presenting .prose h1,
+html.presenting .prose h2,
+html.presenting .prose h3,
+html.presenting .prose h4 {
+  letter-spacing: -0.012em;
+  color: var(--pr-ink);
+}
+/* h2 是「章」：左侧悬一道朱砂细线（挂在栏外，不挤动文字）——
+   一屏之内一眼能看出「这里开新章」，不用加任何装饰元素 */
+html.presenting .prose h2 {
+  position: relative;
+}
+html.presenting .prose h2::before {
+  content: "";
+  position: absolute;
+  left: -0.62em;
+  top: 0.06em;
+  bottom: 0.06em;
+  width: 0.15em;
+  border-radius: 0.08em;
+  background: var(--pr-accent);
+}
+/* h3 是「节」：压小一号、提亮一档，靠层级而不是靠线条区分 */
+html.presenting .prose h3 {
+  color: var(--pr-ink);
+}
+/* —— 列宽：正文收窄、代码/表格/图全宽出血 ——
+   全屏宽下正文一行能排 80 个中文，远超可读的 25~45 字，眼睛要来回扫。
+   收窄到每行 ~38 字；用 min(63vw, 120vh) 表达，两种分辨率观感一致
+   （字号的 rem 也已是视口相对，两者同步按比例放大）。
+   刻意用 vw/vh 而不是 px 上限：px 常量在 4K 下相对值减半，会让断屏点漂移。
+   data-pr-kind 由 presenter.tsx 按块的语义类型写入，未打标时不会收窄。
+   用确定的 width 而不是 max-width：flex 子项一旦有 auto 外边距就不再拉伸，
+   只写 max-width 的话短段落会缩成内容宽（实测「思考问题：」只有 160px）并居中，
+   看起来像标题。给定宽度后段落左对齐到栏边，文本按栏宽折行。 */
+html.presenting #presenter-content > [data-pr-kind="text"],
+html.presenting #presenter-content > [data-pr-kind="heading"],
+html.presenting #presenter-content > [data-pr-kind="other"],
+html.presenting #presenter-content > [data-pr-kind="quiz"],
+html.presenting #presenter-content > [data-pr-kind="code"],
+html.presenting #presenter-content > [data-pr-kind="table"] {
+  width: var(--pr-column);
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+/* 公式块例外：短公式缩到自身宽度并居中，正是幻灯片里公式的排法 */
+html.presenting #presenter-content > [data-pr-kind="formula"] {
+  max-width: var(--pr-column);
+  margin-inline: auto;
+  font-size: calc(1em * var(--pr-fit, 1));
+}
+/* 媒体与交互组件必须先服从幻灯片安全区。单块仍然过高/过宽时，运行时会再做
+   等比缩放；这里先消除 img/canvas/iframe 的固有宽度把画面横向撑出屏幕的问题。 */
+html.presenting #presenter-content > [data-pr-kind="media"],
+html.presenting #presenter-content > [data-pr-kind="interactive"] {
+  width: var(--pr-column);
+  max-width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+}
+html.presenting
+  #presenter-content
+  > :is([data-pr-kind="media"], [data-pr-kind="interactive"])
+  :is(img, video, canvas, svg, iframe) {
+  max-width: 100%;
+}
+/* ToolEmbed 的内容高度来自 iframe 上报；小工具常只有 200~350px，在大屏中几何居中后
+   会显得视觉重心偏下。演示态先给它一个随屏幕缩放的最小工作区，大工具保持原高度。 */
+html.presenting #presenter-content > .tool-embed {
+  display: flex;
+  flex-direction: column;
+}
+html.presenting #presenter-content > .tool-embed > iframe {
+  min-height: min(56vh, 32rem);
+}
+/* 代码块放映态折行而非横向滚动：教室里「代码被切掉一半」比折行更难接受。
+   行号是 CSS 计数器，折行后仍对应同一个逻辑行，不影响阅读。 */
+html.presenting #presenter-content figure.shiki pre,
+html.presenting #presenter-content figure.shiki code {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* 站点深色偏好不应把浅色投屏上的语法高亮变成浅字；退出后仍使用原主题。 */
+html.presenting #presenter-content figure.shiki code span {
+  color: var(--shiki-light, inherit);
+  font-style: var(--shiki-light-font-style, normal);
+}
+/* 行内代码（`0`/`1`/位串等）不再用 13px 小字浅底：
+   跟随正文大小，深色胶囊样式，保证投影清晰（不含代码块 pre 内部） */
+html.presenting #presenter-content :not(pre) > code {
+  font-size: 1em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-fd-foreground);
+  background: var(--color-fd-secondary);
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.3em;
+  padding: 0.04em 0.38em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+/* Callout（提示框）内容默认 text-sm 偏小：演示态放大正文与框内小字 */
+html.presenting
+  .prose
+  div[class*="rounded-xl"][class*="bg-fd-card"][class*="ps-1"] {
+  font-size: 1.3rem;
+  line-height: 1.75;
+}
+html.presenting
+  .prose
+  div[class*="rounded-xl"][class*="bg-fd-card"][class*="ps-1"]
+  [class*="text-sm"],
+html.presenting
+  .prose
+  div[class*="rounded-xl"][class*="bg-fd-card"][class*="ps-1"]
+  [class*="text-xs"] {
+  font-size: 1.15rem;
+  line-height: 1.7;
+}
+/* DataGrid（数值卡片）的 caption/note 是固定 text-sm、数值是固定 text-2xl，
+   在演示态不随正文放大：这里随 --pr-zoom 一并放大，保证投影可读（数值为主、注记次之） */
+html.presenting .prose .datagrid [class*="text-sm"] {
+  font-size: calc(1.2rem * var(--pr-zoom, 1));
+  line-height: 1.5;
+}
+html.presenting .prose .datagrid [class*="text-2xl"] {
+  font-size: calc(1.9rem * var(--pr-zoom, 1));
+}
+/* Quiz 课堂提问：题干/选项/按钮均为固定 text-sm，演示态随 --pr-zoom 放大，
+   学生当场作答时投影才看得清（提交后显示对错与解析） */
+html.presenting .prose .quiz-box [class*="text-sm"] {
+  font-size: calc(1.3rem * var(--pr-zoom, 1));
+  line-height: 1.5;
+}
+/* 代码块与 CodeRunner 编辑器：读文章时 text-sm(14px) 正好，投影上就偏小了。
+   放映态跟着正文一起放大，行高同步抬高（否则字大了会挤在一起）。 */
+html.presenting #presenter-content figure.shiki,
+html.presenting #presenter-content figure.shiki pre,
+html.presenting #presenter-content textarea {
+  font-size: calc(1.18rem * var(--pr-zoom, 1));
+  line-height: 1.6;
+}
+/* 代码块左上角的文件名标题条，按比例放大一档 */
+html.presenting #presenter-content figure.shiki > div:first-child {
+  font-size: calc(0.95rem * var(--pr-zoom, 1));
+}
+/* —— 代码块：去边框、暖纸底、文件名做等宽小标签 ——
+   代码是编程课的主角，但它不该靠边框和阴影「浮起来」；
+   一块安静的暖色底 + 一行小标签就够，视线自然落在代码本身。 */
+html.presenting #presenter-content figure.shiki {
+  background: #fff;
+  border: 1px solid var(--pr-rule-2);
+  border-left: 0.2rem solid var(--pr-accent);
+  border-radius: 0.3rem;
+  box-shadow: none;
+}
+/* 只命中「文件名标题条」：没有文件名时代码块的首个子元素是右上角绝对定位的
+   复制按钮（34px 宽），误命中会画出一道只覆盖一小段的横线 */
+html.presenting
+  #presenter-content
+  figure.shiki
+  > div:not([class*="absolute"]):first-child {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+  color: var(--pr-ink-3);
+}
+/* 代码区默认 max-h-[600px] + overflow:auto——字号放大后超过 14 行的代码会变成
+   滚动容器，投影时等于内容被悄悄截掉（台下看不见，台上也不知道）。
+   放映态取消上限，让真实高度参与分页：超屏的长代码会走单块等比缩放兜底。 */
+html.presenting #presenter-content figure.shiki > div:not([class*="absolute"]) {
+  max-height: none;
+  overflow: visible;
+}
+/* 长代码块拆到多屏时右下角标「续 N / M」：让台下知道代码还没完，
+   而不是以为老师漏了一段 */
+html.presenting #presenter-content figure.shiki[data-pr-cont]::after {
+  content: attr(data-pr-cont);
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--pr-accent);
+  background: var(--pr-paper-2);
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+}
+/* 行号：压到三级墨色，别和代码抢 */
+html.presenting #presenter-content figure.shiki [data-line-number],
+html.presenting #presenter-content figure.shiki .line::before {
+  color: var(--pr-ink-3);
+}
+/* —— Callout：留一道左侧色条，去掉整圈边框 —— */
+html.presenting
+  .prose
+  div[class*="rounded-xl"][class*="bg-fd-card"][class*="ps-1"] {
+  background: var(--pr-paper-2);
+  border: none;
+  border-radius: 0.35rem;
+}
+html.presenting
+  .prose
+  div[class*="rounded-xl"][class*="bg-fd-card"][class*="ps-1"]
+  > div:first-child {
+  border-radius: 0.35rem 0 0 0.35rem;
+}
+/* —— 表格：只留横向细线，去掉竖线网格 ——
+   全网格表格在投影上像 Excel 截图；横线足够引导视线，版面也安静得多。 */
+html.presenting .prose table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: auto;
+  background: transparent;
+}
+html.presenting .prose th,
+html.presenting .prose td {
+  border: none;
+  border-bottom: 1px solid var(--pr-rule);
+  padding: 0.45em 0.65em;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html.presenting .prose th {
+  color: var(--pr-accent);
+  background: var(--pr-paper-3);
+  font-weight: 700;
+  border-bottom: 1px solid var(--pr-rule-2);
+}
+html.presenting
+  .prose
+  table:has(tr:first-child > :nth-child(2):last-child)
+  th:first-child {
+  width: 28%;
+}
+html.presenting .prose tbody tr:nth-child(even) {
+  background: #f3f6f4;
+}
+html.presenting .prose tbody td:first-child {
+  font-weight: 650;
+}
+/* 课堂重点由作者的强调/引用明确指定，不自动把每段都做成卡片。 */
+html.presenting .prose strong {
+  color: var(--pr-accent);
+  font-weight: 800;
+}
+html.presenting .prose blockquote {
+  border-left: 0.2rem solid var(--pr-accent);
+  background: var(--pr-paper-2);
+  border-radius: 0 0.35rem 0.35rem 0;
+  padding: 0.5em 0.9em;
+  color: var(--pr-ink);
+  font-size: calc(1.45rem * var(--pr-zoom, 1));
+  line-height: 1.5;
+  font-style: normal;
+}
+html.presenting .prose blockquote p {
+  margin-block: 0.35em;
+}
+html.presenting .code-runner {
+  border-color: var(--pr-rule-2);
+  border-radius: 0.3rem;
+  box-shadow: none;
+}
+html.presenting .code-runner [class*="text-xs"] {
+  font-size: 0.9rem;
+}
+html.presenting .code-runner pre {
+  font-size: 1.18rem;
+  line-height: 1.5;
+}
+/* 表格外层通常是 fumadocs 的 overflow 容器，去掉它的圆角边框 */
+html.presenting #presenter-content [data-pr-kind="table"] > div {
+  border: none;
+  border-radius: 0;
+}
+/* —— 行内代码：去掉胶囊边框，只留浅底 —— */
+html.presenting #presenter-content :not(pre) > code {
+  background: var(--pr-paper-3);
+  border: none;
+  border-radius: 0.22em;
+  padding: 0.06em 0.34em;
+}
+/* —— Quiz：题号用朱砂，选项条改用细线分隔而非灰底块 —— */
+html.presenting .prose .quiz-box {
+  border: none;
+  background: var(--pr-paper-2);
+  border-radius: 0.35rem;
+}
+html.presenting .prose .quiz-box [class*="rounded-lg"][class*="border"] {
+  background: var(--pr-paper);
+  border-color: var(--pr-rule);
+}
+/* 题号徽标：朱砂描边——一屏一题时它就是这一屏的编号 */
+html.presenting .prose .quiz-box p > span[aria-hidden] {
+  border-color: var(--pr-accent);
+  background: transparent;
+  color: var(--pr-accent);
+  letter-spacing: 0.02em;
+}
+
+/* —— 演示框架：遮罩 + 顶栏 + 进度条 + 标题页 + 底栏 ——
+   顶栏是一条紧凑的浅墨绿信息带，与暖白正文区明确分层。 */
+.presenter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--pr-paper);
+  color: var(--pr-ink);
+}
+
+/* 阅读态标题旁的局部放映入口：鼠标经过标题或键盘聚焦时出现，触屏设备常显。 */
+.presenter-heading-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline-start: 0.65rem;
+  padding: 0.28rem 0.55rem;
+  translate: 0 -0.08em;
+  border: 1px solid var(--color-fd-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-fd-background) 88%, transparent);
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1;
+  vertical-align: middle;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.presenter-heading-trigger svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+#presenter-content > :is(h1, h2, h3):hover .presenter-heading-trigger,
+.presenter-heading-trigger:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.presenter-heading-trigger:hover,
+.presenter-heading-trigger:focus-visible {
+  border-color: color-mix(
+    in srgb,
+    var(--color-fd-primary) 45%,
+    var(--color-fd-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--color-fd-primary) 10%,
+    var(--color-fd-background)
+  );
+  color: var(--color-fd-primary);
+  outline: none;
+}
+
+@media (hover: none) {
+  .presenter-heading-trigger {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.presenter-topbar {
+  flex: none;
+  height: 3.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 max(1.25rem, calc((100vw - var(--pr-column)) / 2));
+  background: #263746;
+  border-bottom: 1px solid #405667;
+  font-size: 1rem;
+}
+.presenter-topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* 课名保持清楚可读；当前小节仍略重一级。 */
+.presenter-topbar-lesson {
+  flex: 0 1 auto;
+  color: #d5e0e7;
+  font-weight: 700;
+  font-size: 1.08rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 课名与小节之间一道竖线，把「册」和「章」分开 */
+.presenter-topbar-rule {
+  flex: none;
+  width: 1px;
+  height: 1.15rem;
+  background: #718796;
+}
+/* 当前小节：每屏都告诉师生「现在讲到哪」，是这一栏存在的理由 */
+.presenter-topbar-section {
+  flex: 1 1 auto;
+  color: #ffffff;
+  font-weight: 780;
+  font-size: 1.18rem;
+  line-height: 1.2;
+  max-width: min(52vw, 100vh);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.presenter-topbar-icon {
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #d5e0e7;
+}
+.presenter-topbar-counter {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #e4ebf0;
+  font-variant-numeric: tabular-nums;
+}
+/* 页码：当前页用墨色加粗，总数用三级色，扫一眼就能定位 */
+.presenter-pagecount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.28rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+.presenter-pagecount-sep {
+  color: #b5c3cc;
+  font-weight: 400;
+  opacity: 0.7;
+}
+.presenter-chip {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+  color: #f4f7f9;
+}
+/* 进度条：顶栏下沿一道细线，用朱砂填充——比「12 / 43」更快读懂进度，
+   又不占版面（横向 2px，视线扫过即可，不构成装饰） */
+.presenter-progress {
+  flex: none;
+  height: 0.115rem;
+  background: var(--pr-rule);
+  overflow: hidden;
+}
+.presenter-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--pr-accent);
+  transform-origin: left center;
+  transition: transform 0.18s ease-out;
+}
+.presenter-stage {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 0 clamp(1.25rem, 6vw, 4rem);
+}
+/* 封面页：左对齐的「扉页」，和正文同一套左对齐逻辑；
+   居中大标题是默认做法，左对齐加一道朱砂短横更像一本讲义的扉页 */
+.presenter-titlepage {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  width: var(--pr-column);
+  max-width: 100%;
+  text-align: left;
+  padding: 2rem 0;
+}
+.presenter-titlepage-mark {
+  width: 3rem;
+  height: 0.16rem;
+  border-radius: 0.08rem;
+  background: var(--pr-accent);
+  margin-bottom: 0.5rem;
+}
+.presenter-titlepage-title {
+  margin: 0;
+  font-size: clamp(2.2rem, 6.2vw, 4.2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--pr-ink);
+}
+.presenter-titlepage-desc {
+  margin: 0;
+  color: var(--pr-ink-2);
+  font-size: 1.25rem;
+  line-height: 1.7;
+  max-width: 34em;
+}
+.presenter-titlepage-hint {
+  margin: 2rem 0 0;
+  color: var(--pr-ink-3);
+  font-size: 0.9rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pr-rule);
+  min-width: 16rem;
+}
+/* 底栏：控制区，压到最安静。只留一道极浅的上边线把它和内容分开 */
+.presenter-bottombar {
+  flex: none;
+  min-height: 2.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-top: 1px solid var(--pr-rule);
+}
+.presenter-bottombar-hint {
+  color: var(--pr-ink-3);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.presenter-bottombar-actions {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.presenter-jump {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-fd-muted-foreground);
+  font-size: 0.85rem;
+}
+.presenter-jump-input {
+  width: 3.4rem;
+  padding: 0.15rem 0.3rem;
+  text-align: center;
+  border-radius: 0.45rem;
+  border: 1px solid var(--color-fd-border);
+  background: var(--color-fd-background);
+  color: var(--color-fd-foreground);
+  font-size: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.presenter-jump-input:focus {
+  outline: none;
+  border-color: var(--color-fd-primary);
+}
+.presenter-jump-input::placeholder {
+  color: var(--color-fd-muted-foreground);
+  opacity: 0.7;
+}
+
+/* ===== 放映态目录浮层：右缘命中带悬停展开、移走延迟收起（老师专用，纯鼠标） =====
+   命中带整条宽 30px（右缘 30px 内都是 hover 区，好瞄准）；面板是 rail 的子节点且
+   紧贴 rail 左侧，鼠标条↔面板之间无空隙。收起不是立即发生：JS 层 onMouseLeave 后
+   宽限 350ms（.is-open 保持展开），鼠标移回即取消，避免窄条瞄偏一瞬闪没。 */
+.presenter-toc-rail {
+  position: fixed;
+  top: 2.75rem; /* 与放映内容区上下对齐 */
+  bottom: 4.05rem;
+  right: 0;
+  /* 用 rem 而非 px：4K 大屏上命中带也要跟着变大，否则触屏难瞄准 */
+  width: 1.4rem;
+  z-index: 70; /* 盖过内容列（z61）与 overlay（z60） */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.32rem;
+  opacity: 0.3;
+  transition: opacity 0.15s ease;
+}
+.presenter-toc-rail:hover,
+.presenter-toc-rail.is-open {
+  opacity: 1;
+}
+.presenter-toc-rail-icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  color: var(--color-fd-muted-foreground);
+  pointer-events: none;
+}
+.presenter-toc-panel {
+  position: absolute;
+  top: 0;
+  right: 100%; /* 面板右缘贴住 rail 左缘，不留空隙 */
+  width: min(13.2rem, 86vw);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem;
+  background: var(--color-fd-popover, var(--color-fd-background));
+  border: 1px solid var(--color-fd-border);
+  border-radius: 0.6rem;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(1.25rem);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.presenter-toc-rail:hover .presenter-toc-panel,
+.presenter-toc-rail.is-open .presenter-toc-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+.presenter-toc-head {
+  flex: none;
+  padding: 0.4rem 0.6rem 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-fd-muted-foreground);
+  letter-spacing: 0.08em;
+}
+.presenter-toc-item {
+  flex: none;
+  width: 100%;
+  text-align: left;
+  padding: 0.32rem 0.6rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-fd-foreground);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.presenter-toc-item:hover {
+  background: var(--color-fd-accent);
+}
+.presenter-toc-item[data-active] {
+  font-weight: 600;
+  color: var(--pr-ink);
+  background: var(--pr-paper-3);
+  box-shadow: inset 2px 0 0 var(--pr-accent);
+}
+/* h3 等三级标题缩进一档，体现层级 */
+.presenter-toc-item[data-level="3"] {
+  padding-left: 1.35rem;
+}
+/* 触屏无 hover，直接隐藏 */
+@media (hover: none) {
+  .presenter-toc-rail {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .presenter-bottombar-hint {
+    display: none;
+  }
+}
+
+/* ===== 首页 Hero 动画场景 ===== */
+.hero-scene {
+  min-height: 350px;
+  background: linear-gradient(180deg, #2e8555, #25a36f 50%, #2e8555);
+}
+
+.hero-layer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+.hero-hills {
+  z-index: 1;
+}
+.hero-grass {
+  z-index: 3;
+}
+
+/* 白云 */
+.hero-cloud {
+  position: absolute;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  animation: cloud-drift linear infinite;
+}
+.hero-cloud::before,
+.hero-cloud::after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+.hero-cloud::before {
+  width: 55%;
+  height: 170%;
+  top: -90%;
+  left: 14%;
+}
+.hero-cloud::after {
+  width: 42%;
+  height: 140%;
+  top: -72%;
+  right: 12%;
+}
+.hero-cloud-1 {
+  width: 190px;
+  height: 54px;
+  top: 16%;
+  animation-duration: 55s;
+}
+.hero-cloud-2 {
+  width: 120px;
+  height: 36px;
+  top: 30%;
+  opacity: 0.8;
+  animation-duration: 75s;
+  animation-delay: -25s;
+}
+.hero-cloud-3 {
+  width: 250px;
+  height: 66px;
+  top: 10%;
+  opacity: 0.65;
+  animation-duration: 95s;
+  animation-delay: -50s;
+}
+@keyframes cloud-drift {
+  from {
+    transform: translateX(-40vw);
+  }
+  to {
+    transform: translateX(110vw);
+  }
+}
+
+/* 吉祥物：素材自带走动动画，叠加上下浮动 */
+.hero-mascot {
+  position: absolute;
+  left: 5%;
+  bottom: 10%;
+  width: min(25vw, 300px);
+  z-index: 5;
+  image-rendering: pixelated;
+  animation: mascot-bob 2.6s ease-in-out infinite;
+}
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+/* 中央文字 */
+.hero-copy {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 3rem 1.5rem 3rem;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+.hero-copy h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 6vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+/* 欢迎徽章 */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1.1rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(4px);
+  animation: badge-in 0.6s ease both;
+}
+.hero-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a7f3d0;
+  box-shadow: 0 0 10px rgba(167, 243, 208, 0.9);
+}
+@keyframes badge-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 副标题 */
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(1rem, 2vw, 1.15rem);
+}
+
+@media (min-width: 641px) and (max-width: 1600px) {
+  .hero-mascot {
+    width: min(18vw, 220px);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-scene {
+    min-height: 300px;
+  }
+  .hero-copy h1 {
+    white-space: normal;
+    max-width: 58vw;
+    font-size: 1.9rem;
+  }
+  .hero-mascot {
+    left: 3%;
+    bottom: 8%;
+    width: min(18vw, 90px);
+  }
+  .hero-copy {
+    padding: 2.5rem 1rem 4rem;
+  }
+}

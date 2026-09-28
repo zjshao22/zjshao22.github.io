@@ -4,7 +4,7 @@ import { ArrowRight, BrainCircuit, Globe2, Presentation } from "lucide-react";
 const courses = [
   {
     title: "计算机网络",
-    description: "从网络应用出发，理解四层模型、IP、分组交换与封装。",
+    description: "从校园网、班级群和课程平台出发，理解数据怎样穿过网络。",
     href: "/docs/network",
     lesson: "/docs/network/01-how-web-works",
     count: "4 节课程",

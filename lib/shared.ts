@@ -1,4 +1,4 @@
-export const appName = "人工智能课程";
+export const appName = "技术课程";
 export const docsRoute = "/docs";
 
 export function shortHash(value: string): string {

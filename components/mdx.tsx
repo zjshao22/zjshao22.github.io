@@ -6,6 +6,7 @@ import DataGrid from "./DataGrid";
 import DataShowcase from "./DataShowcase";
 import KeyPoints from "./KeyPoints";
 import AiTimeline from "./AiTimeline";
+import RequestJourney from "./network/RequestJourney";
 import {
   LearningLoopFigure,
   GeneralizationCurveFigure,
@@ -33,6 +34,7 @@ export function getMDXComponents(components?: MDXComponents) {
     DataShowcase,
     KeyPoints,
     AiTimeline,
+    RequestJourney,
     LearningLoopFigure,
     GeneralizationCurveFigure,
     NeuralNetworkFigure,

@@ -5,7 +5,7 @@ import { appName } from "@/lib/shared";
 
 export const metadata: Metadata = {
   title: { default: appName, template: `%s | ${appName}` },
-  description: "人工智能课程：从基本概念到机器学习、大语言模型。",
+  description: "计算机网络与人工智能的网页课程，支持互动图示和逐屏演示。",
 };
 
 export default function Layout({ children }: LayoutProps<"/">) {

@@ -1,0 +1,6 @@
+{
+  "title": "计算机网络",
+  "icon": "Network",
+  "description": "面向大学一年级的计算机网络入门",
+  "pages": ["01-how-web-works"]
+}

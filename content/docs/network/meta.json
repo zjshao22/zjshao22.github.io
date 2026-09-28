@@ -6,6 +6,10 @@
     "01-how-web-works",
     "02-four-layers",
     "03-ip-and-packets",
-    "04-encapsulation"
+    "04-encapsulation",
+    "05-byte-order",
+    "06-ipv4-subnets",
+    "07-longest-prefix",
+    "08-arp"
   ]
 }

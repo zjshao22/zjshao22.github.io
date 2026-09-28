@@ -8,6 +8,14 @@ import KeyPoints from "./KeyPoints";
 import AiTimeline from "./AiTimeline";
 import RequestJourney from "./network/RequestJourney";
 import {
+  ArpFigure,
+  ByteOrderFigure,
+  DatagramFigure,
+  EncapsulationFigure,
+  HttpExchangeFigure,
+  IPv4PrefixFigure,
+} from "./network/NetworkFigures";
+import {
   LearningLoopFigure,
   GeneralizationCurveFigure,
 } from "./ai/MachineLearningFigures";
@@ -35,6 +43,12 @@ export function getMDXComponents(components?: MDXComponents) {
     KeyPoints,
     AiTimeline,
     RequestJourney,
+    ArpFigure,
+    ByteOrderFigure,
+    DatagramFigure,
+    EncapsulationFigure,
+    HttpExchangeFigure,
+    IPv4PrefixFigure,
     LearningLoopFigure,
     GeneralizationCurveFigure,
     NeuralNetworkFigure,

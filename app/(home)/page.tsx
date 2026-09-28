@@ -7,7 +7,7 @@ const courses = [
     description: "从校园网、班级群和课程平台出发，理解数据怎样穿过网络。",
     href: "/docs/network",
     lesson: "/docs/network/01-how-web-works",
-    count: "4 节课程",
+    count: "8 节课程",
     Icon: Globe2,
     tone: "border-teal-700/20 bg-[#e8f2ed] text-teal-950 dark:border-teal-200/20 dark:bg-[#183633] dark:text-teal-50",
   },

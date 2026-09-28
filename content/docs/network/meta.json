@@ -1,6 +1,11 @@
 {
   "title": "计算机网络",
   "icon": "Network",
-  "description": "面向大学一年级的计算机网络入门",
-  "pages": ["01-how-web-works"]
+  "description": "网络应用、四层模型、IP 与分组交换",
+  "pages": [
+    "01-how-web-works",
+    "02-four-layers",
+    "03-ip-and-packets",
+    "04-encapsulation"
+  ]
 }

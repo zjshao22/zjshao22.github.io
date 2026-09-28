@@ -4,10 +4,10 @@ import { ArrowRight, BrainCircuit, Globe2, Presentation } from "lucide-react";
 const courses = [
   {
     title: "计算机网络",
-    description: "从一次网页访问出发，理解设备如何协作、数据如何抵达。",
+    description: "从网络应用出发，理解四层模型、IP、分组交换与封装。",
     href: "/docs/network",
     lesson: "/docs/network/01-how-web-works",
-    count: "新课 · 第一讲约 120 分钟",
+    count: "4 节课程",
     Icon: Globe2,
     tone: "border-teal-700/20 bg-[#e8f2ed] text-teal-950 dark:border-teal-200/20 dark:bg-[#183633] dark:text-teal-50",
   },

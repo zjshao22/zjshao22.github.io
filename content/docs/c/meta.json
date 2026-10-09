@@ -1,0 +1,19 @@
+{
+  "title": "C 语言程序设计",
+  "icon": "Terminal",
+  "description": "从编译执行、流程控制到数组指针、结构体与文件持久化",
+  "pages": [
+    "00-intro-and-compilation",
+    "01-types-variables-operators",
+    "02-input-output",
+    "03-branching-structures",
+    "04-loops-and-control",
+    "05-arrays-and-strings",
+    "06-functions-and-scope",
+    "07-pointers-mastery",
+    "08-structs-and-typedef",
+    "09-file-operations",
+    "10-experiments",
+    "11-exam-prep-and-exercises"
+  ]
+}

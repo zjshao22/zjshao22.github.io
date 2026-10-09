@@ -1,0 +1,246 @@
+---
+title: 关系模型、数据表与基本操作
+description: 关系数据模型、完整性约束、四表结构 DDL 定义、增删改 DML 与基础数据维护
+---
+
+# 关系模型、数据表与基本操作
+
+在关系数据库中，一切数据都以**二维关系表（Table）**的形式组织。表中的每一行称为一条**元组（Tuple / 记录）**，代表现实世界中的一个具体对象或一次关联；每一列称为一个**属性（Attribute / 字段）**，具有固定的数据类型与约束。
+
+本节我们将深入剖析教学选课系统的四表结构，掌握 DDL 建表与完整性约束语法，理解并导入基准数据 `p1data.sql`，并完成带安全条件的增删改操作。
+
+---
+
+## 一、核心概念：实体表与联系表
+
+在校园选课场景中，我们定义了四张核心业务表：
+
+<FourTableSchemaFigure />
+
+### 1. 为什么不能把成绩直接放在学生表或课程表？
+
+- 如果放在**学生表**：一名学生会选多门课，难道要在学生表中预留 `score1, score2, score3...` 吗？这不仅限制了选课门数，更破坏了第 1 范式的原子性与结构稳定性。
+- 如果放在**课程表**：一门课程有几十名学生选修，同样无法用单行记录容纳不同学生的成绩。
+- **正解**：“选课”是学生实体与课程实体之间的**多对多联系（M:N）**。“成绩（`score`）”既不属于单纯的学生，也不属于单纯的课程，而是**学生在某门特定课程上的评价属性**。因此必须设立独立的**联系表（`t_student_course`）**来承载这一关联。
+
+### 2. 为什么选课表需要联合主键（Composite Primary Key）？
+
+- 一名学生可以选多门课程（`sid` 重复出现）；一门课程可以被多名学生选修（`cid` 重复出现）。因此单独的 `sid` 或 `cid` 均不能唯一标识一行选课记录。
+- **业务规则**：在同一个学期内，一名学生不能重复选修同一门课程多次。因此，`sid` 与 `cid` 的**组合（`sid`, `cid`）**才能唯一确定一条选课记录。这就是**联合主键（复合主键）**。
+
+<Quiz
+  question="关于关系表的主键与联系设计，下列说法中正确的是？"
+  options={[
+    "A 选课成绩应当作为学生表的属性，方便查询某学生的所有成绩",
+    "B 联合主键意味着表中存在多个独立的主键",
+    "C 选课表以 (sid, cid) 作为联合主键，可以杜绝同一学生对同一门课程的重复选课",
+    "D 外键所在的字段必须与其引用的主键字段名称完全一致，否则数据库无法识别",
+  ]}
+  answer="选课表以 (sid, cid) 作为联合主键，可以杜绝同一学生对同一门课程的重复选课"
+  explanation="联合主键是由多个列共同构成的一个主键（不是多个主键）；它从物理约束层面确保了 (sid, cid) 组合的全局唯一性，杜绝重复记录。外键字段名不强制与父表相同，只要数据类型兼容即可。"
+/>
+
+---
+
+## 二、三类完整性约束（Integrity Constraints）
+
+关系模型的核心优势在于通过 DBMS 严格保障数据完整性，主要分为三类：
+
+<IntegrityConstraintsFigure />
+
+1. **实体完整性（Entity Integrity）**：
+   - 规定每个表的主键列**不能取空值（NOT NULL）**，且**必须唯一**。它保证了关系中的每个元组都是可唯一寻址和区分的。
+2. **参照完整性（Referential Integrity）**：
+   - 如果表 A 中的字段引用了表 B 的主键，则表 A 中的该字段称为**外键（Foreign Key）**。
+   - 外键的值必须要么是**被参照表主键中已存在的实际值**，要么取**空值（NULL）**（若业务允许未分配）。
+   - 例如：`t_student_course.cid` 不能随意填入一个不存在的课程号 `c999`；同时，如果某门课程已被选修，直接在父表 `t_course` 中删除该课程将触发参照完整性报错（`Cannot delete or update a parent row`）。
+3. **用户定义完整性（User-defined Integrity）**：
+   - 针对具体业务领域的约束。例如年龄 `age >= 0`、成绩 `score BETWEEN 0 AND 100`（`CHECK` 约束）、字段非空（`NOT NULL`）、默认值（`DEFAULT`）等。
+
+---
+
+## 三、实验一（第一阶段）：Workbench 库表建立与数据维护
+
+本节知识点直接对应**实验一的第一阶段任务**。在 MySQL Workbench 中，可以通过图形化向导或 SQL 语句完成库表的建立与数据导入：
+
+### 1. 创建个人数据库 (Schema)
+
+在 Workbench 左侧导航栏右键或点击工具栏的“Add Schema”图标，创建以个人姓名缩写结尾的数据库（例如 `teachingdb_chen`）：
+
+<WorkbenchSchemaFigure />
+
+```sql
+-- 确保进入当前实验库
+CREATE DATABASE IF NOT EXISTS teachingdb_chen
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_ai_ci;
+
+USE teachingdb_chen;
+```
+
+### 2. 四张基表的表设计与约束配置
+
+在 Workbench 的表设计器（Table Editor）中配置字段名称、数据类型，并勾选 PK（主键）、NN（非空）等选项，在 Foreign Keys 选项卡中建立主外键引用：
+
+<WorkbenchTableEditorFigure />
+
+对应的完整标准 DDL 语句如下：
+
+```sql
+-- 1. 创建学生表 t_student
+CREATE TABLE IF NOT EXISTS t_student (
+  sid CHAR(10) NOT NULL COMMENT '学号，主键',
+  sname VARCHAR(10) NOT NULL COMMENT '姓名',
+  sex CHAR(1) NULL COMMENT '性别',
+  age INT NULL COMMENT '年龄',
+  major VARCHAR(20) NULL COMMENT '专业',
+  PRIMARY KEY (sid),
+  CHECK (age >= 0 AND age <= 120)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. 创建教师表 t_teacher
+CREATE TABLE IF NOT EXISTS t_teacher (
+  tid CHAR(10) NOT NULL COMMENT '工号，主键',
+  tname VARCHAR(10) NOT NULL COMMENT '姓名',
+  age INT NULL COMMENT '年龄',
+  title VARCHAR(20) NULL COMMENT '职称',
+  PRIMARY KEY (tid),
+  CHECK (age >= 18 AND age <= 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 3. 创建课程表 t_course（包含外键引用 t_teacher）
+CREATE TABLE IF NOT EXISTS t_course (
+  cid CHAR(10) NOT NULL COMMENT '课程号，主键',
+  cname VARCHAR(20) NOT NULL UNIQUE COMMENT '课程名，唯一值',
+  tid CHAR(10) NULL COMMENT '授课教师工号，外键，可为空（表示未分配教师）',
+  PRIMARY KEY (cid),
+  CONSTRAINT fk_course_teacher
+    FOREIGN KEY (tid) REFERENCES t_teacher(tid)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 4. 创建选课表 t_student_course（联合主键与双外键）
+CREATE TABLE IF NOT EXISTS t_student_course (
+  sid CHAR(10) NOT NULL COMMENT '学号，外键',
+  cid CHAR(10) NOT NULL COMMENT '课程号，外键',
+  score INT NULL COMMENT '成绩，允许为空（表示尚未考试登分）',
+  PRIMARY KEY (sid, cid),
+  CONSTRAINT fk_sc_student
+    FOREIGN KEY (sid) REFERENCES t_student(sid)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_sc_course
+    FOREIGN KEY (cid) REFERENCES t_course(cid)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CHECK (score >= 0 AND score <= 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+> [!TIP]
+> **外键级联选项解析**
+>
+> - `ON DELETE RESTRICT`（或 `NO ACTION`）：当尝试删除父表行时，如果子表有引用则**拒绝删除**（保护课程不被误删）。
+> - `ON DELETE CASCADE`：当父表行被删除时，子表中所有引用它的行**自动跟随删除**（例如学生退学注销学号，其历史选课记录一并清除）。
+> - `ON UPDATE CASCADE`：父表主键值若发生更新，子表外键**自动同步变动**。
+
+---
+
+## 四、导入基线数据 `p1data.sql`
+
+数据脚本包含 12 名学生、10 位教师、10 门课程和 24 条选课记录。
+
+在导入前，特别注意第十节中指出的**统一材料口径**：原始 `p1data.sql` 文件的第一行可能固定写有 `use teachingdb_chen;`。如果你的个人库名为 `teachingdb_zs`，需将第一行修改为对应库名，或者在命令行中显式指定目标库：
+
+```bash
+# 【系统终端执行】将 p1data.sql 导入到指定数据库中
+mysql -u root -p teachingdb_chen < p1data.sql
+```
+
+或者在 Workbench 中打开 `p1data.sql`，核对 `USE` 语句后点击执行（闪电图标）。
+
+### 验证数据导入完整性：
+
+```sql
+SELECT 't_student' AS tbl, COUNT(*) AS count FROM t_student
+UNION ALL
+SELECT 't_teacher', COUNT(*) FROM t_teacher
+UNION ALL
+SELECT 't_course', COUNT(*) FROM t_course
+UNION ALL
+SELECT 't_student_course', COUNT(*) FROM t_student_course;
+```
+
+**标准核验结果基线**：
+
+- `t_student`：12 行
+- `t_teacher`：10 行
+- `t_course`：10 行
+- `t_student_course`：24 行
+
+---
+
+## 五、实验一变更实战：增、删、改（DML）
+
+在实验一中，导入基线数据后需执行以下三道数据变更任务。每道任务必须严格注意影响行数与约束依赖！
+
+### 任务 1：向 `t_student` 插入一行个人真实信息
+
+```sql
+-- 语法：INSERT INTO 表名 (列1, 列2...) VALUES (值1, 值2...);
+INSERT INTO t_student (sid, sname, sex, age, major)
+VALUES ('2023001', '陈雷', '男', 21, '计算机科学与技术');
+
+-- 验证插入结果
+SELECT * FROM t_student WHERE sid = '2023001';
+```
+
+### 任务 2：从 `t_course` 删除课程名为“工程数学”的记录
+
+在删除前必须先做两项检查：
+
+1. “工程数学”的课程号是什么？（查询得 `cid = 'c010'`，教师 `tid = NULL`）
+2. 是否有学生选修了这门课？若已有选课记录且外键设置为 `RESTRICT`，删除操作将报错！
+
+```sql
+-- 检查选课情况：count 为 0，说明无人选修，可以安全删除
+SELECT COUNT(*) FROM t_student_course WHERE cid = 'c010';
+
+-- 执行删除操作
+DELETE FROM t_course WHERE cname = '工程数学';
+
+-- 验证删除结果（受影响行数应为 1，再次查询返回 0 行）
+SELECT * FROM t_course WHERE cname = '工程数学';
+```
+
+### 任务 3：将 `t_teacher` 中工号为 `t001` 的教师职称更改为“教授”
+
+```sql
+-- 语法：UPDATE 表名 SET 列 = 新值 WHERE 条件;
+UPDATE t_teacher
+SET title = '教授'
+WHERE tid = 't001';
+
+-- 验证更新结果
+SELECT * FROM t_teacher WHERE tid = 't001';
+```
+
+> [!WARNING]
+> **生产安全警示：不带 WHERE 条件的 UPDATE / DELETE**
+> 如果执行 `DELETE FROM t_course;` 或 `UPDATE t_teacher SET title = '教授';` 时遗漏了 `WHERE` 条件，整个表的所有数据行都将被删除或修改！MySQL Workbench 默认启用了 Safe Updates 模式，禁止执行无条件的全局修改。在正式编写 SQL 时，请始终先用 `SELECT * FROM ... WHERE ...` 确认命中范围，再写 `UPDATE/DELETE`！
+
+---
+
+## 阶段达标自测（Gate 1 检查点）
+
+尝试独立完成以下迁移小测验：
+
+<Quiz
+  question="尝试向 t_student_course 插入一条记录：('2099999', 'c001', 95)。假设学生表中不存在学号 2099999，会发生什么？"
+  options={[
+    "A 插入成功，成绩记录正常保存",
+    "B 报错，触发参照完整性约束失败（Foreign key constraint fails）",
+    "C 报错，触发实体完整性约束失败（Primary key violates）",
+    "D 系统自动在 t_student 中补建学号为 2099999 的空白学生记录",
+  ]}
+  answer="报错，触发参照完整性约束失败（Foreign key constraint fails）"
+  explanation="t_student_course.sid 是外键，依赖父表 t_student.sid。父表中不存在该学生学号，违反参照完整性，DBMS 拒绝执行并抛出 foreign key constraint fails 错误。"
+/>

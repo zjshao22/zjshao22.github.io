@@ -8,5 +8,6 @@ const config: NextConfig = {
   images: { unoptimized: true },
   reactStrictMode: true,
   agentRules: false,
+  allowedDevOrigins: ["127.0.0.1", "localhost", "192.168.1.119"],
 };
 export default withMDX(config);

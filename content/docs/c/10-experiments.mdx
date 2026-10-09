@@ -1,0 +1,510 @@
+---
+title: 综合编程实战精解
+description: 流程控制、数组处理、函数封装与指针应用 10 个典型编程案例详解与标准源码实现
+---
+
+# 综合编程实战精解
+
+本篇汇集了 C 语言编程中最经典的 **10 个典型实战案例**，涵盖分支决策、循环迭代、数组遍历、字符状态机、函数模块化封装与指针内存操作两大专题，提供清晰的任务描述、标准算法源码与测试验证。
+
+---
+
+## 专题一 · 流程控制编程实践
+
+本专题聚焦于 `if-else` 与 `switch-case` 分支决策、多重循环嵌套以及经典数列迭代算法。
+
+---
+
+### 案例 1：成绩五级制等级判定（if 与 switch 双实现）
+
+**任务描述**：
+输入百分制浮点成绩，输出对应的五级制等级 A、B、C、D、E：
+
+- $\ge 90$ 分为 **A**
+- $[80, 90)$ 分为 **B**
+- $[70, 80)$ 分为 **C**
+- $[60, 70)$ 分为 **D**
+- $&lt; 60$ 分为 **E**
+
+要求分别用 `if` 语句和 `switch` 语句实现。并增加输入边界校验防御：当输入分数为负值（如 -70）或大于 100 时，输出“输入数据错误!”并结束程序。
+
+#### 程序文本 1（if 语句实现）完整源码
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    float score;  // score 为分数
+    char grade;   // grade 为等级
+
+    printf("请输入学生成绩:");
+    scanf("%f", &score); // 必须带取地址符 &
+
+    if (score > 100 || score < 0)       // 异常范围先打上非法标记
+        grade = '#';
+    else if (score >= 90)              // 90分及以上
+        grade = 'A';
+    else if (score >= 80 && score < 90)
+        grade = 'B';
+    else if (score >= 70 && score < 80)
+        grade = 'C';
+    else if (score >= 60 && score < 70) // 60至70分
+        grade = 'D';
+    else if (score >= 0 && score < 60)  // 0至60分
+        grade = 'E';
+    else
+        grade = '#';
+
+    if (grade == '#')                  // 识别非法标记
+        printf("输入数据错误!\n");
+    else
+        printf("score=%.1f,grade=%c\n", score, grade);
+
+    return 0;
+}
+```
+
+#### 程序文本 2（switch 语句实现）完整源码
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    float score;  // score 为分数
+    char grade;   // grade 为等级
+    int temp;
+
+    printf("请输入学生成绩:");
+    scanf("%f", &score);
+
+    if (score < 0 || score > 100) // 异常输入防御
+    {
+        printf("输入数据错误!\n");
+        exit(1);
+    }
+
+    // 核心转换：将连续的百分制浮点数除以 10 转换为 0~10 的离散整数档位
+    temp = (int)(score / 10);     // 截断取整获取档位
+
+    switch (temp)                 // 以档位作为匹配依据
+    {
+    case 10:
+    case 9:
+        grade = 'A'; break;       // 10 与 9 穿透合并评 A
+    case 8:
+        grade = 'B'; break;
+    case 7:
+        grade = 'C'; break;
+    case 6:
+        grade = 'D'; break;
+    case 5:
+    case 4:                       // 5 至 0 连续穿透评 E
+    case 3:
+    case 2:
+    case 1:
+    case 0:
+        grade = 'E'; break;
+    }
+
+    printf("score=%.1f,grade=%c\n", score, grade);
+    return 0;
+}
+```
+
+**测试用例**：
+
+- 输入 `85.5` $\implies$ 输出 `score=85.5,grade=B`
+- 输入 `98` $\implies$ 输出 `score=98.0,grade=A`
+- 输入 `-70` 或 `105` $\implies$ 输出 `输入数据错误!`
+
+---
+
+### 案例 2：输入一行字符分类统计
+
+**任务描述**：
+输入一行字符，分别统计出其中的英文字母、空格、数字和其它字符的个数。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    char c;
+    int letters = 0, spaces = 0, digits = 0, others = 0;
+
+    printf("请输入一行字符:\n");
+    while ((c = getchar()) != '\n')
+    {
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+            letters++;
+        else if (c == ' ')
+            spaces++;
+        else if (c >= '0' && c <= '9')
+            digits++;
+        else
+            others++;
+    }
+
+    printf("英文字母个数: %d\n", letters);
+    printf("空格个数: %d\n", spaces);
+    printf("数字个数: %d\n", digits);
+    printf("其它字符个数: %d\n", others);
+
+    return 0;
+}
+```
+
+**测试用例**：
+输入：`Hello C 2026 !`
+
+- 英文字母个数: 6
+- 空格个数: 3
+- 数字个数: 4
+- 其它字符个数: 1
+
+---
+
+### 案例 3：斐波那契分数数列前 20 项求和
+
+**任务描述**：
+有一分数序列：$2/1, 3/2, 5/3, 8/5, 13/8, 21/13, \dots$ 求出这个数列的前 20 项之和。
+
+#### 算法解析与完整源码
+
+观察相邻两项的分数规律：下一项的分子 = 原分子 + 原分母；下一项的分母 = 原分子。因为原分子的值会被新分子覆盖，必须借用临时变量 $t$ 保存旧分子。
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    int i, n = 20;
+    double a = 2, b = 1, s = 0, t;
+    /* a 为分子，b 为分母，s 为累加器，t 为临时变量 */
+
+    for (i = 1; i <= n; i++)
+    {
+        s = s + a / b;       // 累加当前分数项
+        t = a;               // 暂存旧分子
+        a = a + b;           // 新分子 = 旧分子 + 旧分母
+        b = t;               // 新分母 = 旧分子
+    }
+
+    printf("sum=%.10f\n", s);
+    return 0;
+}
+```
+
+**运行结果**：`sum=32.6602607986`。
+
+---
+
+### 案例 4：计算 1 至 n 中是 3 的倍数的数值之和
+
+**任务描述**：
+输入正整数 n，计算 1 至 n 中所有是 3 的倍数（`i % 3 == 0`）的数值之和。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    int n, i, sum = 0;
+
+    printf("请输入变量 n: ");
+    scanf("%d", &n);
+
+    for (i = 1; i <= n; i++)
+    {
+        if (i % 3 == 0) // 判断是否能被 3 整除
+        {
+            sum += i;
+        }
+    }
+
+    printf("sum=%d\n", sum);
+    return 0;
+}
+```
+
+**测试用例**：输入 `n = 40` $\implies$ 输出 `sum=273`。
+
+---
+
+### 案例 5：双重嵌套循环打印 7 行对称菱形星号图案
+
+**任务描述**：
+在控制台屏幕上输出如下对称菱形图案：
+
+```text
+      *
+    * * *
+  * * * * *
+* * * * * * *
+  * * * * *
+    * * *
+      *
+```
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    int i, j, k;
+
+    /* 上三角 4 行 */
+    for (i = 0; i < 4; i++) // 控制上三角 4 行
+    {
+        for (j = 0; j < 3 - i; j++) // 前导空格 (3, 2, 1, 0)
+            printf("  ");
+        for (k = 0; k < 2 * i + 1; k++) // 星号 (1, 3, 5, 7)
+            printf("* ");
+        printf("\n");
+    }
+
+    /* 下三角 3 行 */
+    for (i = 0; i < 3; i++) // 控制下三角 3 行
+    {
+        for (j = 0; j <= i; j++) // 前导空格 (1, 2, 3)
+            printf("  ");
+        for (k = 0; k < 5 - 2 * i; k++) // 星号 (5, 3, 1)
+            printf("* ");
+        printf("\n");
+    }
+
+    return 0;
+}
+```
+
+---
+
+## 专题二 · 数组、函数与指针编程实践
+
+本专题深入数组存储模型、字符串哨兵状态机、模块化函数调用与指针内存直接寻址。
+
+---
+
+### 案例 6：一维数组求 10 个整数最大值及所在序号
+
+**任务描述**：
+定义含 10 个元素的一维整型数组，输入 10 个整数，遍历求出最大值以及它所在的序号（位置从 1 开始，即下标加 1）。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    int a[10]; // 定义含 10 个元素的数组变量
+    int i, j, max, max_i;
+
+    printf("input 10 numbers:\n");
+    for (i = 0; i < 10; i++)
+        scanf("%d", &a[i]);         // 输入元素值，必须带 &
+
+    printf("\n");
+    max = a[0];                     // 打擂台初始擂主
+    max_i = 1;                      // 序号从 1 起算
+
+    for (j = 1; j <= 9; j++)
+    {
+        if (a[j] > max)
+        {
+            max = a[j];             // 更新最大值
+            max_i = j + 1;          // 更新位置序号
+        }
+    }
+
+    printf("the max number is %d, it locate at %d.\n", max, max_i);
+    return 0;
+}
+```
+
+**测试用例**：
+输入：`12 45 78 23 99 56 34 88 10 67`
+输出：`the max number is 99, it locate at 5.`
+
+---
+
+### 案例 7：统计一行字符串中的单词个数
+
+**任务描述**：
+输入一行字符，统计其中有多少个单词，单词之间用空格分隔开。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    char string[81];
+    int i, num = 0, word = 0;
+    char c;
+
+    fgets(string, sizeof(string), stdin); // 安全输入一行字符串
+
+    for (i = 0; (c = string[i]) != '\0'; i++) // 只要不是 '\0' 就继续循环
+    {
+        if (c == ' ')
+            word = 0;                         // 遇到空格，重置标志位为 0
+        else if (word == 0)                   // 如果不是空格且 word 为 0
+        {
+            word = 1;                         // 首次进入新单词，置 1
+            num++;                            // 单词总数累加 1
+        }
+    }
+
+    printf("There are %d words in this line.\n", num);
+    return 0;
+}
+```
+
+**测试用例**：
+输入：`C programming language is powerful`
+输出：`There are 5 words in this line.`
+
+---
+
+### 案例 8：封装自定义 Max 函数并在主函数中循环调用
+
+**任务描述**：
+编写求两个数较大值的函数 `Max`，在主函数中输入 10 个整数，通过循环调用 `Max` 函数求出这 10 个数中的最大值。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+int Max(int x, int y)
+{
+    int m;
+    if (x > y)
+        m = x;
+    else
+        m = y;
+    return m;
+}
+
+int main()
+{
+    int a[10];
+    int i, j, max;
+
+    printf("input 10 numbers:\n");
+    for (i = 0; i < 10; i++)
+        scanf("%d", &a[i]);
+
+    printf("\n");
+    max = a[0];                     // 初始化 max 为 a[0]
+
+    for (j = 1; j <= 9; j++)
+        max = Max(max, a[j]);       // 循环调用 Max 函数更新最大值
+
+    printf("the max number is %d.\n", max);
+    return 0;
+}
+```
+
+---
+
+### 案例 9：求数组平均值的函数及数组传参机制
+
+**任务描述**：
+编写求整型数组平均值的函数 `Average`，并在主函数中定义数组、输入 10 个数字后调用该函数。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+float Average(int a[], int n)
+{
+    int i, sum = 0;
+    float aver;
+
+    for (i = 0; i < n; i++)         // 遍历数组
+        sum += a[i];                // 累加求和
+
+    aver = (float)sum / n;          // 转换为浮点除法避免截断
+    return aver;
+}
+
+int main()
+{
+    int i, a[10];
+    float aver;
+
+    printf("input 10 numbers:\n");
+    for (i = 0; i < 10; i++)
+        scanf("%d", &a[i]);
+
+    aver = Average(a, 10);          // 调用 Average 函数传入数组名与长度
+
+    printf("the Average is %f.\n", aver);
+    return 0;
+}
+```
+
+---
+
+### 案例 10：指针 swap 交换函数与大小排序输出
+
+**任务描述**：
+编写指针版本的两数交换函数 `swap`，使用指针变量作为实参，实现两个整数按大小顺序输出（较大数在前，较小数在后）。
+
+#### 完整实现源码
+
+```c
+#include <stdio.h>
+
+void swap(int *p1, int *p2)
+{
+    int temp;       // 注意：此处定义整型变量 temp 暂存数值
+    temp = *p1;     // 取出 p1 所指地址的值
+    *p1 = *p2;      // 将 p2 的值写入 p1
+    *p2 = temp;     // 将 temp 写入 p2
+}
+
+int main()
+{
+    int a, b;
+    int *pointer_1, *pointer_2;
+
+    printf("please enter two integer numbers:");
+    scanf("%d,%d", &a, &b);
+
+    pointer_1 = &a;
+    pointer_2 = &b; // pointer_2 指向 b
+
+    if (a < b)
+        swap(pointer_1, pointer_2); // 调用 swap 函数传入指针变量
+
+    printf("max=%d,min=%d\n", a, b); // 按大在前小在后顺序输出
+    return 0;
+}
+```
+
+**测试用例**：
+输入：`5,9`
+输出：`max=9,min=5`
+
+---
+
+## 核心技术与调试避坑小结
+
+1. **switch 穿透合并技巧**：若多个 case 执行相同的逻辑，可省略 break 实现穿透（如 case 10 与 case 9 共同判定为 A，case 5 到 0 连续穿透判定为 E）。
+2. **状态机标志位法**：使用 `word` 标志位可在遍历字符串时准确区分“空格间隔”与“单词首字母”，能够自然过滤首尾空格与多个连续空格。
+3. **数组传参的指针本质**：一维数组作为形参时会退化为指针（`int a[]` 实际等价于 `int *a`），无法在函数内通过 `sizeof(a)/sizeof(a[0])` 获取长度，必须显式传递数组大小参数 `n`。
+4. **值传递 vs 传地址本质**：普通变量传参只复制副本，无法修改调用方内存；利用指针传递内存首地址并配合解引用 `*`，才能实现跨函数栈帧的变量原地修改。

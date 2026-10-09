@@ -1,0 +1,1181 @@
+---
+title: 课程实验全案指南与实操
+description: 实验一（MySQL 库表操作与综合查询）、实验二（数据库设计全案）、实验三（MySQL 数据库管理）、实验四（学生成绩管理系统开发）
+icon: FlaskConical
+---
+
+# 课程实验全案指南与实操
+
+本篇汇集了本课程的**全部四个综合上机实验**。每个实验均严格按照软件工程与高校教学要求编写，包含明确的实验目的、软硬件环境、高保真界面图示、逐步可执行的 SQL/终端命令、完整代码骨架及答辩验收核对表。实验报告与说明文档均要求**提交主要运行结果的 UI 界面截图**。
+
+---
+
+## 实验一：MySQL 库表操作与综合查询综合实验
+
+### 一、实验目的与要求
+
+1. **实验目的**：
+   - 掌握可视化建库、建表、导入数据的方法；
+   - 掌握 `INSERT`、`UPDATE`、`DELETE` 语句；
+   - 熟练掌握 `SELECT` 语句的多表与分组综合查询。
+2. **实验要求**：
+   - 按照下述步骤完成实验，撰写实验报告并提交相应数据库文件。
+   - **实验报告需呈现每一步操作结果的截图**。实验成绩以百分计。
+
+### 二、第一阶段：Workbench 库表建立与数据导入
+
+#### 1. 创建个人数据库 (Schema)（2分）
+
+利用 MySQL Workbench 客户端，采用图形化操作方式创建名为 `teachingdb_***` 的数据库（`***` 表示个人姓名拼音的缩写，例如 `teachingdb_chen`），字符集选择 `utf8mb4`，排序规则选择 `utf8mb4_0900_ai_ci`：
+
+<WorkbenchSchemaFigure />
+
+```sql
+-- Workbench SQL 编辑器执行：建库并切换当前数据库
+CREATE DATABASE IF NOT EXISTS teachingdb_chen
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_0900_ai_ci;
+
+USE teachingdb_chen;
+```
+
+#### 2. 设计与建立四张基准表（20分）
+
+在 Workbench 表设计器（Table Editor）中配置字段属性与主外键引用：
+
+<WorkbenchTableEditorFigure />
+
+四表完整标准 DDL 语句：
+
+```sql
+-- 1. 学生表 t_student
+CREATE TABLE IF NOT EXISTS t_student (
+  sid CHAR(10) NOT NULL COMMENT '学号，主键',
+  sname VARCHAR(10) NOT NULL COMMENT '姓名',
+  sex CHAR(1) NULL COMMENT '性别',
+  age INT NULL COMMENT '年龄',
+  major VARCHAR(20) NULL COMMENT '专业',
+  PRIMARY KEY (sid),
+  CHECK (age >= 0 AND age <= 120)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. 教师表 t_teacher
+CREATE TABLE IF NOT EXISTS t_teacher (
+  tid CHAR(10) NOT NULL COMMENT '工号，主键',
+  tname VARCHAR(10) NOT NULL COMMENT '姓名',
+  age INT NULL COMMENT '年龄',
+  title VARCHAR(20) NULL COMMENT '职称',
+  PRIMARY KEY (tid),
+  CHECK (age >= 18 AND age <= 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 3. 课程表 t_course（外键 tid 引用 t_teacher）
+CREATE TABLE IF NOT EXISTS t_course (
+  cid CHAR(10) NOT NULL COMMENT '课程号，主键',
+  cname VARCHAR(20) NOT NULL UNIQUE COMMENT '课程名，唯一值',
+  tid CHAR(10) NULL COMMENT '工号，外键',
+  PRIMARY KEY (cid),
+  CONSTRAINT fk_course_teacher
+    FOREIGN KEY (tid) REFERENCES t_teacher(tid)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 4. 选课表 t_student_course（联合主键 sid + cid）
+CREATE TABLE IF NOT EXISTS t_student_course (
+  sid CHAR(10) NOT NULL COMMENT '学号，外键',
+  cid CHAR(10) NOT NULL COMMENT '课程号，外键',
+  score INT NULL COMMENT '成绩，允许为空',
+  PRIMARY KEY (sid, cid),
+  CONSTRAINT fk_sc_student
+    FOREIGN KEY (sid) REFERENCES t_student(sid)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_sc_course
+    FOREIGN KEY (cid) REFERENCES t_course(cid)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CHECK (score >= 0 AND score <= 100)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+#### 3. 执行 `p1data.sql` 导入数据（3分）
+
+在系统终端中执行数据脚本导入：
+
+```bash
+# 【系统终端执行】导入基线数据到个人库中
+mysql -u root -p teachingdb_chen < p1data.sql
+```
+
+导入后在 Workbench 中执行行数完整性核验 SQL 并**截图**：
+
+```sql
+SELECT 't_student' AS tbl, COUNT(*) AS cnt FROM t_student
+UNION ALL
+SELECT 't_teacher', COUNT(*) FROM t_teacher
+UNION ALL
+SELECT 't_course', COUNT(*) FROM t_course
+UNION ALL
+SELECT 't_student_course', COUNT(*) FROM t_student_course;
+```
+
+**标准行数基线**：`t_student`: 12 行，`t_teacher`: 10 行，`t_course`: 10 行，`t_student_course`: 24 行。
+
+#### 4. 三道表数据插入、删除与更新（每题5分，共计15分）
+
+1. **任务 1（插入个人真实信息）**：向 `t_student` 表中插入一行记录，内容为个人真实信息：
+   ```sql
+   INSERT INTO t_student (sid, sname, sex, age, major)
+   VALUES ('2023001', '陈雷', '男', 21, '计算机科学与技术');
+   ```
+2. **任务 2（删除指定课程）**：从 `t_course` 表中删除课程名为“工程数学”的课程记录：
+   ```sql
+   -- 先确认该课程无人选修（选修记录为0）
+   DELETE FROM t_course WHERE cname = '工程数学';
+   ```
+3. **任务 3（更新教师职称）**：将 `t_teacher` 表中工号为 `t001` 的教师职称更改为“教授”：
+   ```sql
+   UPDATE t_teacher SET title = '教授' WHERE tid = 't001';
+   ```
+
+---
+
+### 三、第二阶段：15 道综合查询实战（每题4分，共计60分）
+
+在 Workbench 中逐题执行并**截取查询结果网格图**：
+
+<WorkbenchSingleQueryFigure />
+
+- **第 1 题：根据个人学号查询个人信息**
+  ```sql
+  SELECT sid, sname, sex, age, major FROM t_student WHERE sid = '2012001';
+  ```
+- **第 2 题：查询所有姓李的学生的学号，姓名和年龄（预期 4 行）**
+  ```sql
+  SELECT sid, sname, age FROM t_student WHERE sname LIKE '李%';
+  ```
+- **第 3 题：查询女同学的姓名和年龄，列名分别指定为“姓名”和“年龄”（预期 5 行）**
+  ```sql
+  SELECT sname AS 姓名, age AS 年龄 FROM t_student WHERE sex = '女';
+  ```
+- **第 4 题：查询软件工程（或机械电子）专业所有男学生的平均年龄（软件工程男同学预期 30.0000）**
+  ```sql
+  SELECT AVG(age) AS avg_age FROM t_student WHERE major = '软件工程' AND sex = '男';
+  ```
+- **第 5 题：查询年龄在30到35岁之间的副教授的姓名和年龄，按年龄降序排列（预期 4 行）**
+  ```sql
+  SELECT tname, age FROM t_teacher WHERE title = '副教授' AND age BETWEEN 30 AND 35 ORDER BY age DESC;
+  ```
+- **第 6 题：查询所有学生的学号，姓名和性别，将查询结果插入到新表 `t_sinfo` 中**
+  ```sql
+  CREATE TABLE t_sinfo AS
+  SELECT sid, sname, sex FROM t_student;
+  -- 核验新表：
+  SELECT * FROM t_sinfo;
+  ```
+
+<WorkbenchQueryGridFigure />
+
+- **第 7 题：查询有同学选修的课程的课程号及课程名（预期 4 门：c001, c002, c003, c008）**
+  ```sql
+  SELECT DISTINCT c.cid, c.cname
+  FROM t_course c
+  JOIN t_student_course sc ON c.cid = sc.cid;
+  ```
+- **第 8 题：查询李平同学所选修课程的课程号，课程名和成绩（预期 2 行）**
+  ```sql
+  SELECT c.cid, c.cname, sc.score
+  FROM t_student s
+  JOIN t_student_course sc ON s.sid = sc.sid
+  JOIN t_course c ON sc.cid = c.cid
+  WHERE s.sname = '李平';
+  ```
+- **第 9 题：查询选修了数据库课程但成绩为空的学生的姓名（预期 2 人：李勇、李华）**
+  ```sql
+  SELECT s.sname
+  FROM t_student s
+  JOIN t_student_course sc ON s.sid = sc.sid
+  JOIN t_course c ON sc.cid = c.cid
+  WHERE c.cname = '数据库' AND sc.score IS NULL;
+  ```
+- **第 10 题：查询既选修了 C001 号课程，又选修了 C002 号课程的学生的学号（预期 1 人：2012001）**
+  ```sql
+  SELECT sid FROM t_student_course
+  WHERE cid = 'c001' AND sid IN (
+    SELECT sid FROM t_student_course WHERE cid = 'c002'
+  );
+  ```
+- **第 11 题：查询李平同学选修的课程门数以及平均成绩（预期 2 门，79.0 分）**
+  ```sql
+  SELECT COUNT(*) AS course_count, AVG(sc.score) AS avg_score
+  FROM t_student s
+  JOIN t_student_course sc ON s.sid = sc.sid
+  WHERE s.sname = '李平';
+  ```
+- **第 12 题：查询年龄比李平同学大的所有学生的学号，姓名和年龄（李平27岁，预期 8 人）**
+  ```sql
+  SELECT sid, sname, age FROM t_student
+  WHERE age > (SELECT age FROM t_student WHERE sname = '李平');
+  ```
+- **第 13 题：查询每个专业的学生人数，显示“专业”和“人数”两列（含 NULL 专业 1 人）**
+  ```sql
+  SELECT major AS 专业, COUNT(*) AS 人数
+  FROM t_student
+  GROUP BY major;
+  ```
+- **第 14 题：查询选课人数超过 5 人的课程信息，要求显示课程号，课程名和选修人数（预期 2 门：c003、c008）**
+  ```sql
+  SELECT c.cid, c.cname, COUNT(sc.sid) AS 选修人数
+  FROM t_course c
+  JOIN t_student_course sc ON c.cid = sc.cid
+  GROUP BY c.cid, c.cname
+  HAVING COUNT(sc.sid) > 5;
+  ```
+- **第 15 题：查询没有选修数据库课程的学生的学号（预期 8 人）**
+  ```sql
+  SELECT sid FROM t_student
+  WHERE sid NOT IN (
+    SELECT sc.sid
+    FROM t_student_course sc
+    JOIN t_course c ON sc.cid = c.cid
+    WHERE c.cname = '数据库'
+  );
+  ```
+
+#### 实验一成果导出与归档
+
+在系统终端中运行导出命令，生成后续实验三所需的基准备份文件：
+
+```bash
+# 【系统终端执行】导出整个实验一数据库
+mysqldump -u root -p teachingdb_chen > Dumpteachingdb.sql
+```
+
+---
+
+## 实验二：数据库设计全案实战（五选一场景）
+
+### 一、实验目的与评分规范（100 分制）
+
+1. **实验目的**：
+   - 掌握数据库设计方法的完整过程；
+   - 掌握需求分析、概念设计、逻辑设计及物理设计文档的撰写方法。
+2. **实验要求**：
+   - 从下列应用场景中任选一题，完成设计并撰写设计文档。
+   - 成绩分配：**需求分析（20分）**、**概念设计（40分）**、**逻辑设计与物理设计（30分）**、**回答问题（10分）**。
+
+### 二、可选业务场景库与真题 ER 图（五选一）
+
+#### 场景 1：教学管理系统
+
+- **实体**：学生（学号、姓名、性别、年龄）、课程（课程号、课程名、学分）、班级（班级名、班主任）、教师（工号、姓名）。
+- **联系**：班级与学生（1:N）、教师与课程（1:N）、学生与课程（M:N，含联系属性“成绩”）。
+
+<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+  <div className="mb-2 text-xs font-bold text-slate-500">
+    真题 ER 图（场景 1）：教学管理系统概念模型
+  </div>
+  <img
+    src="/images/database/er-question-5.png"
+    alt="教学管理系统 ER 模型图"
+    className="mx-auto max-h-72 object-contain rounded"
+  />
+</div>
+
+#### 场景 2：图书管理系统
+
+- **实体**：图书（书号、书名、数量、位置）、借书人（借书证号、姓名、单位）、出版社（出版社名、地址、电话、Email）。
+- **联系**：出版社与图书（1:N）、图书与借书人（M:N，含联系属性“借阅时间”）。
+
+<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+  <div className="mb-2 text-xs font-bold text-slate-500">
+    真题 ER 图（场景 2）：图书借阅管理概念模型
+  </div>
+  <img
+    src="/images/database/er-question-4.png"
+    alt="图书借阅管理系统 ER 模型图"
+    className="mx-auto max-h-72 object-contain rounded"
+  />
+</div>
+
+#### 场景 3：库存管理系统
+
+- **实体**：仓库（仓库号、地址、电话）、零件（零件号、零件名称、规格、单价）、管理员（工号、姓名、性别）。
+- **联系**：仓库与管理员（1:N）、仓库与零件（M:N，含联系属性“库存量”）。
+
+<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+  <div className="mb-2 text-xs font-bold text-slate-500">
+    真题 ER 图（场景 3）：仓库零件管理概念模型
+  </div>
+  <img
+    src="/images/database/er-question-2.png"
+    alt="仓库零件管理系统 ER 模型图"
+    className="mx-auto max-h-72 object-contain rounded"
+  />
+</div>
+
+#### 场景 4：机票订票系统
+
+- **实体**：航班（航班号、起飞地、目的地、起飞时间）、飞机（机号、机型、座位数）、旅客（身份证号、姓名、联系电话）。
+- **联系**：飞机与航班（1:N 执飞）、旅客与航班（M:N 订票，含联系属性“订票日期”、“舱位”、“票价”）。
+
+#### 场景 5：人事管理系统
+
+- **实体**：部门（部门编号、部门名称、办公地点）、员工（工号、姓名、性别、入职时间）、职务（职务编号、职务名称、基本薪资）。
+- **联系**：部门与员工（1:N 隶属）、职务与员工（1:N 聘任）、员工与项目（M:N 参与，含联系属性“工作量”）。
+
+### 三、实验二标杆全案示范（以图书管理系统为例）
+
+#### 1. 概念设计文字表达规范
+
+- **出版社实体**：出版社名（主键/标识）、地址、电话、Email。
+- **借书人实体**：借书证号（主键/标识）、姓名、单位。
+- **图书实体**：书号（主键/标识）、书名、数量、位置。
+- **联系与基数**：出版社与图书存在 1:N 出版联系；图书与借书人存在 M:N 借阅联系，借阅联系包含联系属性“借阅时间”。
+
+#### 2. 逻辑结构设计与 3NF 规范化推导
+
+1. `出版社(出版社名, 地址, 电话, Email)`，主键：`出版社名`。
+2. `借书人(借书证号, 姓名, 单位)`，主键：`借书证号`。
+3. `图书(书号, 书名, 数量, 位置, 出版社名)`，主键：`书号`，外键：`出版社名` 引用出版社表。
+4. `借阅(借书证号, 书号, 借阅时间, 归还时间)`，联合主键：`(借书证号, 书号, 借阅时间)`。
+   - **联合主键解析**：同一读者可在不同日期重复借阅同一本书，故必须将借阅时间纳入主键。
+
+- **3NF 证明**：每个属性均为单值不可拆分的原子项（满足 1NF）；所有非主属性均完全函数依赖于候选键，无部分依赖（满足 2NF）；不存在非主属性对码的传递函数依赖（满足 3NF）。
+
+#### 3. 物理设计：MySQL DDL 脚本
+
+```sql
+CREATE DATABASE IF NOT EXISTS library_db CHARACTER SET utf8mb4;
+USE library_db;
+
+CREATE TABLE t_publisher (
+  pub_name VARCHAR(100) NOT NULL PRIMARY KEY,
+  address VARCHAR(200) NULL,
+  phone VARCHAR(30) NULL,
+  email VARCHAR(100) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE t_reader (
+  reader_id VARCHAR(20) NOT NULL PRIMARY KEY,
+  name VARCHAR(50) NOT NULL,
+  unit VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE t_book (
+  book_id VARCHAR(30) NOT NULL PRIMARY KEY,
+  title VARCHAR(150) NOT NULL,
+  stock INT NOT NULL DEFAULT 0,
+  location VARCHAR(50) NULL,
+  pub_name VARCHAR(100) NOT NULL,
+  CONSTRAINT fk_book_pub FOREIGN KEY (pub_name) REFERENCES t_publisher(pub_name)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CHECK (stock >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE t_borrow_record (
+  reader_id VARCHAR(20) NOT NULL,
+  book_id VARCHAR(30) NOT NULL,
+  borrow_time DATETIME NOT NULL,
+  return_time DATETIME NULL,
+  PRIMARY KEY (reader_id, book_id, borrow_time),
+  CONSTRAINT fk_borrow_reader FOREIGN KEY (reader_id) REFERENCES t_reader(reader_id)
+    ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT fk_borrow_book FOREIGN KEY (book_id) REFERENCES t_book(book_id)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+```
+
+#### 4. 实验二问答题（10分）
+
+1. **试描述将 ER 图转换为关系模式的一般规则（5分）**：
+   - **实体转换**：一个实体型转换为一个关系模式。实体的属性即为模式的属性，实体的码即为模式的主键。
+   - **1:1 联系**：可转换为一个独立模式，也可以与任意一端合并。若合并，应将另一端的主键及联系属性加入到被合并端作为外键。
+   - **1:N 联系**：可转换为一个独立模式，但通常合并到 **N 端实体对应的关系模式**中。方法是将 1 端实体的主键及联系属性加入到 N 端模式中，作为 N 端的外键。
+   - **M:N 联系**：必须转换为一个**独立的关系模式**。该模式的属性为两端实体的主键与联系本身的属性，其主键为两端实体主键组合而成的**联合主键**。
+2. **针对撰写设计文档中遇到的问题阐述心得体会（5分）**：
+   - _体会要点_：需求分析阶段必须与真实业务流程对齐，避免拍脑袋定义字段；概念设计阶段必须严格辨析联系属性的归属（例如“借阅时间”归属于 M:N 借阅联系，而非图书实体或读者实体）；在逻辑设计转换为关系模式时，主外键约束与范式检验是防止数据冗余和更新异常的关键防线。
+
+---
+
+## 实验三：MySQL 数据库管理实战
+
+### 一、实验目的与命令行执行原则
+
+1. **实验目的**：
+   - 掌握 MySQL 数据库备份与还原的基本方法；
+   - 掌握 MySQL 数据库安全管理的基本方法。
+2. **执行原则**：
+   - **备份与还原必须在系统终端中执行**（`mysqldump` 与 `mysql` 命令行）。
+   - 用户创建与权限管理可在 Workbench 或 MySQL 客户端交互执行。
+   - **实验报告需呈现每一步操作结果的截图**。
+
+### 二、第一阶段：数据恢复与表级备份还原（50分）
+
+#### 1. 执行 `Dumpteachingdb.sql` 恢复数据库（5分）
+
+```bash
+# 【系统终端执行】利用实验一导出的全库脚本恢复数据库
+mysql -u root -p teachingdb_chen < Dumpteachingdb.sql
+```
+
+#### 2. 表数据的导出和导入（15分）
+
+```bash
+# 步骤 1：使用 mysqldump 命令导出 t_student_course 表数据至文本文件
+mysqldump -u root -p teachingdb_chen t_student_course > Dump_sc.sql
+
+# 步骤 2：删除表 t_student_course 中的数据并核验
+mysql -u root -p teachingdb_chen -e "DELETE FROM t_student_course; SELECT COUNT(*) FROM t_student_course;"
+
+# 步骤 3：利用数据导出文件还原表数据并截图核验行数
+mysql -u root -p teachingdb_chen < Dump_sc.sql
+mysql -u root -p teachingdb_chen -e "SELECT COUNT(*) FROM t_student_course;" -- 确认恢复为 24 行
+```
+
+<TerminalBackupRestoreFigure />
+
+#### 3. 表的备份与跨库还原（15分）
+
+```bash
+# 步骤 1：使用 mysqldump 备份 t_student 和 t_course 两张表
+mysqldump -u root -p teachingdb_chen t_student t_course > Dump_st_co.sql
+
+# 步骤 2：创建 teachingdb2 数据库
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS teachingdb2 CHARACTER SET utf8mb4;"
+
+# 步骤 3：基于备份文件，在 teachingdb2 数据库中还原两张表并核验
+mysql -u root -p teachingdb2 < Dump_st_co.sql
+mysql -u root -p teachingdb2 -e "SHOW TABLES; SELECT COUNT(*) FROM t_student;"
+```
+
+#### 4. 全库备份与整库容灾还原（15分）
+
+```bash
+# 步骤 1：使用 mysqldump 备份整个 teachingdb 数据库
+mysqldump -u root -p teachingdb_chen > Dump_teachingdb_all.sql
+
+# 步骤 2：删除数据库
+mysql -u root -p -e "DROP DATABASE teachingdb_chen;"
+
+# 步骤 3：基于备份文件还原该数据库并核验
+mysql -u root -p -e "CREATE DATABASE teachingdb_chen CHARACTER SET utf8mb4;"
+mysql -u root -p teachingdb_chen < Dump_teachingdb_all.sql
+mysql -u root -p teachingdb_chen -e "SHOW TABLES;"
+```
+
+---
+
+### 三、第二阶段：MySQL 安全管理实战（50分）
+
+在 Workbench 或终端中以 `root` 执行以下用户管理步骤并逐一**截图**：
+
+```sql
+-- 1. 创建用户账号 tuser，密码为 123456，允许从本地主机访问（10分）
+CREATE USER 'tuser'@'localhost' IDENTIFIED BY '123456';
+
+-- 2. 修改 tuser 的密码为 111111（10分）
+ALTER USER 'tuser'@'localhost' IDENTIFIED BY '111111';
+
+-- 3. 授予 tuser 用户访问 teachingdb_chen 数据库的全部权限（10分）
+GRANT ALL PRIVILEGES ON teachingdb_chen.* TO 'tuser'@'localhost';
+
+-- 4. 利用 grant 语句授权：授予 tuser 用户访问 teachingdb2 数据库中 t_student 表的 select 权限（10分）
+GRANT SELECT ON teachingdb2.t_student TO 'tuser'@'localhost';
+
+-- 刷新系统权限字典表
+FLUSH PRIVILEGES;
+
+-- 查看授权结果
+SHOW GRANTS FOR 'tuser'@'localhost';
+```
+
+在系统终端中建立新连接，利用 `tuser` 访问服务器（10分）并验证授权边界：
+
+<TerminalSecurityGrantFigure />
+
+```bash
+# 【系统终端执行】以 tuser 建立新连接访问服务器
+mysql -u tuser -p
+# 输入新密码：111111
+```
+
+在 `tuser` 会话中执行验证 SQL：
+
+```sql
+-- 验证 1：访问已授权的 teachingdb2.t_student（成功放行并输出结果）
+SELECT sid, sname, sex, age FROM teachingdb2.t_student LIMIT 3;
+
+-- 验证 2：越权尝试访问未授权的 teachingdb2.t_course（被系统强制拦截并报错）
+SELECT * FROM teachingdb2.t_course;
+-- 拦截报错：ERROR 1142 (42000): SELECT command denied to user 'tuser'@'localhost' for table 't_course'
+```
+
+---
+
+## 实验四：数据库应用开发（学生成绩管理系统）
+
+### 一、实验目的与系统开发要求
+
+1. **实验目的**：
+   - 掌握小型数据库应用系统开发的完整过程和基本技能。
+2. **实验要求**：
+   - 自行选取一种熟悉的技术，开发小型数据库应用系统“**学生成绩管理系统**”；
+   - 提交工程文件以及**系统说明文档（需包括主要运行结果截图）**。实验成绩以百分计。
+3. **数据架构与用户角色**：
+   - 数据库包含四张表：`t_student`（学生）、`t_teacher`（教师）、`t_course`（课程）、`t_student_course`（选课）。
+   - **系统用户唯一规定为：任课教师**（教师使用工号 `tid` 登录系统，只能维护和查看自己承担课程的选课及学生成绩，具备严格的数据范围权限隔离）。
+4. **五大核心业务功能与 UI 界面要求**：
+   - **功能 1：登录与注销**（教师身份凭证校验、进入系统与安全退出会话）
+   - **功能 2：查看所承担课程的学生选课情况**（仅列出登录教师名下课程的花名册与选课成绩）
+   - **功能 3：添加选课记录**（在教师所授课程下为学生录入选课关系，防主键冲突）
+   - **功能 4：删除选课记录**（退选操作，带警示二次确认与防误删控制）
+   - **功能 5：成绩录入与成绩修改**（针对选课记录登分与调分，带 0~100 分数区间校验）
+
+---
+
+### 二、任课教师端 UI 运行界面真机仿真器（可直接交互与截图）
+
+针对实验说明文档中“**需包括主要运行结果截图**”的核心要求，下方提供完整的任课教师成绩管理系统高保真 UI 仿真组件。
+
+您可以在线切换教师账号（如李明副教授 `t001`、韩伟副教授 `t004`）、切换课程、在线添加退选、修改录入成绩，并可一键切换至 5 大功能的专用截图视图用于实验报告：
+
+<InteractiveGradeSystem />
+
+---
+
+### 三、系统说明文档中五大核心 UI 界面截图与填报规范（报告必填项）
+
+实验报告的系统说明文档中必须包含以下 **5 张核心运行结果截图** 及对应文字说明：
+
+#### 截图 1：教师登录与注销界面（身份鉴权与会话控制）
+
+- **界面要素与截图要点**：
+  - 界面包含系统标题（学生成绩管理系统 · 教师端）、教师工号输入框（`tid`）、登录密码输入框及“登录进入系统”按钮。
+  - 错误防呆验证：输入不存在的工号（如 `t999`）时，界面显示红字警示“工号不存在或无教师权限”。
+  - 成功登录后，顶部导航栏展示当前教师姓名（如“李明 · 副教授”）及显眼的“注销退出”按钮。
+- **报告说明文字模板**：
+  > “系统登录界面面向任课教师。系统获取前端提交的教师工号执行参数化查询 `SELECT tid, tname, title FROM t_teacher WHERE tid = ?`，校验通过后创建教师会话并在页面顶部展示身份信息。点击注销按钮可安全清空本地会话并返回登录窗口。”
+
+#### 截图 2：承担课程及学生选课情况主控台界面（数据范围强制隔离）
+
+- **界面要素与截图要点**：
+  - 核心展示登录教师承担的课程切换控件（例如李明老师登录后，课程栏仅显示 `c001 数据库` 与 `c003 软件测试`，绝不泄漏韩伟老师的 `c005 微机原理`）。
+  - 下方为主表格：展示该门课程的学生学号、姓名、性别、年龄、专业、当前成绩及登分状态标识（“已登分”绿色徽标、“待录入”黄色徽标）。
+- **报告说明文字模板**：
+  > “主界面实现了基于教师工号的数据范围强制隔离。执行 SQL：`SELECT c.cid, c.cname, s.sid, s.sname, s.sex, s.age, s.major, sc.score FROM t_course c JOIN t_student_course sc ON c.cid = sc.cid JOIN t_student s ON sc.sid = s.sid WHERE c.tid = ? AND c.cid = ?`，保证教师只能查阅自己名下的学生名单。”
+
+#### 截图 3：添加选课记录弹窗界面（业务新增与防重校验）
+
+- **界面要素与截图要点**：
+  - 点击“+ 为本课程添加选课”后呼出 Modal 对话框。
+  - 包含待选课学生下拉选择框（系统自动过滤已选该课的学生，防止复合主键 `(sid, cid)` 冲突）、初始成绩输入框（选填，支持初始留空 NULL）。
+  - 点击“确认添加选课”后，表格实时新增该行记录，并弹出绿色 Toast 成功提示。
+- **报告说明文字模板**：
+  > “添加选课界面支持任课教师为当前课程补录选课学生。前端下拉框预先过滤已选课学生，后端执行事务或预检插入 `INSERT INTO t_student_course (sid, cid, score) VALUES (?, ?, ?)`，若遇重复选课则触发主键完整性异常拦截。”
+
+#### 截图 4：删除选课记录二次确认界面（退选警示与误删防护）
+
+- **界面要素与截图要点**：
+  - 在学生行点击“退选”操作时，弹出危险确认模态框。
+  - 弹窗明确列出被退选学生学号、姓名、课程名称及已登分数，避免教师手抖误删。
+  - 确认后执行物理删除，并在主界面提示“已退选学生并移除成绩”。
+- **报告说明文字模板**：
+  > “退选功能加入二次确认对话框以规避误触。后端执行带所属教师鉴权的删除语句：`DELETE sc FROM t_student_course sc JOIN t_course c ON sc.cid = c.cid WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`，若非当前教师的课程则拒绝执行。”
+
+#### 截图 5：成绩录入与成绩修改登分界面（数值校验与即时反馈）
+
+- **界面要素与截图要点**：
+  - 点击“录入成绩”（针对 NULL 记录）或“修改成绩”（针对已有成绩）弹出登分窗口或激活行内编辑。
+  - 输入框限制输入 0~100 的数值。当输入非数字、负数（如 `-10`）或超出 100（如 `120`）时，实时触发红色提示“成绩必须在 0 到 100 分之间”。
+  - 保存成功后，表格内分数即刻刷新，状态从“待录入”转为“已登分”。
+- **报告说明文字模板**：
+  > “成绩录入与修改功能在前端与后端均配置了边界校验。执行更新 SQL：`UPDATE t_student_course sc JOIN t_course c ON sc.cid = c.cid SET sc.score = ? WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`，登分完成后数据持久化保存并触发页面表格响应式重绘。”
+
+---
+
+### 四、完整可运行全套工程代码（两套技术方案任选）
+
+为了满足提交工程文件与说明文档的要求，本指南提供**两套完整且零配置门槛的参考工程源码**，可根据个人技术栈自由任选：
+
+#### 方案 A：Web 极简全栈工程（HTML5 + Tailwind UI 前端 + Node.js Express 后端）
+
+无需任何复杂的前端打包工具，前端单文件 `public/index.html` 放入目录，双击或配合极简 Express 服务即可在浏览器中获得与仿真器一致的现代化 UI 界面！
+
+##### 1. 前端 UI 单页源码：`public/index.html`
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>学生成绩管理系统 · 教师端</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-slate-100 text-slate-800 p-6 min-h-screen">
+    <!-- 登录卡片 -->
+    <div
+      id="loginCard"
+      class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg mt-12 border border-slate-200"
+    >
+      <h2 class="text-xl font-bold text-indigo-900 mb-2">
+        教师成绩管理系统 · 登录
+      </h2>
+      <p class="text-xs text-slate-500 mb-6">
+        系统用户为任课教师 · 请输入教师工号登录
+      </p>
+      <div
+        id="loginError"
+        class="hidden mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-xs font-semibold"
+      ></div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700"
+            >教师工号 (tid)</label
+          >
+          <input
+            id="tidInput"
+            type="text"
+            value="t001"
+            placeholder="例如: t001"
+            class="mt-1 w-full p-2.5 border rounded-lg text-sm font-mono"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700"
+            >登录密码</label
+          >
+          <input
+            id="pwdInput"
+            type="password"
+            value="123456"
+            class="mt-1 w-full p-2.5 border rounded-lg text-sm"
+          />
+        </div>
+        <button
+          onclick="handleLogin()"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm shadow"
+        >
+          登 录 系 统
+        </button>
+      </div>
+    </div>
+
+    <!-- 主控制台 -->
+    <div id="dashboard" class="hidden max-w-5xl mx-auto space-y-6">
+      <div
+        class="bg-white p-5 rounded-2xl shadow flex justify-between items-center border border-slate-200"
+      >
+        <div>
+          <h1 class="text-lg font-bold text-indigo-950">
+            学生成绩管理系统 · 教师工作台
+          </h1>
+          <p class="text-xs text-slate-500">
+            当前教师：<span
+              id="teacherInfo"
+              class="font-bold text-indigo-600"
+            ></span>
+          </p>
+        </div>
+        <button
+          onclick="handleLogout()"
+          class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg font-semibold"
+        >
+          注销退出
+        </button>
+      </div>
+
+      <!-- 课程选择与工具栏 -->
+      <div
+        class="bg-white p-5 rounded-2xl shadow flex justify-between items-center border border-slate-200"
+      >
+        <div class="flex items-center gap-3">
+          <label class="text-xs font-bold text-slate-700">选择授课课程：</label>
+          <select
+            id="courseSelect"
+            onchange="loadStudents()"
+            class="border p-2 rounded-lg text-xs font-semibold bg-slate-50"
+          ></select>
+        </div>
+        <button
+          onclick="openAddModal()"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow"
+        >
+          + 添加选课学生
+        </button>
+      </div>
+
+      <!-- 学生成绩表格 -->
+      <div
+        class="bg-white rounded-2xl shadow overflow-hidden border border-slate-200"
+      >
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-50 text-slate-500 border-b">
+            <tr>
+              <th class="p-3.5">学号</th>
+              <th class="p-3.5">姓名</th>
+              <th class="p-3.5">性别</th>
+              <th class="p-3.5">年龄</th>
+              <th class="p-3.5">专业</th>
+              <th class="p-3.5">成绩</th>
+              <th class="p-3.5">状态</th>
+              <th class="p-3.5 text-right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="studentTable" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      let currentTeacher = null;
+      let currentCourses = [];
+
+      async function handleLogin() {
+        const tid = document.getElementById("tidInput").value.trim();
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tid }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          document.getElementById("loginError").innerText = data.error;
+          document.getElementById("loginError").classList.remove("hidden");
+          return;
+        }
+        currentTeacher = data.teacher;
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("dashboard").classList.remove("hidden");
+        document.getElementById("teacherInfo").innerText =
+          `${currentTeacher.tname} (工号: ${currentTeacher.tid} · ${currentTeacher.title})`;
+        await loadCourses();
+      }
+
+      function handleLogout() {
+        currentTeacher = null;
+        document.getElementById("dashboard").classList.add("hidden");
+        document.getElementById("loginCard").classList.remove("hidden");
+      }
+
+      async function loadCourses() {
+        const res = await fetch("/api/courses", {
+          headers: { "x-teacher-id": currentTeacher.tid },
+        });
+        currentCourses = await res.json();
+        const sel = document.getElementById("courseSelect");
+        sel.innerHTML = currentCourses
+          .map((c) => `<option value="${c.cid}">${c.cname} (${c.cid})</option>`)
+          .join("");
+        loadStudents();
+      }
+
+      async function loadStudents() {
+        const cid = document.getElementById("courseSelect").value;
+        const res = await fetch(`/api/scores?cid=${cid}`, {
+          headers: { "x-teacher-id": currentTeacher.tid },
+        });
+        const list = await res.json();
+        const tbody = document.getElementById("studentTable");
+        tbody.innerHTML = list
+          .map(
+            (item) => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-3.5 font-mono font-bold">${item.sid}</td>
+          <td class="p-3.5 font-semibold">${item.sname}</td>
+          <td class="p-3.5 text-slate-500">${item.sex}</td>
+          <td class="p-3.5 font-mono">${item.age}</td>
+          <td class="p-3.5">${item.major || "未定"}</td>
+          <td class="p-3.5 font-bold ${item.score !== null ? "text-indigo-600" : "text-amber-500 italic"}">
+            ${item.score !== null ? item.score : "NULL (待登分)"}
+          </td>
+          <td class="p-3.5">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.score !== null ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}">
+              ${item.score !== null ? "已登分" : "待录入"}
+            </span>
+          </td>
+          <td class="p-3.5 text-right space-x-2">
+            <button onclick="promptEditScore('${item.sid}', '${item.sname}', ${item.score})" class="text-indigo-600 font-semibold hover:underline">
+              ${item.score !== null ? "修改成绩" : "录入成绩"}
+            </button>
+            <button onclick="deleteEnrollment('${item.sid}', '${item.sname}')" class="text-red-500 font-semibold hover:underline">退选</button>
+          </td>
+        </tr>
+      `,
+          )
+          .join("");
+      }
+
+      async function promptEditScore(sid, sname, oldScore) {
+        const val = prompt(
+          `请输入学生【${sname}】(${sid})的成绩（0~100）：`,
+          oldScore !== null ? oldScore : "",
+        );
+        if (val === null) return;
+        const score = Number(val);
+        if (isNaN(score) || score < 0 || score > 100)
+          return alert("成绩必须在 0 到 100 之间！");
+        const cid = document.getElementById("courseSelect").value;
+        const res = await fetch("/api/update-score", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-teacher-id": currentTeacher.tid,
+          },
+          body: JSON.stringify({ sid, cid, score }),
+        });
+        if (res.ok) {
+          alert("成绩已成功更新！");
+          loadStudents();
+        }
+      }
+
+      async function deleteEnrollment(sid, sname) {
+        const cid = document.getElementById("courseSelect").value;
+        if (!confirm(`确定要退选学生【${sname}】(${sid})吗？`)) return;
+        const res = await fetch("/api/delete-enrollment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-teacher-id": currentTeacher.tid,
+          },
+          body: JSON.stringify({ sid, cid }),
+        });
+        if (res.ok) {
+          alert("退选成功！");
+          loadStudents();
+        }
+      }
+
+      async function openAddModal() {
+        const sid = prompt("请输入要添加选课的学生学号（例如 2013002）：");
+        if (!sid) return;
+        const cid = document.getElementById("courseSelect").value;
+        const res = await fetch("/api/add-enrollment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-teacher-id": currentTeacher.tid,
+          },
+          body: JSON.stringify({ sid, cid }),
+        });
+        if (res.ok) {
+          alert("选课添加成功！");
+          loadStudents();
+        } else {
+          const d = await res.json();
+          alert(d.error);
+        }
+      }
+    </script>
+  </body>
+</html>
+```
+
+##### 2. 后端服务源码：`server.mjs`
+
+```javascript
+// server.mjs - 最小可运行教师成绩管理全栈服务
+import express from "express";
+import mysql from "mysql2/promise";
+
+const app = express();
+app.use(express.json());
+app.use(express.static("public"));
+
+const pool = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "your_password",
+  database: "teachingdb_chen",
+  waitForConnections: true,
+  connectionLimit: 10,
+});
+
+// 1. 教师登录
+app.post("/api/login", async (req, res) => {
+  const { tid } = req.body;
+  const [rows] = await pool.execute(
+    "SELECT tid, tname, age, title FROM t_teacher WHERE tid = ?",
+    [tid],
+  );
+  if (rows.length === 0)
+    return res.status(401).json({ error: "教师工号不存在" });
+  res.json({ teacher: rows[0] });
+});
+
+// 2. 获取该教师承担的课程列表（强制 WHERE tid = ? 隔离）
+app.get("/api/courses", async (req, res) => {
+  const tid = req.headers["x-teacher-id"];
+  const [rows] = await pool.execute(
+    "SELECT cid, cname FROM t_course WHERE tid = ? ORDER BY cid",
+    [tid],
+  );
+  res.json(rows);
+});
+
+// 3. 查看主讲课程的选课花名册与成绩
+app.get("/api/scores", async (req, res) => {
+  const tid = req.headers["x-teacher-id"];
+  const { cid } = req.query;
+  const sql = `
+    SELECT c.cid, c.cname, s.sid, s.sname, s.sex, s.age, s.major, sc.score 
+    FROM t_course c
+    JOIN t_student_course sc ON c.cid = sc.cid
+    JOIN t_student s ON sc.sid = s.sid
+    WHERE c.tid = ? AND c.cid = ?
+    ORDER BY s.sid`;
+  const [rows] = await pool.execute(sql, [tid, cid]);
+  res.json(rows);
+});
+
+// 4. 添加选课记录
+app.post("/api/add-enrollment", async (req, res) => {
+  const tid = req.headers["x-teacher-id"];
+  const { sid, cid } = req.body;
+  const [auth] = await pool.execute(
+    "SELECT 1 FROM t_course WHERE cid = ? AND tid = ?",
+    [cid, tid],
+  );
+  if (auth.length === 0)
+    return res.status(403).json({ error: "无权为此课程添加选课" });
+  try {
+    await pool.execute(
+      "INSERT INTO t_student_course (sid, cid, score) VALUES (?, ?, NULL)",
+      [sid, cid],
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: "添加失败：学号不存在或该学生已选修此课程" });
+  }
+});
+
+// 5. 删除选课记录（退选）
+app.post("/api/delete-enrollment", async (req, res) => {
+  const tid = req.headers["x-teacher-id"];
+  const { sid, cid } = req.body;
+  const sql = `
+    DELETE sc FROM t_student_course sc
+    JOIN t_course c ON sc.cid = c.cid
+    WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`;
+  const [result] = await pool.execute(sql, [sid, cid, tid]);
+  if (result.affectedRows === 0)
+    return res.status(403).json({ error: "无权退选此记录" });
+  res.json({ success: true });
+});
+
+// 6. 成绩录入与修改
+app.post("/api/update-score", async (req, res) => {
+  const tid = req.headers["x-teacher-id"];
+  const { sid, cid, score } = req.body;
+  if (score < 0 || score > 100)
+    return res.status(400).json({ error: "成绩必须在 0 到 100 分之间" });
+  const sql = `
+    UPDATE t_student_course sc
+    JOIN t_course c ON sc.cid = c.cid
+    SET sc.score = ?
+    WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`;
+  const [result] = await pool.execute(sql, [score, sid, cid, tid]);
+  if (result.affectedRows === 0)
+    return res.status(403).json({ error: "无权操作此课程或记录不存在" });
+  res.json({ success: true });
+});
+
+app.listen(3000, () => console.log("系统运行于 http://localhost:3000"));
+```
+
+---
+
+#### 方案 B：Python 原生桌面 GUI 客户端工程（`grade_system_gui.py`）
+
+无需任何外部前端框架与 Web 服务器，纯 Python 标准库自带的 `tkinter` 模块即可实现具有系统原生窗口样式的任课教师成绩管理系统客户端，双击直接运行截桌面窗口提交实验报告！
+
+```python
+# grade_system_gui.py - Python Tkinter 原生桌面 GUI 客户端
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog
+import pymysql
+
+DB_CONFIG = {
+    "host": "localhost",
+    "user": "root",
+    "password": "your_password",
+    "database": "teachingdb_chen",
+    "charset": "utf8mb4"
+}
+
+class GradeSystemApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("学生成绩管理系统 · 教师端 (Python 原生 GUI)")
+        self.root.geometry("860x540")
+        self.teacher = None
+        self.show_login_frame()
+
+    def get_conn(self):
+        return pymysql.connect(**DB_CONFIG, cursorclass=pymysql.cursors.DictCursor)
+
+    def show_login_frame(self):
+        if hasattr(self, "main_frame"):
+            self.main_frame.destroy()
+
+        self.login_frame = ttk.Frame(self.root, padding=30)
+        self.login_frame.pack(expand=True)
+
+        ttk.Label(self.login_frame, text="任课教师身份登录", font=("Helvetica", 16, "bold")).grid(row=0, column=0, columnspan=2, pady=15)
+        ttk.Label(self.login_frame, text="教师工号 (tid):").grid(row=1, column=0, sticky="e", pady=5)
+        self.tid_entry = ttk.Entry(self.login_frame, width=20)
+        self.tid_entry.insert(0, "t001")
+        self.tid_entry.grid(row=1, column=1, pady=5)
+
+        ttk.Button(self.login_frame, text="登录进入系统", command=self.do_login).grid(row=2, column=0, columnspan=2, pady=15)
+
+    def do_login(self):
+        tid = self.tid_entry.get().strip()
+        try:
+            with self.get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT tid, tname, age, title FROM t_teacher WHERE tid = %s", (tid,))
+                    self.teacher = cur.fetchone()
+        except Exception as e:
+            messagebox.showerror("连接错误", f"数据库连接失败: {e}")
+            return
+
+        if not self.teacher:
+            messagebox.showwarning("登录失败", f"工号 {tid} 不存在或无教师权限！")
+            return
+
+        self.login_frame.destroy()
+        self.show_main_frame()
+
+    def show_main_frame(self):
+        self.main_frame = ttk.Frame(self.root, padding=15)
+        self.main_frame.pack(fill="both", expand=True)
+
+        # 顶部信息栏
+        top_bar = ttk.Frame(self.main_frame)
+        top_bar.pack(fill="x", pady=5)
+        t_info = f"当前教师: {self.teacher['tname']} (工号: {self.teacher['tid']} · {self.teacher['title']})"
+        ttk.Label(top_bar, text=t_info, font=("Helvetica", 11, "bold")).pack(side="left")
+        ttk.Button(top_bar, text="注销退出", command=self.show_login_frame).pack(side="right")
+
+        # 课程选择与操作栏
+        ctrl_bar = ttk.Frame(self.main_frame)
+        ctrl_bar.pack(fill="x", pady=10)
+        ttk.Label(ctrl_bar, text="选择所承担课程:").pack(side="left", padx=5)
+
+        self.course_combo = ttk.Combobox(ctrl_bar, state="readonly", width=25)
+        self.course_combo.pack(side="left", padx=5)
+        self.course_combo.bind("<<ComboboxSelected>>", lambda e: self.load_enrollments())
+
+        ttk.Button(ctrl_bar, text="+ 添加选课", command=self.add_enrollment).pack(side="left", padx=10)
+        ttk.Button(ctrl_bar, text="退选该生", command=self.delete_enrollment).pack(side="left", padx=5)
+        ttk.Button(ctrl_bar, text="录入/修改成绩", command=self.edit_score).pack(side="left", padx=5)
+
+        # 选课花名册表格
+        cols = ("sid", "sname", "sex", "age", "major", "score", "status")
+        self.tree = ttk.Treeview(self.main_frame, columns=cols, show="headings", height=15)
+        for c, name in zip(cols, ["学号", "姓名", "性别", "年龄", "专业", "成绩", "状态"]):
+            self.tree.heading(c, text=name)
+            self.tree.column(c, width=100, anchor="center")
+        self.tree.pack(fill="both", expand=True)
+
+        self.load_courses()
+
+    def load_courses(self):
+        with self.get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT cid, cname FROM t_course WHERE tid = %s", (self.teacher["tid"],))
+                self.courses = cur.fetchall()
+
+        if self.courses:
+            self.course_combo["values"] = [f"{c['cname']} ({c['cid']})" for c in self.courses]
+            self.course_combo.current(0)
+            self.load_enrollments()
+        else:
+            self.course_combo["values"] = ["暂无授课课程"]
+
+    def current_cid(self):
+        idx = self.course_combo.current()
+        return self.courses[idx]["cid"] if idx >= 0 else None
+
+    def load_enrollments(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        cid = self.current_cid()
+        if not cid: return
+
+        sql = """
+            SELECT s.sid, s.sname, s.sex, s.age, s.major, sc.score
+            FROM t_course c
+            JOIN t_student_course sc ON c.cid = sc.cid
+            JOIN t_student s ON sc.sid = s.sid
+            WHERE c.tid = %s AND c.cid = %s
+            ORDER BY s.sid
+        """
+        with self.get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, (self.teacher["tid"], cid))
+                for row in cur.fetchall():
+                    score_val = row["score"] if row["score"] is not None else "NULL"
+                    st = "已登分" if row["score"] is not None else "待录入"
+                    self.tree.insert("", "end", values=(row["sid"], row["sname"], row["sex"], row["age"], row["major"], score_val, st))
+
+    def edit_score(self):
+        sel = self.tree.selection()
+        if not sel: return messagebox.showwarning("提示", "请先在表格中点击选中一名学生！")
+        item = self.tree.item(sel[0])["values"]
+        sid, sname, old_score = item[0], item[1], item[5]
+        new_score = simpledialog.askinteger("成绩录入/修改", f"请输入【{sname}】({sid})的成绩 (0~100):", initialvalue=old_score if old_score != "NULL" else 85, minvalue=0, maxvalue=100)
+        if new_score is None: return
+
+        cid = self.current_cid()
+        with self.get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE t_student_course sc JOIN t_course c ON sc.cid = c.cid SET sc.score = %s WHERE sc.sid = %s AND sc.cid = %s AND c.tid = %s", (new_score, sid, cid, self.teacher["tid"]))
+                conn.commit()
+        messagebox.showinfo("成功", f"学生 {sname} 的成绩已成功更新为 {new_score} 分！")
+        self.load_enrollments()
+
+    def delete_enrollment(self):
+        sel = self.tree.selection()
+        if not sel: return messagebox.showwarning("提示", "请先选中一名要退选的学生！")
+        item = self.tree.item(sel[0])["values"]
+        sid, sname = item[0], item[1]
+        if not messagebox.askyesno("退选确认", f"确定要将学生【{sname}】({sid})从本课程退选吗？该操作将删除该条选课记录！"): return
+
+        cid = self.current_cid()
+        with self.get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE sc FROM t_student_course sc JOIN t_course c ON sc.cid = c.cid WHERE sc.sid = %s AND sc.cid = %s AND c.tid = %s", (sid, cid, self.teacher["tid"]))
+                conn.commit()
+        messagebox.showinfo("成功", "已成功退选该学生！")
+        self.load_enrollments()
+
+    def add_enrollment(self):
+        sid = simpledialog.askstring("添加选课", "请输入待选课学生的学号 (如 2013002):")
+        if not sid: return
+        cid = self.current_cid()
+        try:
+            with self.get_conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("INSERT INTO t_student_course (sid, cid, score) VALUES (%s, %s, NULL)", (sid.strip(), cid))
+                    conn.commit()
+            messagebox.showinfo("成功", "选课记录添加成功！")
+            self.load_enrollments()
+        except Exception as e:
+            messagebox.showerror("添加失败", f"无法添加选课：{e}")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = GradeSystemApp(root)
+    root.mainloop()
+```
+
+---
+
+### 五、现场答辩与实验验收核查清单（Gate 4 答辩检查项）
+
+1. **现场切换教师工号**：以李明（`t001`）登录展示课程 `c001`、`c003`；注销后以韩伟（`t004`）登录，界面仅显示课程 `c005`、`c008`，证明数据范围隔离机制生效。
+2. **成绩越界防呆拦截**：输入 `-10` 或 `105`，验证 UI 前端即时提示拦截与数据库 `CHECK (score >= 0 AND score <= 100)` 约束双重防护。
+3. **主键防重约束检验**：尝试为同一个学生重复添加同一门课程，观察系统捕获主键重复并弹出友好错误提示。
+4. **防 SQL 注入解释**：指出代码中参数化占位符 `?`（或 `%s`）的预编译防注入机制。
+5. **系统说明文档完整性**：确认文档包含前文规定的 5 张核心运行结果截图（登录、主控台、添加弹窗、退选确认、成绩修改）。

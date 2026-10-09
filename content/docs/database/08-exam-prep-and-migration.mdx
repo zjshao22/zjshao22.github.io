@@ -1,0 +1,191 @@
+---
+title: 综合迁移演练与机考准备
+description: 90 分钟机考试卷全貌、两套全真迁移模拟试卷（图书借阅与超市销售）、题库易错口径统一与答题技巧
+---
+
+# 综合迁移演练与机考准备
+
+期末考试实行上机闭卷考试。考试时长为 **90 分钟**，满分 100 分，**以主观题为主，不提供可交互执行代码并反馈结果的数据库客户端**。
+
+本节旨在帮助大家跳出日常开发的工具提示依赖，建立在纯文本环境下组织严谨、语法精确答案的能力。我们提供了完整的 90 分钟时间分配策略、两套涵盖图书与销售场景的全真迁移模拟卷，并针对题库中的高频争议点进行了权威口径核验。
+
+---
+
+## 一、机考试卷结构与 90 分钟时间分配策略
+
+| 题型序号 | 题型名称       | 题目数量与分值             | 考察重点与深度                                                                                                                                          | 建议用时 |
+| -------- | -------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | :------: |
+| **一**   | 单项选择题     | 10 题 × 2 分 = **20 分**   | 概念辨析：三级模式、完整性约束、范式定义、事务 ACID、索引                                                                                               | 10 分钟  |
+| **二**   | 判断题         | 15 题 × 1 分 = **15 分**   | 规则判断：COUNT 与 NULL、视图更新限制、存储过程语法、外键级联                                                                                           |  5 分钟  |
+| **三**   | 设计题         | 3 题 × 5 分 = **15 分**    | 1. 场景文字描述 ER 图要素（5分）<br />2. ER 转关系模式与主外键（5分）<br />3. 范式判断与无损分解（5分）                                                 | 20 分钟  |
+| **四**   | 综合应用题     | 1 大题 12 小题 = **50 分** | (1) 建库语句（4分）<br />(2) 建表语句（6分）<br />(3) 增删改语句（3题，12分）<br />(4) 查询/视图/存储过程（6题，24分）<br />(5) 关系代数文字描述（4分） | 45 分钟  |
+| **—**    | **检查与复核** | —                          | 核对字段拼写、主外键引用、英文标点分号、空括号 `()`                                                                                                     | 10 分钟  |
+
+---
+
+## 二、题库高频易错点与权威统一口径
+
+根据教学方案核查，机考答题必须遵循以下统一标准：
+
+1. **存储过程参数括号**：
+   - 存储过程即使没有参数，**过程名后必须带空括号 `()`**（如 `CREATE PROCEDURE sp_demo()`），遗漏将按语法错误扣分。
+2. **COUNT 函数统计口径**：
+   - `COUNT(*)` 统计行数（包含 NULL 行）；`COUNT(列名)` 忽略 NULL 值。凡题目未特别指明特定非空列时，统计总人数或总行数推荐写 `COUNT(*)`。
+3. **金额与小数类型**：
+   - 商品单价、订单金额、罚款等，严禁使用 `FLOAT/DOUBLE`，在建表中统一使用精确定点数 `DECIMAL(10, 2)`。
+4. **DATETIME 日期全天查询**：
+   - 比较销售时间是否为“某一天”时，由于包含时分秒，不能简单写 `sale_time = '2025-05-01'`（这只能匹配到午夜 00:00:00）。
+   - 正确写法：`sale_time >= '2025-05-01 00:00:00' AND sale_time < '2025-05-02 00:00:00'`。
+5. **联系表联合主键业务重复条件**：
+   - 图书借阅、商品购买属于**多次发生**的业务。若联合主键只写 `(读者号, 图书号)`，将导致读者无法多次借阅同一本书。主键必须包含**借阅时间/购买时间**。
+
+---
+
+## 三、全真迁移模拟试卷 A：图书借阅管理系统
+
+本套模拟题用于检验将“学生选课”向“图书借阅”迁移的能力。
+
+### 背景描述
+
+某大学图书借阅管理系统包含三张表：
+
+- 读者表 `t_reader`：读者卡号 `rid`（主键），姓名 `rname`，类别 `dept`，办卡日期 `reg_date`。
+- 图书表 `t_book`：图书编号 `bid`（主键），书名 `bname`，作者 `author`，单价 `price`，出版社 `publisher`。
+- 借阅记录表 `t_borrow`：读者卡号 `rid`（外键），图书编号 `bid`（外键），借阅日期 `borrow_date`，归还日期 `return_date`（未还时为 NULL）。三字段联合主键 `(rid, bid, borrow_date)`。
+
+### 综合应用真题训练（共 12 问）
+
+```sql
+-- (1) 建库语句（4分）
+CREATE DATABASE IF NOT EXISTS library_db CHARACTER SET utf8mb4;
+USE library_db;
+
+-- (2) 建表语句：创建借阅记录表 t_borrow（6分）
+CREATE TABLE t_borrow (
+  rid VARCHAR(20) NOT NULL,
+  bid VARCHAR(20) NOT NULL,
+  borrow_date DATE NOT NULL,
+  return_date DATE NULL,
+  PRIMARY KEY (rid, bid, borrow_date),
+  CONSTRAINT fk_borrow_reader FOREIGN KEY (rid) REFERENCES t_reader(rid),
+  CONSTRAINT fk_borrow_book FOREIGN KEY (bid) REFERENCES t_book(bid)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- (3) 增删改语句（每题 4 分，共 12 分）
+-- 题 3.1: 插入一条读者 'r001' 在 '2025-05-10' 借阅图书 'b008' 的记录
+INSERT INTO t_borrow (rid, bid, borrow_date, return_date)
+VALUES ('r001', 'b008', '2025-05-10', NULL);
+
+-- 题 3.2: 读者 'r001' 在今天归还了 'b008'，更新其归还日期为 '2025-06-01'
+UPDATE t_borrow
+SET return_date = '2025-06-01'
+WHERE rid = 'r001' AND bid = 'b008' AND borrow_date = '2025-05-10';
+
+-- 题 3.3: 删除定价低于 15 元且从未被借阅过的图书记录
+DELETE FROM t_book
+WHERE price < 15.00
+  AND bid NOT IN (SELECT DISTINCT bid FROM t_borrow);
+
+-- (4) 查询、视图与存储过程语句（每题 4 分，共 24 分）
+-- 题 4.1: 查询所有姓“王”且为“计算机系”的读者姓名与办卡日期
+SELECT rname, reg_date
+FROM t_reader
+WHERE rname LIKE '王%' AND dept = '计算机系';
+
+-- 题 4.2: 查询借阅了书名为“数据库系统概念”且尚未归还的读者卡号与借阅日期
+SELECT b.rid, b.borrow_date
+FROM t_borrow b
+JOIN t_book bk ON b.bid = bk.bid
+WHERE bk.bname = '数据库系统概念' AND b.return_date IS NULL;
+
+-- 题 4.3: 查询每位读者的读者卡号以及累计借阅图书的总册数
+SELECT rid, COUNT(*) AS total_borrows
+FROM t_borrow
+GROUP BY rid;
+
+-- 题 4.4: 查询借阅图书总册数超过 10 册的读者卡号与姓名
+SELECT r.rid, r.rname, COUNT(b.bid) AS borrow_count
+FROM t_reader r
+JOIN t_borrow b ON r.rid = b.rid
+GROUP BY r.rid, r.rname
+HAVING COUNT(b.bid) > 10;
+
+-- 题 4.5: 创建视图 v_current_borrowing，显示当前所有未归还图书的读者卡号、姓名、书名和借阅日期
+CREATE OR REPLACE VIEW v_current_borrowing AS
+SELECT r.rid, r.rname, bk.bname, b.borrow_date
+FROM t_borrow b
+JOIN t_reader r ON b.rid = r.rid
+JOIN t_book bk ON b.bid = bk.bid
+WHERE b.return_date IS NULL;
+
+-- 题 4.6: 创建存储过程 sp_reader_borrows，传入读者卡号，返回该读者当前尚未归还的图书册数
+DELIMITER //
+CREATE PROCEDURE sp_reader_borrows(
+  IN in_rid VARCHAR(20),
+  OUT out_unreturned_count INT
+)
+BEGIN
+  SELECT COUNT(*) INTO out_unreturned_count
+  FROM t_borrow
+  WHERE rid = in_rid AND return_date IS NULL;
+END //
+DELIMITER ;
+
+-- (5) 关系代数文字描述（4分）
+-- 题目：查询借阅了图书编号为 'b001' 的读者姓名
+```
+
+> **第 (5) 题标准作答文本**：
+>
+> 1. 将读者表 `t_reader` 与借阅表 `t_borrow` 按照读者卡号相等（`t_reader.rid = t_borrow.rid`）进行等值连接。
+> 2. 在连接结果上执行选择操作，条件为 `bid = 'b001'`。
+> 3. 对筛选后的结果执行投影操作，输出读者姓名 `rname`。
+
+---
+
+## 四、全真迁移模拟试卷 B：超市商品销售系统
+
+### 背景描述
+
+- 会员表 `t_member(mid, mname, phone, points)`，主键 `mid`。
+- 商品表 `t_product(pid, pname, category, price, stock)`，主键 `pid`。
+- 销售表 `t_sales(sale_id, mid, pid, sale_time, quantity, total_amount)`，主键 `sale_id`，外键 `mid` 与 `pid`。
+
+### 核心考点自检：
+
+1. **统计当天销售总额**：
+   ```sql
+   SELECT SUM(total_amount) AS today_revenue
+   FROM t_sales
+   WHERE sale_time >= '2026-05-18 00:00:00'
+     AND sale_time < '2026-05-19 00:00:00';
+   ```
+2. **查询从未消费过的会员信息**：
+   ```sql
+   SELECT m.mid, m.mname
+   FROM t_member m
+   LEFT JOIN t_sales s ON m.mid = s.mid
+   WHERE s.sale_id IS NULL;
+   ```
+3. **查询同时购买过商品 'p001' 和 'p002' 的会员卡号**：
+   ```sql
+   SELECT mid
+   FROM t_sales
+   WHERE pid IN ('p001', 'p002')
+   GROUP BY mid
+   HAVING COUNT(DISTINCT pid) = 2;
+   ```
+
+---
+
+## 阶段达标检查点一览（Gate 1 至 Gate 5）
+
+考前请对照下表评估自己的复习完整度：
+
+| 检查点            | 达标任务                                   | 自测标准                                          |
+| ----------------- | ------------------------------------------ | ------------------------------------------------- |
+| **G1 基础操作**   | 独立建表，带主键、外键和 CHECK；完成增删改 | 约束不遗漏，WHERE 影响范围精准                    |
+| **G2 综合查询**   | 混合多表、统计、子查询与不存在测试         | 15 道题脱离手册能准确书写，理解 NULL 与 GROUP BY  |
+| **G3 数据库设计** | 实体联系文字描述、ER 转表、1NF—3NF 分解    | 列出函数依赖，明确候选键，消灭部分/传递依赖       |
+| **G4 管理与应用** | 备份还原、用户创建授权、实验四成绩系统     | 能解释 `mysqldump` 参数，任课教师数据隔离逻辑正确 |
+| **G5 机考模拟**   | 90 分钟独立完成模拟试卷 A 或 B             | 达到 75 分以上，综合题与设计题得分率超过 80%      |

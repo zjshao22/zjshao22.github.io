@@ -3,7 +3,7 @@
   "version": "0.0.14",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
     "types:check": "next typegen && tsc --noEmit",
     "lint": "eslint",

@@ -1,0 +1,215 @@
+---
+title: 备份恢复、权限管理与事务索引
+description: mysqldump 备份恢复、用户创建与授权验证、ACID 事务、并发隔离级别与索引权衡
+---
+
+# 备份恢复、权限管理与事务索引
+
+数据库不仅要跑得快，更要**安全可控、绝不丢失数据**。在企业生产环境与日常运维中，定期容灾备份、细粒度最小权限控制、强一致性事务保障是核心职责。
+
+本节我们将全面掌握 `mysqldump` 命令行工具的单表、多表及整库备份恢复，学习 MySQL 账户权限体系，深入理解事务 ACID 特性与并发锁机制，并客观权衡索引的利弊。
+
+---
+
+---
+
+## 一、【实验三 第一阶段】数据与整库备份恢复上机（mysqldump & mysql）
+
+容灾备份是保障业务连续性的第一道防线。在日常运维与实验三中，必须切记一条铁律：
+
+> **执行位置核心原则**：
+> `mysqldump` 与 `mysql`（带重定向 `<`）是**操作系统层面的独立可执行命令**，必须在**系统的终端（Terminal / CMD / PowerShell）**中运行；**绝不能在 MySQL Workbench 的 SQL 查询编辑器内直接输入**！
+
+<BackupRestoreFlowFigure />
+
+### 1. 表数据的导出与灾难恢复（以 `t_student_course` 为例）
+
+以选课表 `t_student_course` 为例，演练从“备份 $\to$ 模拟删表灾难 $\to$ 命令行恢复 $\to$ 验证行数”的完整流程：
+
+<TerminalBackupRestoreFigure />
+
+```bash
+# 步骤 1：【系统终端】使用 mysqldump 导出 t_student_course 的表结构与数据
+mysqldump -u root -p teachingdb_chen t_student_course > Dump_sc.sql
+
+# 步骤 2：【终端/Workbench】模拟误操作清空选课表
+mysql -u root -p teachingdb_chen -e "DELETE FROM t_student_course;"
+
+# 验证数据已被清空（输出 0 行）
+mysql -u root -p teachingdb_chen -e "SELECT COUNT(*) FROM t_student_course;"
+
+# 步骤 3：【系统终端】使用 mysql 命令重定向回放备份脚本完成恢复
+mysql -u root -p teachingdb_chen < Dump_sc.sql
+
+# 步骤 4：【系统终端】验证数据是否全部恢复（基准为 24 行）
+mysql -u root -p teachingdb_chen -e "SELECT COUNT(*) FROM t_student_course;"
+```
+
+### 2. 多表备份与跨库还原（备份至新库 `teachingdb2`）
+
+在实验三中，要求将主库中的 `t_student` 与 `t_course` 备份并恢复到一个全新的验证数据库 `teachingdb2` 中：
+
+```bash
+# 步骤 1：【系统终端】同时指定导出多张表
+mysqldump -u root -p teachingdb_chen t_student t_course > Dump_st_co.sql
+
+# 步骤 2：【终端/Workbench】在 MySQL 中创建目标数据库 teachingdb2
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS teachingdb2 CHARACTER SET utf8mb4;"
+
+# 步骤 3：【系统终端】将多表脚本还原到新库 teachingdb2 中
+mysql -u root -p teachingdb2 < Dump_st_co.sql
+
+# 步骤 4：【系统终端】验证目标库中的表清单与行数
+mysql -u root -p teachingdb2 -e "SHOW TABLES; SELECT COUNT(*) FROM t_student; SELECT COUNT(*) FROM t_course;"
+```
+
+> [!IMPORTANT]
+> **外键依赖顺序陷阱（课程设计口径统一）**
+> `t_course` 的外键 `tid` 依赖教师表 `t_teacher`。如果仅将 `t_student` 和 `t_course` 恢复到一个完全空白的库 `teachingdb2` 中，当执行到包含外键定义的 `t_course` 建表语句时，可能会因找不到被引用的 `t_teacher` 表而触发外键依赖报错！
+> **标准解决方案**：在生成导出文件时，`mysqldump` 默认会在文件头加上 `SET FOREIGN_KEY_CHECKS=0;` 临时关闭外键约束检查，在恢复完成后再恢复为 1。恢复时请确保保留该选项，或预先在目标库恢复父表。
+
+### 3. 整库备份与归档（留存 `Dumpteachingdb.sql`）
+
+```bash
+# 【系统终端执行】导出整个数据库（包含所有表、结构与数据）
+mysqldump -u root -p --databases teachingdb_chen > Dumpteachingdb.sql
+
+# 检查备份文件内容前 10 行，确认包含 DDL 与字符集设置
+head -n 15 Dumpteachingdb.sql
+```
+
+---
+
+## 二、【实验三 第二阶段】MySQL 安全管理：用户创建、细粒度授权与越权拦截验证
+
+在企业生产环境与实验三中，数据库绝对不能全员使用 `root` 超级管理员账号，必须遵循**最小权限原则（Principle of Least Privilege）**。
+
+### 1. 账户标识的本质：`'用户名'@'主机'`
+
+在 MySQL 中，用户账户由**用户名**与**允许连接的主机 IP/域名**共同决定：
+
+- `'tuser'@'localhost'`：仅允许在本机（127.0.0.1 环回接口）建立连接；
+- `'tuser'@'%'`：允许从任意网络地址（局域网/公网）发起远程连接。
+
+### 2. 实验三账户管理全流程命令（在 MySQL Workbench 中执行）
+
+打开 MySQL Workbench SQL 编辑器（以 `root` 身份登录），依次执行以下 DCL 语句：
+
+```sql
+-- 1. 创建本地用户账户 tuser，初始密码设为 123456
+CREATE USER 'tuser'@'localhost' IDENTIFIED BY '123456';
+
+-- 2. 修改用户 tuser 的登录密码为 111111
+ALTER USER 'tuser'@'localhost' IDENTIFIED BY '111111';
+
+-- 3. 授予 tuser 对主数据库 teachingdb_chen 的全部操作权限
+GRANT ALL PRIVILEGES ON teachingdb_chen.* TO 'tuser'@'localhost';
+
+-- 4. 细粒度权限控制：授予 tuser 仅访问 teachingdb2 库中 t_student 表的 SELECT 权限
+GRANT SELECT ON teachingdb2.t_student TO 'tuser'@'localhost';
+
+-- 5. 刷新系统授权表，使新权限立即生效
+FLUSH PRIVILEGES;
+
+-- 6. 查看用户 tuser 拥有的全部有效权限清单
+SHOW GRANTS FOR 'tuser'@'localhost';
+```
+
+### 3. 登录与权限边界拦截验证（在系统终端中执行）
+
+配置完权限后，必须在系统终端中以 `tuser` 的身份登录，验证权限边界是否生效：
+
+<TerminalSecurityGrantFigure />
+
+```bash
+# 【系统终端】以新建用户 tuser 连接 MySQL
+mysql -u tuser -p
+# 提示输入密码时，输入修改后的新密码：111111
+```
+
+在终端登录后的交互会话中分别执行合法操作与越权操作：
+
+```sql
+-- 测试 1：访问被授权的 teachingdb2.t_student 表（放行）
+SELECT sid, sname FROM teachingdb2.t_student LIMIT 2;
+-- 预期结果：正常返回 2 行数据！
+
+-- 测试 2：尝试访问未被授权的 teachingdb2.t_course 表（越权拦截）
+SELECT * FROM teachingdb2.t_course;
+-- 预期结果：系统立即拦截并返回权限拒绝报错：
+-- ERROR 1142 (42000): SELECT command denied to user 'tuser'@'localhost' for table 't_course'
+
+-- 测试 3：尝试对 t_student 执行 DELETE 删除操作（越权拦截）
+DELETE FROM teachingdb2.t_student WHERE sid = '2012001';
+-- 预期结果：系统立即拦截并报错：
+-- ERROR 1142 (42000): DELETE command denied to user 'tuser'@'localhost' for table 't_student'
+```
+
+> [!TIP]
+> **实验三验收要点**
+> 实验三验收时，教师会重点检查：
+>
+> 1. `Dump_sc.sql` 与 `Dump_st_co.sql` 文件的完整性；
+> 2. `teachingdb2` 中恢复的表行数是否与源库一致；
+> 3. 以 `tuser` 登录后，执行 `SELECT * FROM teachingdb2.t_course;` 是否成功被 MySQL 安全子系统拦截（呈现 `ERROR 1142`）。
+
+---
+
+## 三、事务与并发控制（ACID 与锁）
+
+<AcidTransactionFigure />
+
+### 1. 事务四大特性（ACID）
+
+- **A (Atomicity，原子性)**：事务中的操作要么全做，要么全不做（由 Undo Log 保证）。
+- **C (Consistency，一致性)**：事务执行前后，数据必须处于合法且满足所有约束的状态。
+- **I (Isolation，隔离性)**：并发事务互不干扰（由锁机制与 MVCC 多版本并发控制保证）。
+- **D (Durability，持久性)**：一旦提交，数据永久写入磁盘（由 Redo Log 保证）。
+
+### 2. 并发操作引发的三大经典问题
+
+1. **脏读（Dirty Read）**：事务 A 读取到了事务 B **尚未提交**的数据。若事务 B 随后回滚，A 读到的数据即为无效的“脏数据”。
+2. **不可重复读（Non-repeatable Read）**：事务 A 读取某行后，事务 B **修改或删除了该行并提交**；事务 A 再次读取该行，发现前后数值不一致。
+3. **幻读（Phantom Read）**：事务 A 按条件读取某范围的行后，事务 B **插入了符合该条件的新行并提交**；事务 A 再次读取该范围，发现凭空多出了新行（如同出现幻觉）。
+
+### 3. 四大隔离级别标准对照
+
+| 隔离级别                        |   脏读   | 不可重复读 |                   幻读                    | 默认系统支持                          |
+| ------------------------------- | :------: | :--------: | :---------------------------------------: | ------------------------------------- |
+| **Read Uncommitted (读未提交)** |  会发生  |   会发生   |                  会发生                   | 并发最高，安全性极低                  |
+| **Read Committed (读已提交)**   | **避免** |   会发生   |                  会发生                   | Oracle / SQL Server / PostgreSQL 默认 |
+| **Repeatable Read (可重复读)**  | **避免** |  **避免**  | **避免** (InnoDB 通过 Next-Key Lock 解决) | **MySQL InnoDB 默认**                 |
+| **Serializable (可串行化)**     | **避免** |  **避免**  |                 **避免**                  | 强制事务完全排队，性能最低            |
+
+---
+
+## 四、索引（INDEX）机制与客观权衡
+
+在 MySQL 中，InnoDB 默认采用 **B+ 树** 组织数据索引：
+
+- **聚簇索引（Clustered Index）**：以主键构建的 B+ 树，其**叶子节点直接存放完整的行记录数据**。每张表有且仅有一个聚簇索引。
+- **辅助索引 / 二级索引（Secondary Index）**：其叶子节点只存放该索引列的值与对应的**主键值**。通过二级索引查询非主键列通常需要“回表”。
+
+### 索引的双刃剑效应（破除盲目背诵）
+
+- **带来的收益**：极大地加速 `WHERE` 检索、`JOIN` 连接和 `ORDER BY` 排序的响应速度。
+- **付出的代价**：
+  1. **磁盘开销**：每个索引都是一棵独立的 B+ 树文件，占用存储空间。
+  2. **写性能损耗**：每次执行 `INSERT`, `UPDATE`, `DELETE` 时，DBMS 必须同步调整更新各棵 B+ 树的平衡结构与节点分裂，写操作变慢。
+  3. **结论**：高频更新的字段、基数很小（如性别只有男女）的字段不宜建立索引；查询频率极高的外键和主要业务筛选列适合建立索引。
+
+---
+
+## 阶段达标自测（Gate 4 运维自查）
+
+<Quiz
+  question="某电商系统在高并发更新库存时，为了防止一个事务读到另一个事务未提交的修改，数据库最低需要设置在哪个隔离级别？"
+  options={[
+    "A Read Uncommitted (读未提交)",
+    "B Read Committed (读已提交)",
+    "C Repeatable Read (可重复读)",
+    "D Serializable (可串行化)",
+  ]}
+  answer="Read Committed (读已提交)"
+  explanation="脏读是指读取到其他事务未提交的数据。消除脏读的最低隔离级别是 Read Committed（读已提交）。在此级别下，任何事务只能读取到其他事务已经提交确认的数据。"
+/>

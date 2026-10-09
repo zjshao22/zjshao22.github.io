@@ -1,0 +1,332 @@
+---
+title: 多表连接、分组统计与子查询
+description: 内外连接、聚合统计、GROUP BY 与 HAVING、子查询、存在性判断与关系代数推演
+---
+
+# 多表连接、分组统计与子查询
+
+在真实业务中，几乎所有有价值的信息都需要跨越多个实体表进行关联与统计。多表连接、分组过滤与子查询是关系数据库的核心技能与高频应用场景。
+
+本节将系统梳理多表连接路径、聚合函数的统计口径差异、`WHERE` 与 `HAVING` 的本质分工、高频难点（未选课集合、双重条件交集）、关系代数的形式化推演，并逐一剖析各种核心查询模型。
+
+---
+
+## 一、多表连接（JOIN）与连接路径推演
+
+### 1. 连接的本质
+
+在逻辑上，多表连接首先对参与的表做**笛卡尔积（Cartesian Product）**，然后通过 `ON` 条件筛选出外键与主键相等的有效匹配行。
+
+<JoinPathFigure />
+
+- **两表连接**：学生查选课成绩 $\implies$ `FROM t_student s JOIN t_student_course sc ON s.sid = sc.sid`
+- **三表连接**：学生查选修课程名称 $\implies$ 先连选课表，再连课程表：
+  ```sql
+  FROM t_student s
+  JOIN t_student_course sc ON s.sid = sc.sid
+  JOIN t_course c ON sc.cid = c.cid
+  ```
+- **四表连接**：学生查授课教师姓名 $\implies$ 继续沿外键连教师表：
+  ```sql
+  JOIN t_teacher t ON c.tid = t.tid
+  ```
+
+### 2. 内连接（INNER JOIN）与外连接（OUTER JOIN）的区别
+
+- **INNER JOIN（内连接）**：仅保留两边都能成功匹配的行。如果某门课程没有任何学生选修，它**不会**出现在连接结果中；如果某个学生未选课，他也会被剔除。
+- **LEFT JOIN（左外连接）**：以左表为基准，无论右表是否有匹配，**左表的每一行都强制保留**。若右表无对应匹配，右表的列全部补填 `NULL`。
+  - **核心应用**：寻找“从未选课的学生”或“无人选修的课程”：
+    ```sql
+    -- 寻找没有选课的学生
+    SELECT s.sid, s.sname
+    FROM t_student s
+    LEFT JOIN t_student_course sc ON s.sid = sc.sid
+    WHERE sc.cid IS NULL;
+    ```
+
+---
+
+## 二、聚合函数与 GROUP BY / HAVING 的口径分工
+
+### 1. COUNT(\*) 与 COUNT(列名) 的重大区别
+
+依据官方 MySQL 规范与机考核定口径：
+
+- `COUNT(*)`：统计结果集中的**总行数（包括包含 NULL 的行）**。
+- `COUNT(列名)`：仅统计该列**取值非空（NOT NULL）**的有效行数。
+- 实例对比：
+  - `t_student` 中华宇的 `major` 为 `NULL`。
+  - `COUNT(*)` 统计学生总数为 12；
+  - `COUNT(major)` 统计有专业登记的学生数则为 11。
+
+### 2. WHERE 与 HAVING 的本质区别
+
+<SqlOrderFigure />
+
+| 对比维度     | WHERE 条件过滤                                      | HAVING 分组过滤                             |
+| ------------ | --------------------------------------------------- | ------------------------------------------- |
+| **执行阶段** | 在 `GROUP BY` **之前**执行                          | 在 `GROUP BY` **之后**执行                  |
+| **过滤对象** | 逐行扫描物理基表中的**单条记录**                    | 针对已经聚合后的**分组（Group）**           |
+| **聚合函数** | **严禁使用**（如 `WHERE AVG(score) > 80` 语法报错） | **可以使用**（如 `HAVING AVG(score) > 80`） |
+| **典型用途** | 过滤出“2012级学生”或“及格的单科成绩”                | 过滤出“选课门数 > 3”或“平均分 > 85”的学生   |
+
+---
+
+## 三、子查询与存在性测试（EXISTS / NOT EXISTS）
+
+### 1. 标量子查询与列子查询
+
+- **标量子查询**：返回单个数值，可直接用于比较表达式中。
+  - 例：查询比李平年龄大的学生：
+    ```sql
+    SELECT sid, sname, age
+    FROM t_student
+    WHERE age > (SELECT age FROM t_student WHERE sname = '李平');
+    ```
+- **列子查询（IN / NOT IN）**：返回一个单列的集合。
+  - 例：选修了数据库课程的学生学号：
+    ```sql
+    SELECT sid FROM t_student_course WHERE cid = 'c001';
+    ```
+
+### 2. 双重条件交集问题（既选 C001 又选 C002）
+
+学生不能在同一条记录中既拥有 `cid = 'c001'` 又拥有 `cid = 'c002'`。因此绝不能写 `WHERE cid = 'c001' AND cid = 'c002'`！
+
+正确解法有三种经典形态：
+
+```sql
+-- 解法一：自连接（Self-Join）
+SELECT sc1.sid
+FROM t_student_course sc1
+JOIN t_student_course sc2 ON sc1.sid = sc2.sid
+WHERE sc1.cid = 'c001' AND sc2.cid = 'c002';
+
+-- 解法二：子查询（IN / EXISTS）
+SELECT sid
+FROM t_student_course
+WHERE cid = 'c001'
+  AND sid IN (SELECT sid FROM t_student_course WHERE cid = 'c002');
+
+-- 解法三：分组聚合（GROUP BY + HAVING）
+SELECT sid
+FROM t_student_course
+WHERE cid IN ('c001', 'c002')
+GROUP BY sid
+HAVING COUNT(DISTINCT cid) = 2;
+```
+
+---
+
+## 四、【实验一 第三阶段】多表综合查询收官与全库导出（题 7~15）
+
+在掌握连接、聚合与子查询原理后，进入实验一第三阶段：完成全部 9 道多表综合查询，并完成实验一全库成果归档。
+
+### 题 7：查询有同学选修的课程的课程号及课程名
+
+- **读题分析**：只要有学生选修（在 `t_student_course` 中出现过），就检索出该课程的信息。利用 `JOIN` 连接后通过 `DISTINCT` 消除重复。
+- **小数据验证**：选课表中有记录的课程号为 `c001, c002, c003, c008`。共 4 门课程。
+
+```sql
+-- 题 7：查询有同学选修的课程信息
+SELECT DISTINCT c.cid, c.cname
+FROM t_course c
+JOIN t_student_course sc ON c.cid = sc.cid;
+```
+
+### 题 8：查询李平同学所选修课程的课程号、课程名和成绩
+
+- **读题分析**：需要从学生表找李平（`sname = '李平'`），通过选课表关联课程表，属于标准的三表内连接。
+- **小数据推演**：李平（`2012002`）在选课表中有两条记录：`c003`（软件测试，70 分）与 `c008`（计算机基础，88 分）。
+- **基准预期**：返回 **2 行**。
+
+<WorkbenchQueryGridFigure />
+
+```sql
+-- 题 8：查询李平所选修课程的课程号、课程名和成绩
+SELECT c.cid, c.cname, sc.score
+FROM t_student s
+JOIN t_student_course sc ON s.sid = sc.sid
+JOIN t_course c ON sc.cid = c.cid
+WHERE s.sname = '李平';
+```
+
+### 题 9：查询选修了“数据库”课程但成绩为空的学生的姓名
+
+- **读题分析**：限定课程为“数据库”（`c001`），且成绩处于待登分状态（`score IS NULL`）。
+- **小数据推演**：选修数据库且未登分的学生为：`2012005`（李勇）与 `2013005`（李华）。
+- **基准预期**：返回 **2 行**（李勇、李华）。
+
+```sql
+-- 题 9：查询选修数据库但成绩为空的学生姓名
+SELECT s.sname
+FROM t_student s
+JOIN t_student_course sc ON s.sid = sc.sid
+JOIN t_course c ON sc.cid = c.cid
+WHERE c.cname = '数据库' AND sc.score IS NULL;
+```
+
+### 题 10：查询既选修了 C001 号课程，又选修了 C002 号课程的学生的学号
+
+- **读题分析**：双选课交集。单行记录不可能同时等于两个课程号，必须使用子查询或自连接。
+- **小数据推演**：选 `c001` 的学生为 2012001, 2012003, 2012005, 2013005；选 `c002` 的学生仅有 2012001。
+- **基准预期**：返回 **1 行**（`2012001`）。
+
+```sql
+-- 题 10：查询同时选修 c001 和 c002 的学生学号
+SELECT sid
+FROM t_student_course
+WHERE cid = 'c001'
+  AND sid IN (SELECT sid FROM t_student_course WHERE cid = 'c002');
+```
+
+### 题 11：查询李平同学选修的课程门数以及平均成绩
+
+- **读题分析**：以李平为统计单元，门数用 `COUNT(*)`，平均成绩用 `AVG(sc.score)`。
+- **小数据推演**：李平选修 2 门课（70分、88分），门数 = 2，平均分 = $(70 + 88) / 2 = 79.0$。
+- **基准预期**：返回 **1 行 2 列**（`course_count: 2`, `avg_score: 79.0000`）。
+
+```sql
+-- 题 11：统计李平选修门数与平均分
+SELECT COUNT(*) AS course_count, AVG(sc.score) AS avg_score
+FROM t_student s
+JOIN t_student_course sc ON s.sid = sc.sid
+WHERE s.sname = '李平';
+```
+
+### 题 12：查询年龄比李平同学大的所有学生的学号、姓名和年龄
+
+- **读题分析**：标量子查询求出李平年龄（27 岁），外层查询过滤 `age > 27`。
+- **小数据推演**：全表中年龄大于 27 岁的学生有：周云(30)、吴军(33)、李勇(32)、张华(30)、李娜(29)、杨玲(28)、王新(30)、孙强(31)。
+- **基准预期**：返回 **8 行**。
+
+```sql
+-- 题 12：标量子查询比李平年龄大的学生
+SELECT sid, sname, age
+FROM t_student
+WHERE age > (SELECT age FROM t_student WHERE sname = '李平');
+```
+
+### 题 13：查询每个专业的学生人数，显示“专业”和“人数”两列
+
+- **读题分析**：按专业分组 `GROUP BY major`。注意：华宇同学的 `major` 为 NULL，在 SQL 分组中会归为单独的一组 NULL。
+- **基准预期**：返回各专业的人数统计（软件工程 6、机械电子 3、英语 2、NULL 1）。
+
+```sql
+-- 题 13：按专业分组统计学生人数
+SELECT major AS 专业, COUNT(*) AS 人数
+FROM t_student
+GROUP BY major;
+```
+
+### 题 14：查询选课人数超过 5 人的课程信息，显示课程号、课程名和选修人数
+
+- **读题分析**：统计对象是课程；按课程主键分组；组筛选条件使用 `HAVING COUNT(sc.sid) > 5`。
+- **小数据推演**：
+  - `c003`（软件测试）：9 人选修；
+  - `c008`（计算机基础）：11 人选修；
+  - 其余课程均 $\le 5$ 人。
+- **基准预期**：返回 **2 行**（`c003` 与 `c008`）。
+
+```sql
+-- 题 14：分组过滤选课人数超过 5 人的课程
+SELECT c.cid, c.cname, COUNT(sc.sid) AS 选修人数
+FROM t_course c
+JOIN t_student_course sc ON c.cid = sc.cid
+GROUP BY c.cid, c.cname
+HAVING COUNT(sc.sid) > 5;
+```
+
+### 题 15：查询没有选修“数据库”课程的学生的学号和姓名
+
+- **读题分析**：不存在性测试。必须使用 `NOT IN` 或 `NOT EXISTS`。
+- **基准预期**：总学生 12 人，选修数据库的有 4 人，故未选修数据库的学生共 **8 人**。
+
+```sql
+-- 题 15 推荐解法：NOT IN 子查询
+SELECT sid, sname
+FROM t_student
+WHERE sid NOT IN (
+  SELECT sc.sid
+  FROM t_student_course sc
+  JOIN t_course c ON sc.cid = c.cid
+  WHERE c.cname = '数据库'
+);
+```
+
+---
+
+### 实验一验收基准与全库归档（Gate 2）
+
+完成 15 道题后，请对照下表自查各题返回行数与结果：
+
+| 题号      | 查询目标                     | 涉及表              | 预期返回                      |
+| :-------- | :--------------------------- | :------------------ | :---------------------------- |
+| **题 1**  | 查询个人学号信息             | `t_student`         | 1 行                          |
+| **题 2**  | 姓“李”的学生信息             | `t_student`         | 4 行                          |
+| **题 3**  | 女同学姓名与年龄（别名）     | `t_student`         | 5 行                          |
+| **题 4**  | 软件工程男同学平均年龄       | `t_student`         | 1 行 (30.0000)                |
+| **题 5**  | 30~35 岁副教授降序排列       | `t_teacher`         | 4 行 (刘红 $\to$ 韩伟)        |
+| **题 6**  | 物化查询结果到新表 `t_sinfo` | `t_student`, `t_sc` | 物化 24 行表                  |
+| **题 7**  | 有同学选修的课程             | `t_course`, `t_sc`  | 4 行 (c001, c002, c003, c008) |
+| **题 8**  | 李平选修课程及成绩           | `s`, `sc`, `c`      | 2 行 (c003: 70, c008: 88)     |
+| **题 9**  | 选修数据库但成绩为空的学生   | `s`, `sc`, `c`      | 2 行 (李勇, 李华)             |
+| **题 10** | 既选 c001 又选 c002 的学生   | `t_sc`              | 1 行 (2012001)                |
+| **题 11** | 李平选课门数与平均分         | `s`, `sc`           | 1 行 (2 门, 79.0 分)          |
+| **题 12** | 年龄大于李平的学生           | `t_student`         | 7 行                          |
+| **题 13** | 各专业人数统计               | `t_student`         | 分组统计 (含 NULL 组)         |
+| **题 14** | 选课人数超过 5 人的课程      | `c`, `sc`           | 2 行 (c003, c008)             |
+| **题 15** | 未选修数据库的学生           | `s`, `sc`, `c`      | 8 行                          |
+
+#### 全库成果导出：生成 `Dumpteachingdb.sql`
+
+在**系统终端命令行**中运行以下命令，将当前完成所有增删改与验证的数据库完整导出：
+
+```bash
+# 【系统终端执行】将个人数据库完整导出为纯文本 SQL 文件
+mysqldump -u root -p teachingdb_chen > Dumpteachingdb.sql
+```
+
+> [!IMPORTANT]
+> **归档提示**：请妥善保存此 `Dumpteachingdb.sql` 文件。它不仅是实验一的交付物，也是后续进行【实验三：MySQL 数据库管理】中数据容灾恢复与跨库迁移的上机输入文件！
+
+---
+
+## 五、关系代数（Relational Algebra）与机考表达
+
+机考规定：**由于机考输入所限，关系代数题用文字清晰描述操作过程与条件即可**。必须说明：**参与的关系、连接依据、选择条件和投影属性**。
+
+### 1. 核心代数运算符号与含义
+
+- **选择（$\sigma_{\text{condition}}(R)$）**：从关系 $R$ 中选取满足逻辑条件的**元组行**（对应 `WHERE`）。
+- **投影（$\pi_{\text{attrs}}(R)$）**：从关系 $R$ 中挑选指定**列**，并自动消除重复行（对应 `SELECT DISTINCT`）。
+- **连接（$R \bowtie_{\text{condition}} S$）**：选取笛卡尔积中满足连接条件的元组。若连接属性名相同且自动去除重复列，称为**自然连接（Natural Join）**。
+- **笛卡尔积（$R \times S$）**：若 $R$ 有 $n$ 列 $k_1$ 行，$S$ 有 $m$ 列 $k_2$ 行，则 $R \times S$ 具有 **$n+m$ 列** 和 **$k_1 \times k_2$ 行**。
+- **集合运算（并 $\cup$、交 $\cap$、差 $-$）**：参与运算的关系必须具有相同的属性数目和兼容域（属性类型相同）。
+
+### 2. 机考标准文字表达规范示范
+
+**题目**：查询选修了“数据库”课程的学生学号和姓名，写出关系代数表达式及文字描述。
+
+- **代数式**：
+  $$\pi_{sid, sname}(\sigma_{cname=\text{'数据库'}}(t\_student \bowtie t\_student\_course \bowtie t\_course))$$
+- **机考文字作答标准规范**：
+  1. **第一步（连接）**：将学生表（`t_student`）、选课表（`t_student_course`）和课程表（`t_course`）按主外键关系 `t_student.sid = t_student_course.sid` 以及 `t_student_course.cid = t_course.cid` 做等值连接。
+  2. **第二步（选择）**：在连接结果中施加选择操作，筛选条件为 `cname = '数据库'`。
+  3. **第三步（投影）**：对筛选后的元组进行投影操作，输出学号（`sid`）和姓名（`sname`）两列。
+
+---
+
+## 阶段达标自测（Gate 2 检查点）
+
+<Quiz
+  question="关于查询'没有选修任何课程的学生学号'，下面哪种 SQL 语句是绝对错误的？"
+  options={[
+    "A SELECT sid FROM t_student WHERE sid NOT IN (SELECT sid FROM t_student_course);",
+    "B SELECT s.sid FROM t_student s LEFT JOIN t_student_course sc ON s.sid = sc.sid WHERE sc.cid IS NULL;",
+    "C SELECT s.sid FROM t_student s JOIN t_student_course sc ON s.sid = sc.sid WHERE sc.cid IS NULL;",
+    "D SELECT sid FROM t_student s WHERE NOT EXISTS (SELECT 1 FROM t_student_course sc WHERE sc.sid = s.sid);",
+  ]}
+  answer="SELECT s.sid FROM t_student s JOIN t_student_course sc ON s.sid = sc.sid WHERE sc.cid IS NULL;"
+  explanation="选项 C 使用了 INNER JOIN（内连接）。内连接本身就要求 sc.sid = s.sid 必须在两边都存在，没有选课的学生根本进不了连接结果集；再加 WHERE sc.cid IS NULL 更是自相矛盾，结果集永远恒为空集！必须使用 LEFT JOIN 配合 IS NULL（选项 B）或 NOT IN / NOT EXISTS（选项 A、D）。"
+/>

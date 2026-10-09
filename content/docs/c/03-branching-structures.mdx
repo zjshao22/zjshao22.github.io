@@ -1,0 +1,286 @@
+---
+title: 分支结构与条件控制
+description: if 单分支/双分支/多分支、两数交换经典模型、成绩五级制等级判定、异常输入防御与 switch-case 防穿透机制
+---
+
+# 分支结构与条件控制
+
+在现实生活与软件开发中，程序的执行不可能总是一条道走到黑。我们需要根据不同的输入和状态，选择不同的分支路径执行——这就是**分支（选择）控制结构**。
+
+本节重点剖析单分支、双分支与多分支阶梯结构，掌握两数交换经典算法，并通过实战案例精讲成绩五级制等级判定、异常输入防御机制以及 switch-case 的穿透特性。
+
+---
+
+## 一、逻辑真假与 if 分支结构
+
+在 C 语言中，判断条件是否成立遵循一个基本铁律：
+
+- **数值为 0 表示“假”（False）**。
+- **任何非 0 数值均表示“真”（True）**（无论是正数 1、100 还是负数 -5，只要不等于 0，均被视为真）。
+
+### 1. if 单分支与两数排序交换算法
+
+语法格式：
+
+```c
+if (条件表达式) {
+    语句块;
+}
+```
+
+#### 经典算法：引入临时变量的两数互换
+
+如果要将两个变量 $a$ 和 $b$ 按照从大到小的顺序排列，我们常使用“借空杯子”原理：
+
+```c
+int a = 3, b = 7, temp;
+
+if (a < b) {
+    temp = a; // 第一步：把 a 的水倒进临时空杯 temp
+    a = b;    // 第二步：把 b 的水倒进 a
+    b = temp; // 第三步：把 temp 中原 a 的水倒进 b
+}
+// 此时 a 必然大于等于 b
+```
+
+<Quiz
+  question={`设有变量定义 int a = 5, b = 8, t;，若执行条件语句 if (a &lt; b) { t = a; a = b; b = t; }，则执行后 a 和 b 的值分别是（    ）。`}
+  options={[
+    "A a = 5, b = 8",
+    "B a = 8, b = 5",
+    "C a = 8, b = 8",
+    "D a = 5, b = 5",
+  ]}
+  answer="a = 8, b = 5"
+  explanation={`因为 5 &lt; 8 条件成立，进入分支体执行三步交换逻辑：t 保存 5，a 被赋值为 8，b 获得 t 的原值 5。完成变量值的互相交换，最终 a = 8, b = 5。`}
+/>
+
+---
+
+## 二、if-else 双分支与悬空 else 匹配规则
+
+### 1. if-else 双分支
+
+```c
+if (条件表达式) {
+    // 条件为真时执行
+} else {
+    // 条件为假时执行
+}
+```
+
+### 2. 悬空 else 配对铁律
+
+当多个 `if` 和 `else` 嵌套在一起且未加花括号时，C 语言有明确的语法绑定规定：
+
+> [!IMPORTANT] 悬空 else 配对准则
+> **C 语言规定：`else` 总是与它前面【离它最近的且尚未与其他 else 配对的 if】配对！** 绝不看代码的排版缩进！
+
+看下面的易错代码：
+
+```c
+int x = 1, y = 0;
+if (x > 0)
+    if (y > 0)
+        printf("A");
+else
+    printf("B");
+```
+
+根据最近匹配原则，这里的 `else` 实际上是与内层的 `if (y > 0)` 配对的！因为 $x > 0$ 为真但 $y > 0$ 为假，程序最终会打印 `"B"`。
+**强烈建议**：无论分支体有几条语句，**始终显式书写 `{}` 大括号**，彻底消灭歧义。
+
+---
+
+## 三、多分支阶梯结构与成绩等级判定（if 语句实现）
+
+在处理多个区间段判定时，采用 `if - else if - ... - else` 阶梯结构最为清晰：
+
+```c
+if (条件1) {
+    语句1;
+} else if (条件2) {
+    语句2;
+} else {
+    默认语句;
+}
+```
+
+### 实战任务剖析：成绩五级制转换与输入边界防御
+
+**任务描述**：给出百分制浮点成绩，输出等级 A、B、C、D、E：
+
+- $\ge 90$ 分为 **A**
+- $[80, 90)$ 分为 **B**
+- $[70, 80)$ 分为 **C**
+- $[60, 70)$ 分为 **D**
+- $&lt; 60$ 分为 **E**
+- **异常输入防御**：若输入分数为负数（如 -70）或大于 100，提示“输入数据错误!”，不给出等级。
+
+### 核心实现代码（if-else 多分支版）
+
+```c
+#include <stdio.h>
+
+int main()
+{
+    float score;  // score 为分数
+    char grade;   // grade 为等级
+
+    printf("请输入学生成绩:");
+    scanf("%f", &score); // 必须带取地址符 &
+
+    if (score > 100 || score < 0) // 数据异常防御
+        grade = '#';
+    else if (score >= 90)         // 90分及以上
+        grade = 'A';
+    else if (score >= 80 && score < 90)
+        grade = 'B';
+    else if (score >= 70 && score < 80)
+        grade = 'C';
+    else if (score >= 60 && score < 70) // 60至70分
+        grade = 'D';
+    else if (score >= 0 && score < 60)  // 0至60分
+        grade = 'E';
+    else
+        grade = '#';
+
+    if (grade == '#') // 识别错误标记
+        printf("输入数据错误!\n");
+    else
+        printf("score=%.1f,grade=%c\n", score, grade);
+
+    return 0;
+}
+```
+
+<Quiz
+  question="在 C 语言中，若想正确表达数学关系“变量 score 在 80 到 90 之间（含 80，不含 90）”，正确的条件表达式是（    ）。"
+  options={[
+    "A 80 &lt;= score &lt; 90",
+    "B score >= 80 || score &lt; 90",
+    "C score >= 80 && score &lt; 90",
+    "D 80 &lt;= score AND score &lt; 90",
+  ]}
+  answer={`score >= 80 && score &lt; 90`}
+  explanation={`在 C 语言中，数学连续不等式 80 &lt;= score &lt; 90 会被从左至右计算：先算出 (80 &lt;= score) 的真假值 1 或 0，再去与 90 比较，逻辑完全错误。必须使用逻辑与运算符 && 连接两个独立关系表达式：score >= 80 && score &lt; 90。`}
+/>
+
+---
+
+## 四、switch-case 多分支与 break 防穿透机制
+
+当多分支判断是基于**某一个整型或字符型表达式的离散等值比较**时，使用 `switch-case` 语句比冗长的 `if-else` 结构更加优雅清晰。
+
+### 1. switch-case 的语法结构
+
+```c
+switch (整型表达式) {
+    case 常量表达式1:
+        语句块1;
+        break; // 跳出 switch
+    case 常量表达式2:
+        语句块2;
+        break;
+    ...
+    default:
+        默认处理语句;
+        break;
+}
+```
+
+### 2. switch 的四大刚性规则
+
+1. **表达式类型限制**：`switch(...)` 括号中的表达式必须是**整型（如 `int`, `char`, `short`）**，**绝不能使用浮点型（`float`, `double`）**！
+2. **case 标号限制**：`case` 后面必须跟着一个**常量或常量表达式**（如 `case 1:` 或 `case 'A':`），不能是包含变量的表达式（如 `case x:` 严重报错）。
+3. **标号唯一性**：同一个 switch 内各个 case 的常量值不能重复。
+4. **break 的穿透效应（Fall-through）**：
+   - 如果某个 case 分支执行完毕后**没有写 `break;`**，程序不会退出，而是会**毫无阻拦地顺次穿透执行下一个 case 的所有代码**，直到遇到 break 或整个 switch 结束为止！
+
+<Quiz
+  question={`执行下列代码段后，控制台屏幕上输出的结果是（    ）：
+int x = 2;
+switch (x) {
+    case 1: printf("A");
+    case 2: printf("B");
+    case 3: printf("C"); break;
+    default: printf("D");
+}`}
+  options={["A B", "B BC", "C BCD", "D C"]}
+  answer="BC"
+  explanation="x 值为 2，直接匹配进入 case 2 打印出 'B'。因为 case 2 末尾缺少 break; 语句，发生 case 穿透，紧接着顺序执行 case 3 打印出 'C'，遇到 break 后才退出 switch。最终输出 BC。"
+/>
+
+---
+
+## 五、switch-case 离散档位转换与穿透合并巧用
+
+在处理百分制分数时，浮点型分数 `score` 无法直接放进 `switch`。但我们可以通过数学除法将连续区间转化为离散档位：
+$$\text{temp} = \lfloor \text{score} / 10 \rfloor$$
+
+- 100 分对应档位 10，90~99 分对应档位 9 $\implies$ 均评为 A！
+- 80~89 分对应档位 8 $\implies$ 评为 B
+- 70~79 分对应档位 7 $\implies$ 评为 C
+- 60~69 分对应档位 6 $\implies$ 评为 D
+- 0~59 分对应档位 5, 4, 3, 2, 1, 0 $\implies$ **利用无 break 穿透特性**，全部归流评为 E！
+
+### 核心实现代码（switch-case 穿透合并版）
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+    float score;  // score 为分数
+    char grade;   // grade 为等级
+    int temp;
+
+    printf("请输入学生成绩:");
+    scanf("%f", &score);
+
+    // 异常数据校验与直接退出
+    if (score < 0 || score > 100)
+    {
+        printf("输入数据错误!\n");
+        exit(1); // 终止程序
+    }
+
+    // 强制转换为整型并除以 10 获取十进制档位 (0~10)
+    temp = (int)(score / 10);
+
+    // 以 temp 作为 switch 判定依据
+    switch (temp)
+    {
+    case 10:
+    case 9:
+        grade = 'A'; break; // 10 与 9 穿透合并评 A
+    case 8:
+        grade = 'B'; break;
+    case 7:
+        grade = 'C'; break;
+    case 6:
+        grade = 'D'; break;
+    case 5:
+    case 4:                 // 5 到 0 连续穿透评 E
+    case 3:
+    case 2:
+    case 1:
+    case 0:
+        grade = 'E'; break;
+    }
+
+    printf("score=%.1f,grade=%c\n", score, grade);
+    return 0;
+}
+```
+
+---
+
+## 本节小结与核心要点
+
+1. **真假数值**：0 表示假，非 0 表示真；关系运算结果用 1 和 0 表示。
+2. **不等式书写**：不可写 `80 &lt;= x &lt; 90`，必须用逻辑与 `x >= 80 && x &lt; 90`。
+3. **两数交换模板**：`temp = a; a = b; b = temp;`。
+4. **else 匹配原则**：无视代码缩进，始终与上方最近未配对的 `if` 结合。
+5. **switch 核心限制**：表达式与 case 标号必须为整型/字符型常量，穿透机制需谨防遗漏 `break`。

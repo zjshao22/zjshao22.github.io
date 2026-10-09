@@ -1,0 +1,214 @@
+---
+title: 数据库应用开发与系统集成
+description: 外部应用架构、参数化防注入、用户身份映射、权限范围数据隔离与全栈工程落地
+---
+
+# 数据库应用开发与系统集成
+
+脱离具体应用程序的数据库是静态的“数据仓库”；只有与业务应用层深度集成，才能真正释放数据的业务价值。
+
+本节我们将深入剖析应用与数据库的通信协议与驱动层，掌握参数化预编译查询与安全防注入，设计身份认证与**严格的业务数据范围隔离**，并提供一套可直接运行的最小应用工程骨架。
+
+---
+
+## 一、应用与数据库通信架构
+
+<AppArchitectureFigure />
+
+外部程序访问 MySQL 时，绝不是由前端页面直接连数据库，而是采用经典的三层分工：
+
+1. **展示层（UI / Web / 客户端）**：负责收集用户输入的账号、密码、学号、成绩，渲染列表表格与操作反馈。
+2. **应用业务层（Application Server）**：维护会话状态（记录当前登录的教师工号 `current_teacher_id`），执行参数化校验，构造并执行业务 SQL。
+3. **数据库存储层（MySQL）**：执行 SQL，维护外键参照约束与 ACID 事务，返回结果集或受影响行数。
+
+---
+
+## 二、安全红线：参数化查询（Prepared Statement）与防注入
+
+在构造动态 SQL 时，初学者最容易犯的错误是**字符串直接拼接**：
+
+```sql
+-- 致命危险反例：字符串拼接构造 SQL
+SELECT * FROM t_teacher WHERE tid = '输入工号' AND password = '输入密码';
+```
+
+> 如果攻击者在密码框输入 `' OR '1'='1`，SQL 就会变成 `... WHERE tid = 't001' AND password = '' OR '1'='1'`，导致认证逻辑被彻底绕过！这就是臭名昭著的 **SQL 注入漏洞**。
+
+### 标准解决方案：参数化预编译占位符（`?`）
+
+所有语言的现代数据库驱动（Node.js `mysql2`、Python `pymysql/sqlite3`、Java `PreparedStatement`）均支持参数化查询。SQL 结构预先发送给 MySQL 编译，输入参数仅作为纯数据传递，**从语法层面彻底消除了 SQL 注入风险**：
+
+```javascript
+// Node.js mysql2 示范：永远使用占位符 ?
+const [rows] = await db.execute(
+  "SELECT * FROM t_teacher WHERE tid = ? AND password = ?",
+  [inputTid, inputPassword],
+);
+```
+
+---
+
+## 三、【实验四 完整实战】学生成绩管理系统业务设计与界面
+
+实验四要求综合运用四张业务表（`t_student`, `t_teacher`, `t_course`, `t_student_course`），实现一个**面向任课教师的“学生成绩管理系统”**。
+
+系统运行界面如下所示：
+
+<AppGradeSystemFigure />
+
+以下是 5 项核心业务流程对应的严格 SQL 逻辑与安全控制：
+
+### 1. 登录与身份映射
+
+- **认证规则**：教师输入工号（如 `t001`）与密码。
+- **状态维持**：认证通过后，将该工号存入会话（Session / Token），作为后续所有请求的强制上下文。
+
+```sql
+-- 依据工号查找教师记录与凭证
+SELECT tid, tname, prof FROM t_teacher WHERE tid = ?;
+```
+
+### 2. 查看所承担课程的学生选课情况（核心隔离控制）
+
+- **数据范围隔离铁律**：李明老师（`t001`）登录后，**只能看到自己主讲的课程（如数据库 c001、软件测试 c003）以及选修了这些课程的学生**；绝对不允许跨权看到刘红老师（`t005`）的数据！
+
+```sql
+-- 查询当前登录教师所教课程的学生选课清单
+SELECT
+  c.cid,
+  c.cname,
+  s.sid,
+  s.sname,
+  s.sex,
+  s.age,
+  s.major,
+  sc.score
+FROM t_course c
+JOIN t_student_course sc ON c.cid = sc.cid
+JOIN t_student s ON sc.sid = s.sid
+WHERE c.tid = ?
+ORDER BY c.cid, s.sid;
+```
+
+### 3. 添加选课记录
+
+- **业务前置检查**：必须校验该课程确实是当前教师所承担的课程，防止教师恶意为他人的课程加人。
+
+```sql
+-- 步骤 A：鉴权（确保 cid 属于当前登录教师）
+SELECT 1 FROM t_course WHERE cid = ? AND tid = ?;
+
+-- 步骤 B：插入选课记录（初始成绩可为 NULL）
+INSERT INTO t_student_course (sid, cid, score) VALUES (?, ?, ?);
+```
+
+### 4. 删除选课记录
+
+- **安全约束**：删除操作不仅限定 `sid` 和 `cid`，还必须联查或限定该课程归属于当前教师。
+
+```sql
+-- 删除指定学生在本人课程中的选课
+DELETE sc FROM t_student_course sc
+JOIN t_course c ON sc.cid = c.cid
+WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?;
+```
+
+### 5. 成绩录入与修改
+
+- 录入成绩：针对已有选课但 `score IS NULL` 的记录登分；修改成绩：修正已有的登分。两者均对应更新语句：
+
+```sql
+-- 修改/录入成绩（包含合法范围 CHECK 检查 0~100）
+UPDATE t_student_course sc
+JOIN t_course c ON sc.cid = c.cid
+SET sc.score = ?
+WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?;
+```
+
+---
+
+## 四、最小可运行项目骨架（以 Node.js / Express 为例）
+
+针对没有深厚前端工程基础的学生，这里提供一个仅需单个文件即可跑通完整实验四的最小服务代码骨架：
+
+```javascript
+// server.mjs - 最小可运行教师成绩管理服务
+import express from "express";
+import mysql from "mysql2/promise";
+
+const app = express();
+app.use(express.json());
+app.use(express.static("public")); // 静态前端页面
+
+// 1. 创建数据库连接池
+const pool = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "your_password",
+  database: "teachingdb_chen",
+  waitForConnections: true,
+  connectionLimit: 10,
+});
+
+// 2. 教师登录接口
+app.post("/api/login", async (req, res) => {
+  const { tid } = req.body;
+  const [rows] = await pool.execute(
+    "SELECT tid, tname, age, title FROM t_teacher WHERE tid = ?",
+    [tid],
+  );
+  if (rows.length === 0)
+    return res.status(401).json({ error: "教师工号不存在" });
+  res.json({ teacher: rows[0] });
+});
+
+// 3. 查看本人承担课程的选课与成绩
+app.get("/api/scores", async (req, res) => {
+  const tid = req.headers["x-teacher-id"]; // 从请求头中提取教师身份
+  const sql = `
+    SELECT c.cid, c.cname, s.sid, s.sname, sc.score 
+    FROM t_course c
+    JOIN t_student_course sc ON c.cid = sc.cid
+    JOIN t_student s ON sc.sid = s.sid
+    WHERE c.tid = ?
+    ORDER BY c.cid, s.sid`;
+  const [rows] = await pool.execute(sql, [tid]);
+  res.json(rows);
+});
+
+// 4. 录入/修改成绩接口
+app.post("/api/update-score", async (req, res) => {
+  const tid = req.headers["x-teacher-id"];
+  const { sid, cid, score } = req.body;
+
+  if (score < 0 || score > 100) {
+    return res.status(400).json({ error: "成绩必须在 0 到 100 分之间" });
+  }
+
+  const sql = `
+    UPDATE t_student_course sc
+    JOIN t_course c ON sc.cid = c.cid
+    SET sc.score = ?
+    WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`;
+  const [result] = await pool.execute(sql, [score, sid, cid, tid]);
+  if (result.affectedRows === 0) {
+    return res.status(403).json({ error: "无权操作此课程或记录不存在" });
+  }
+  res.json({ success: true });
+});
+
+app.listen(3000, () =>
+  console.log("成绩管理系统已运行于 http://localhost:3000"),
+);
+```
+
+---
+
+## 五、实验四现场答辩与验收准备清单
+
+现场验收不仅看系统能否运行，更侧重考察个人对底层数据库交互的理解。教师现场将随机抽取以下任务进行现场问答：
+
+1. **现场切换教师**：先以李明（`t001`）登录，展示课程 c001、c003；注销后以陈军（`t003`）登录，检查界面是否仅显示大学英语（`c002`），证明数据范围隔离机制生效。
+2. **非法输入拦截**：在成绩输入框输入 `120` 或 `-5`，检查系统是前端校验还是捕获了 MySQL `CHECK` 约束异常。
+3. **外键约束联动**：尝试为一个不存在的学号添加选课，观察系统控制台捕获的 MySQL 外键报错信息并向考官解释。
+4. **代码讲解**：指明任课教师限定条件 `WHERE c.tid = ?` 位于代码的哪一行，说明占位符的防注入机制。

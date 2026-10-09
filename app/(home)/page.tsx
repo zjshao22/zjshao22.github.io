@@ -1,7 +1,33 @@
 import Link from "next/link";
-import { ArrowRight, BrainCircuit, Globe2, Presentation } from "lucide-react";
+import {
+  ArrowRight,
+  BrainCircuit,
+  Database,
+  Globe2,
+  Presentation,
+  Terminal,
+} from "lucide-react";
 
 const courses = [
+  {
+    title: "C 语言程序设计",
+    description:
+      "从编译执行、内存模型、控制结构到数组指针、结构体与文件持久化。",
+    href: "/docs/c",
+    lesson: "/docs/c/00-intro-and-compilation",
+    count: "12 节课程 · 2 个实验",
+    Icon: Terminal,
+    tone: "border-sky-700/20 bg-[#edf5f8] text-sky-950 dark:border-sky-200/20 dark:bg-[#152336] dark:text-sky-50",
+  },
+  {
+    title: "数据库原理及应用",
+    description: "从关系模型、SQL查询到ER规范化设计、MySQL运维与成绩系统开发。",
+    href: "/docs/database",
+    lesson: "/docs/database/00-intro-and-environment",
+    count: "9 节课程 · 4 个实验",
+    Icon: Database,
+    tone: "border-indigo-700/20 bg-[#edf0f8] text-indigo-950 dark:border-indigo-200/20 dark:bg-[#1a2035] dark:text-indigo-50",
+  },
   {
     title: "计算机网络",
     description: "从校园网、班级群和课程平台出发，理解数据怎样穿过网络。",

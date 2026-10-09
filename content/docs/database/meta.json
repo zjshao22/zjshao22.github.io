@@ -1,0 +1,17 @@
+{
+  "title": "数据库原理及应用",
+  "icon": "Database",
+  "description": "从关系模型、SQL 查询到 ER 设计、数据库管理与系统开发",
+  "pages": [
+    "00-intro-and-environment",
+    "01-relational-tables-and-crud",
+    "02-single-table-queries",
+    "03-multi-table-and-aggregation",
+    "04-er-modeling-and-normalization",
+    "05-views-and-procedures",
+    "06-admin-backup-and-security",
+    "07-application-integration",
+    "08-exam-prep-and-migration",
+    "09-experiments"
+  ]
+}

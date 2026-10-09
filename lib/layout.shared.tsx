@@ -5,6 +5,8 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: { title: appName },
     links: [
+      { text: "C 语言", url: "/docs/c" },
+      { text: "数据库原理", url: "/docs/database" },
       { text: "计算机网络", url: "/docs/network" },
       { text: "人工智能", url: "/docs/ai" },
     ],

@@ -21,7 +21,7 @@ description: 关系数据模型、完整性约束、四表结构 DDL 定义、�
 
 - 如果放在**学生表**：一名学生会选多门课，难道要在学生表中预留 `score1, score2, score3...` 吗？这不仅限制了选课门数，更破坏了第 1 范式的原子性与结构稳定性。
 - 如果放在**课程表**：一门课程有几十名学生选修，同样无法用单行记录容纳不同学生的成绩。
-- **正解**：“选课”是学生实体与课程实体之间的**多对多联系（M:N）**。“成绩（`score`）”既不属于单纯的学生，也不属于单纯的课程，而是**学生在某门特定课程上的评价属性**。因此必须设立独立的**联系表（`t_student_course`）**来承载这一关联。
+- **正解**：“选课”是学生实体与课程实体之间的**多对多联系（M:N）**。“成绩（`score`）”既不属于单纯的学生，也不属于单纯的课程，而是**学生在某门特定课程上的评价属性**。因此必须设立独立的**联系表（`t_student_course`）** 来承载这一关联。
 
 ### 2. 为什么选课表需要联合主键（Composite Primary Key）？
 
@@ -135,12 +135,14 @@ CREATE TABLE IF NOT EXISTS t_student_course (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-> [!TIP]
-> **外键级联选项解析**
->
-> - `ON DELETE RESTRICT`（或 `NO ACTION`）：当尝试删除父表行时，如果子表有引用则**拒绝删除**（保护课程不被误删）。
-> - `ON DELETE CASCADE`：当父表行被删除时，子表中所有引用它的行**自动跟随删除**（例如学生退学注销学号，其历史选课记录一并清除）。
-> - `ON UPDATE CASCADE`：父表主键值若发生更新，子表外键**自动同步变动**。
+<Callout type="idea" title="外键级联选项解析">
+  - `ON DELETE RESTRICT`（或 `NO
+  ACTION`）：当尝试删除父表行时，如果子表有引用则**拒绝删除**（保护课程不被误删）。
+  - `ON DELETE
+  CASCADE`：当父表行被删除时，子表中所有引用它的行**自动跟随删除**（例如学生退学注销学号，其历史选课记录一并清除）。
+  - `ON UPDATE CASCADE`：父表主键值若发生更新，子表外键**自动同步变动**。
+
+</Callout>
 
 ---
 
@@ -223,9 +225,14 @@ WHERE tid = 't001';
 SELECT * FROM t_teacher WHERE tid = 't001';
 ```
 
-> [!WARNING]
-> **生产安全警示：不带 WHERE 条件的 UPDATE / DELETE**
-> 如果执行 `DELETE FROM t_course;` 或 `UPDATE t_teacher SET title = '教授';` 时遗漏了 `WHERE` 条件，整个表的所有数据行都将被删除或修改！MySQL Workbench 默认启用了 Safe Updates 模式，禁止执行无条件的全局修改。在正式编写 SQL 时，请始终先用 `SELECT * FROM ... WHERE ...` 确认命中范围，再写 `UPDATE/DELETE`！
+<Callout type="warn" title="生产安全警示：不带 WHERE 条件的 UPDATE / DELETE">
+  如果执行 `DELETE FROM t_course;` 或 `UPDATE t_teacher SET title = '教授';`
+  时遗漏了 `WHERE` 条件，整个表的所有数据行都将被删除或修改！MySQL Workbench
+  默认启用了 Safe Updates 模式，禁止执行无条件的全局修改。在正式编写 SQL
+  时，请始终先用 `SELECT * FROM ... WHERE ...` 确认命中范围，再写
+  `UPDATE/DELETE`！
+
+</Callout>
 
 ---
 

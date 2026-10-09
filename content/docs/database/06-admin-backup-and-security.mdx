@@ -63,10 +63,16 @@ mysql -u root -p teachingdb2 < Dump_st_co.sql
 mysql -u root -p teachingdb2 -e "SHOW TABLES; SELECT COUNT(*) FROM t_student; SELECT COUNT(*) FROM t_course;"
 ```
 
-> [!IMPORTANT]
-> **外键依赖顺序陷阱（课程设计口径统一）**
-> `t_course` 的外键 `tid` 依赖教师表 `t_teacher`。如果仅将 `t_student` 和 `t_course` 恢复到一个完全空白的库 `teachingdb2` 中，当执行到包含外键定义的 `t_course` 建表语句时，可能会因找不到被引用的 `t_teacher` 表而触发外键依赖报错！
-> **标准解决方案**：在生成导出文件时，`mysqldump` 默认会在文件头加上 `SET FOREIGN_KEY_CHECKS=0;` 临时关闭外键约束检查，在恢复完成后再恢复为 1。恢复时请确保保留该选项，或预先在目标库恢复父表。
+<Callout type="warn" title="外键依赖顺序陷阱（课程设计口径统一）">
+  `t_course` 的外键 `tid` 依赖教师表 `t_teacher`。如果仅将 `t_student` 和
+  `t_course` 恢复到一个完全空白的库 `teachingdb2` 中，当执行到包含外键定义的
+  `t_course` 建表语句时，可能会因找不到被引用的 `t_teacher`
+  表而触发外键依赖报错！ **标准解决方案**：在生成导出文件时，`mysqldump`
+  默认会在文件头加上 `SET FOREIGN_KEY_CHECKS=0;`
+  临时关闭外键约束检查，在恢复完成后再恢复为
+  1。恢复时请确保保留该选项，或预先在目标库恢复父表。
+
+</Callout>
 
 ### 3. 整库备份与归档（留存 `Dumpteachingdb.sql`）
 
@@ -145,13 +151,14 @@ DELETE FROM teachingdb2.t_student WHERE sid = '2012001';
 -- ERROR 1142 (42000): DELETE command denied to user 'tuser'@'localhost' for table 't_student'
 ```
 
-> [!TIP]
-> **实验三验收要点**
-> 实验三验收时，教师会重点检查：
->
-> 1. `Dump_sc.sql` 与 `Dump_st_co.sql` 文件的完整性；
-> 2. `teachingdb2` 中恢复的表行数是否与源库一致；
-> 3. 以 `tuser` 登录后，执行 `SELECT * FROM teachingdb2.t_course;` 是否成功被 MySQL 安全子系统拦截（呈现 `ERROR 1142`）。
+<Callout type="idea" title="实验三验收要点">
+实验三验收时，教师会重点检查：
+
+1. `Dump_sc.sql` 与 `Dump_st_co.sql` 文件的完整性；
+2. `teachingdb2` 中恢复的表行数是否与源库一致；
+3. 以 `tuser` 登录后，执行 `SELECT * FROM teachingdb2.t_course;` 是否成功被 MySQL 安全子系统拦截（呈现 `ERROR 1142`）。
+
+</Callout>
 
 ---
 
@@ -168,9 +175,9 @@ DELETE FROM teachingdb2.t_student WHERE sid = '2012001';
 
 ### 2. 并发操作引发的三大经典问题
 
-1. **脏读（Dirty Read）**：事务 A 读取到了事务 B **尚未提交**的数据。若事务 B 随后回滚，A 读到的数据即为无效的“脏数据”。
-2. **不可重复读（Non-repeatable Read）**：事务 A 读取某行后，事务 B **修改或删除了该行并提交**；事务 A 再次读取该行，发现前后数值不一致。
-3. **幻读（Phantom Read）**：事务 A 按条件读取某范围的行后，事务 B **插入了符合该条件的新行并提交**；事务 A 再次读取该范围，发现凭空多出了新行（如同出现幻觉）。
+1. **脏读（Dirty Read）**：事务 A 读取到了事务 B**尚未提交**的数据。若事务 B 随后回滚，A 读到的数据即为无效的“脏数据”。
+2. **不可重复读（Non-repeatable Read）**：事务 A 读取某行后，事务 B**修改或删除了该行并提交**；事务 A 再次读取该行，发现前后数值不一致。
+3. **幻读（Phantom Read）**：事务 A 按条件读取某范围的行后，事务 B**插入了符合该条件的新行并提交**；事务 A 再次读取该范围，发现凭空多出了新行（如同出现幻觉）。
 
 ### 3. 四大隔离级别标准对照
 

@@ -134,11 +134,11 @@ int main()
 
 int main()
 {
-    char c;
+    int c; // 必须使用 int 接收 getchar() 返回值以安全支持 EOF
     int letters = 0, spaces = 0, digits = 0, others = 0;
 
     printf("请输入一行字符:\n");
-    while ((c = getchar()) != '\n')
+    while ((c = getchar()) != '\n' && c != EOF)
     {
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
             letters++;
@@ -353,13 +353,19 @@ int main()
     int i, num = 0, word = 0;
     char c;
 
-    fgets(string, sizeof(string), stdin); // 安全输入一行字符串
-
-    for (i = 0; (c = string[i]) != '\0'; i++) // 只要不是 '\0' 就继续循环
+    // 检查 fgets 返回值，规避直接 EOF 或读取失败导致的未定义行为
+    if (fgets(string, sizeof(string), stdin) == NULL)
     {
-        if (c == ' ')
-            word = 0;                         // 遇到空格，重置标志位为 0
-        else if (word == 0)                   // 如果不是空格且 word 为 0
+        printf("There are 0 words in this line.\n");
+        return 0;
+    }
+
+    // 遍历字符直到 '\0'；将空格、制表符及 fgets 保留的换行符 '\n' 均作为分隔符
+    for (i = 0; (c = string[i]) != '\0'; i++)
+    {
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+            word = 0;                         // 遇到空白分隔符，重置标志位为 0
+        else if (word == 0)                   // 如果不是空白分隔符且此前处于间隔区
         {
             word = 1;                         // 首次进入新单词，置 1
             num++;                            // 单词总数累加 1
@@ -505,6 +511,6 @@ int main()
 ## 核心技术与调试避坑小结
 
 1. **switch 穿透合并技巧**：若多个 case 执行相同的逻辑，可省略 break 实现穿透（如 case 10 与 case 9 共同判定为 A，case 5 到 0 连续穿透判定为 E）。
-2. **状态机标志位法**：使用 `word` 标志位可在遍历字符串时准确区分“空格间隔”与“单词首字母”，能够自然过滤首尾空格与多个连续空格。
+2. **状态机标志位法**：使用 `word` 标志位并在条件中统一判定空白字符（空格、Tab、换行符等），可在遍历字符串时准确区分“间隔区”与“单词首字符”，自然过滤首尾与连续空白。
 3. **数组传参的指针本质**：一维数组作为形参时会退化为指针（`int a[]` 实际等价于 `int *a`），无法在函数内通过 `sizeof(a)/sizeof(a[0])` 获取长度，必须显式传递数组大小参数 `n`。
 4. **值传递 vs 传地址本质**：普通变量传参只复制副本，无法修改调用方内存；利用指针传递内存首地址并配合解引用 `*`，才能实现跨函数栈帧的变量原地修改。

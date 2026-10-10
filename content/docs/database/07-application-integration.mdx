@@ -28,21 +28,22 @@ description: 外部应用架构、参数化防注入、用户身份映射、权�
 在构造动态 SQL 时，初学者最容易犯的错误是**字符串直接拼接**：
 
 ```sql
--- 致命危险反例：字符串拼接构造 SQL
-SELECT * FROM t_teacher WHERE tid = '输入工号' AND password = '输入密码';
+-- 致命危险反例：字符串拼接构造 SQL（此处以常规 Web 凭据表演示原理）
+-- 注：实验基线表 t_teacher 未设 password 列；生产或扩展系统中通常配合凭据表或密码列实现校验
+SELECT * FROM t_user WHERE username = '输入工号' AND password = '输入密码';
 ```
 
-> 如果攻击者在密码框输入 `' OR '1'='1`，SQL 就会变成 `... WHERE tid = 't001' AND password = '' OR '1'='1'`，导致认证逻辑被彻底绕过！这就是臭名昭著的 **SQL 注入漏洞**。
+> 如果攻击者在密码框输入 `' OR '1'='1`，SQL 就会变成 `... WHERE username = 't001' AND password = '' OR '1'='1'`，导致认证逻辑被彻底绕过！这就是臭名昭著的 **SQL 注入漏洞**。
 
 ### 标准解决方案：参数化预编译占位符（`?`）
 
 所有语言的现代数据库驱动（Node.js `mysql2`、Python `pymysql/sqlite3`、Java `PreparedStatement`）均支持参数化查询。SQL 结构预先发送给 MySQL 编译，输入参数仅作为纯数据传递，**从语法层面彻底消除了 SQL 注入风险**：
 
 ```javascript
-// Node.js mysql2 示范：永远使用占位符 ?
+// Node.js mysql2 示范：永远使用占位符 ? 传递外部输入
 const [rows] = await db.execute(
-  "SELECT * FROM t_teacher WHERE tid = ? AND password = ?",
-  [inputTid, inputPassword],
+  "SELECT * FROM t_user WHERE username = ? AND password = ?",
+  [inputUsername, inputPassword],
 );
 ```
 
@@ -60,12 +61,12 @@ const [rows] = await db.execute(
 
 ### 1. 登录与身份映射
 
-- **认证规则**：教师输入工号（如 `t001`）与密码。
-- **状态维持**：认证通过后，将该工号存入会话（Session / Token），作为后续所有请求的强制上下文。
+- **认证规则**：教师输入工号（如 `t001`）与密码（教学实验统一支持预设凭证验证，如默认口令 `123456`，或经哈希比对）。
+- **状态维持**：认证通过后，服务端生成随机安全凭证（Token / Session），后续所有请求必须携带该凭据，由服务端解析出 `current_teacher_id` 作为不可篡改的查询上下文。
 
 ```sql
--- 依据工号查找教师记录与凭证
-SELECT tid, tname, prof FROM t_teacher WHERE tid = ?;
+-- 依据工号查找教师记录（基线表包含 tid, tname, sex, age, title）
+SELECT tid, tname, age, title FROM t_teacher WHERE tid = ?;
 ```
 
 ### 2. 查看所承担课程的学生选课情况（核心隔离控制）
@@ -129,12 +130,31 @@ WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?;
 
 ## 四、最小可运行项目骨架（以 Node.js / Express 为例）
 
-针对没有深厚前端工程基础的学生，这里提供一个仅需单个文件即可跑通完整实验四的最小服务代码骨架：
+针对没有深厚全栈工程基础的学生，这里提供具备**密码校验、服务端 Session 鉴权与上下文绑定**的最小服务代码骨架。
+
+### 1. 运行环境准备与依赖安装
+
+在本地新建工程目录，初始化并安装依赖：
+
+```bash
+# 1. 创建并进入工程目录
+mkdir teacher-grade-server && cd teacher-grade-server
+
+# 2. 初始化 package.json 并声明 ES 模块类型
+npm init -y
+npm pkg set type="module"
+
+# 3. 安装 Web 框架与 MySQL 异步驱动
+npm install express mysql2
+```
+
+### 2. 服务端核心源码：`server.mjs`
 
 ```javascript
-// server.mjs - 最小可运行教师成绩管理服务
+// server.mjs - 最小可运行教师成绩管理服务（带真实 Session 鉴权与数据隔离）
 import express from "express";
 import mysql from "mysql2/promise";
+import crypto from "node:crypto";
 
 const app = express();
 app.use(express.json());
@@ -144,27 +164,64 @@ app.use(express.static("public")); // 静态前端页面
 const pool = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "your_password",
+  password: "your_password", // 请替换为您本地真实的 MySQL root 密码
   database: "teachingdb_chen",
   waitForConnections: true,
   connectionLimit: 10,
 });
 
-// 2. 教师登录接口
+// 服务端内存会话存储：Map<sessionToken, { tid, tname, title }>()
+const activeSessions = new Map();
+
+// 统一身份认证中间件：从 Authorization 头提取 Bearer Token，拒绝伪造工号
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "未提供有效凭证，请先登录系统" });
+  }
+  const token = authHeader.slice(7).trim();
+  const session = activeSessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: "会话已过期或无效，请重新登录" });
+  }
+  req.currentTeacher = session; // 注入服务端验证后的安全身份
+  next();
+}
+
+// 2. 教师登录接口（验证工号与预设口令，颁发安全 Session Token）
 app.post("/api/login", async (req, res) => {
-  const { tid } = req.body;
+  const { tid, password } = req.body;
+
+  // 凭据校验：教学实验默认口令为 123456（若扩展密码表则在此比对哈希）
+  if (!password || password !== "123456") {
+    return res.status(401).json({ error: "登录密码错误（教学系统默认密码: 123456）" });
+  }
+
   const [rows] = await pool.execute(
     "SELECT tid, tname, age, title FROM t_teacher WHERE tid = ?",
     [tid],
   );
-  if (rows.length === 0)
+  if (rows.length === 0) {
     return res.status(401).json({ error: "教师工号不存在" });
-  res.json({ teacher: rows[0] });
+  }
+
+  const teacher = rows[0];
+  const token = crypto.randomUUID();
+  activeSessions.set(token, teacher);
+
+  res.json({ token, teacher });
 });
 
-// 3. 查看本人承担课程的选课与成绩
-app.get("/api/scores", async (req, res) => {
-  const tid = req.headers["x-teacher-id"]; // 从请求头中提取教师身份
+// 3. 教师注销接口（安全销毁服务端凭证）
+app.post("/api/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7).trim();
+  activeSessions.delete(token);
+  res.json({ success: true, message: "已安全注销" });
+});
+
+// 4. 查看本人承担课程的选课与成绩（身份完全取自服务端 req.currentTeacher）
+app.get("/api/scores", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid; // 强制使用鉴权身份，杜绝客户端伪造
   const sql = `
     SELECT c.cid, c.cname, s.sid, s.sname, sc.score 
     FROM t_course c
@@ -176,9 +233,9 @@ app.get("/api/scores", async (req, res) => {
   res.json(rows);
 });
 
-// 4. 录入/修改成绩接口
-app.post("/api/update-score", async (req, res) => {
-  const tid = req.headers["x-teacher-id"];
+// 5. 录入/修改成绩接口（强制校验所操作课程属于当前教师）
+app.post("/api/update-score", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid;
   const { sid, cid, score } = req.body;
 
   if (score < 0 || score > 100) {

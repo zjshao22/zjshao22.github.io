@@ -213,8 +213,8 @@ export function CMemoryLayoutFigure() {
 export function PointerIndirectionFigure() {
   return (
     <Figure
-      title="指针变量的本质：保存另一个变量的物理内存首地址"
-      caption="变量 a 存放具体数值 42；指针变量 p 存放的是 a 的地址 0x7ffd58。对 p 进行解引用 (*p) 等同于直接读写变量 a。"
+      title="指针变量的本质：保存另一个变量在进程虚拟地址空间中的首地址"
+      caption="变量 a 存放具体数值 42；指针变量 p 存放的是 a 的内存首地址 0x7ffd58。对 p 进行解引用 (*p) 等同于直接读写变量 a。"
     >
       <div className="grid gap-6 md:grid-cols-2">
         {/* 指针变量 p */}
@@ -452,7 +452,7 @@ export function StructAlignmentFigure() {
         </div>
         <p className="text-slate-600 dark:text-slate-300">
           💡 <strong>对齐规则</strong>
-          ：结构体各成员偏移量必须为其自身大小的整数倍；结构体总大小必须为最大成员大小（此处为
+          ：在遵循自然对齐的主流 ABI 规范下，结构体各成员偏移量必须为其类型对齐值的整数倍；结构体总大小必须为最大成员对齐值（此处为
           int 的 4 字节）的整数倍。因此末尾补充 2 字节达到 12 字节。
         </p>
       </div>
@@ -516,8 +516,8 @@ export function InputBufferFigure() {
               3. 解决方案
             </div>
             <p className="mt-2 text-xs font-mono text-emerald-900 dark:text-emerald-200">
-              ① getchar(); // 吃掉回车
-              <br />② scanf(&quot; %c&quot;, &amp;ch); // 前导空格跳过空白符
+              ① getchar(); // 单次吸收紧随回车（多余字符可循环清空）
+              <br />② scanf(&quot; %c&quot;, &amp;ch); // 前导空格自动跳过空白符
             </p>
             <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               彻底杜绝后续字符输入被残留回车意外跳过的经典 Bug
@@ -537,7 +537,7 @@ export function StudyLoopFigure() {
     {
       num: "01",
       title: "精读讲义与图解",
-      desc: "建立清晰物理内存与控制流模型",
+      desc: "建立清晰进程内存与控制流模型",
       tone: "border-sky-500/30 bg-sky-500/10 text-sky-800 dark:text-sky-300",
     },
     {
@@ -563,7 +563,7 @@ export function StudyLoopFigure() {
   return (
     <Figure
       title="C 语言“理论 → 测验 → 实验 → 题库”四步闭环学习路线"
-      caption="遵循科学的递进闭环：首先理解物理内存底层机理，再通过在线测验和上机调试将语法内化为能力，最后以真实题库实现全面通关。"
+      caption="遵循科学的递进闭环：首先理解进程虚拟内存底层机理，再通过在线测验和上机调试将语法内化为能力，最后以真实题库实现全面通关。"
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((st, i) => (
@@ -672,13 +672,13 @@ export function WordStateMachineFigure() {
   return (
     <Figure
       title="字符串单词统计：基于 word 标志位的二元有限状态机"
-      caption="字符串遇到空格将 word 置 0（空格态）；从空格首次遇到非空格字符时，触发单词首字母事件（num++ 并将 word 置 1，进入单词态）。"
+      caption="遇到空白字符（空格、Tab、换行符等）将 word 置 0（间隔态）；从间隔态首次遇到单词可见字符时，触发单词首字符事件（num++ 并将 word 置 1，进入单词态）。"
     >
       <div className="grid gap-6 md:grid-cols-2 text-xs">
         <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-200 pb-2 dark:border-slate-800">
             <span className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-              状态 A：空格间隔态 (word = 0)
+              状态 A：空白间隔态 (word = 0)
             </span>
             <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               词外等待
@@ -688,14 +688,14 @@ export function WordStateMachineFigure() {
             <li className="flex items-start gap-1.5">
               <span className="font-mono text-sky-600 font-bold">•</span>
               <span>
-                <strong>遇到空格 &apos; &apos;</strong>：继续保持在状态 A (word
+                <strong>遇到空白字符（空格/Tab/换行）</strong>：继续保持在状态 A (word
                 = 0)。
               </span>
             </li>
             <li className="flex items-start gap-1.5">
               <span className="font-mono text-emerald-600 font-bold">➜</span>
               <span>
-                <strong>遇到非空格字母</strong>：发现新单词！
+                <strong>遇到单词可见字符</strong>：发现新单词！
                 <strong>num 计数加 1</strong>，跃迁至状态 B (word = 1)。
               </span>
             </li>
@@ -715,14 +715,14 @@ export function WordStateMachineFigure() {
             <li className="flex items-start gap-1.5">
               <span className="font-mono text-emerald-600 font-bold">•</span>
               <span>
-                <strong>遇到后续字母</strong>：仍属于当前单词，保持在状态
+                <strong>遇到后续可见字符</strong>：仍属于当前单词，保持在状态
                 B，不重复累加计数。
               </span>
             </li>
             <li className="flex items-start gap-1.5">
               <span className="font-mono text-sky-600 font-bold">➜</span>
               <span>
-                <strong>遇到空格 &apos; &apos;</strong>：当前单词结束，返回状态
+                <strong>遇到空白分隔符</strong>：当前单词结束，返回状态
                 A (word = 0)。
               </span>
             </li>
@@ -741,7 +741,7 @@ export function FileFunctionsTreeFigure() {
     {
       type: "字符级 I/O",
       funcs: "fgetc() / fputc()",
-      desc: "以单一字符为单位读写，读至文件末尾返回 EOF (-1)",
+      desc: "以单一字符为单位读写，读至文件末尾或出错返回宏常量 EOF (负整型)",
       badge: "单字节流",
     },
     {
@@ -759,8 +759,8 @@ export function FileFunctionsTreeFigure() {
     {
       type: "二进制数据块 I/O",
       funcs: "fread() / fwrite()",
-      desc: "将内存中的结构体或数组按字节块原样读写磁盘",
-      badge: "高效原样搬运",
+      desc: "将内存数据块或对象直接读写磁盘（需注意字节序与结构体对齐）",
+      badge: "数据块流",
     },
   ];
 

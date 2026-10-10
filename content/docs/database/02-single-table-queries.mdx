@@ -52,17 +52,19 @@ SELECT sname AS 姓名, age AS 年龄 FROM t_student WHERE sex = '女';
 - `_`（半角下划线）精确代表**单个字符**。
 - 例：`sname LIKE '李%'` 匹配所有姓李的学生（如“李平”、“李勇”、“李娜”、“李华”）；而 `sname LIKE '李_'` 仅匹配姓李且**名字只有两个字**的学生。
 
-### 4. NULL 的三值逻辑与排错
+### 4. NULL 的三值逻辑（Three-Valued Logic）与排错
 
-- 在关系数据库中，`NULL` 代表“未知”或“未录入”，它**不等于 0，也不等于空字符串 `''`**。
-- 比较运算符（`= NULL` 或 `!= NULL`）的逻辑结果永远是 `UNKNOWN`（假），无法筛出任何数据！
-- **语法铁律**：必须使用 `IS NULL` 或 `IS NOT NULL`。
+- 在关系数据库与 SQL 标准中，布尔表达式遵循三值逻辑：`TRUE`、`FALSE` 与 **`UNKNOWN`**。
+- `NULL` 代表“未知”或“未录入”，它**不等于 0，也不等于空字符串 `''`**。
+- 任何包含 `NULL` 的常规比较运算（如 `= NULL`、`!= NULL` 或 `<> '软件工程'`）求值结果都是 **`UNKNOWN`**（未知）。
+- **关键辨析**：`WHERE` 子句仅保留判定为 `TRUE` 的行（求值为 `FALSE` 和 `UNKNOWN` 的行均被过滤排除）。但请注意 `UNKNOWN` 不等于 `FALSE`：`NOT FALSE` 为 `TRUE`，而 `NOT UNKNOWN` 的结果仍然是 `UNKNOWN`！
+- **语法铁律**：测试空值必须使用专用的 `IS NULL` 或 `IS NOT NULL` 谓词。
 
 ```sql
 -- 查出专业尚未确定的学生（例如华宇）
 SELECT sid, sname FROM t_student WHERE major IS NULL;
 
--- 错误写法（永远返回空集）：
+-- 错误写法（结果为 UNKNOWN，永远返回空集）：
 -- SELECT sid, sname FROM t_student WHERE major = NULL;
 ```
 
@@ -185,7 +187,8 @@ CREATE TABLE t_sinfo AS
 SELECT sid, sname, sex
 FROM t_student;
 
--- 执行物化后的数据核验：共 12 行
+-- 执行物化后的数据核验：原始导入状态（基线 A）为 12 行；若在完成示例插入学生陈雷后（状态 B）执行则为 13 行
+-- （若重复测试提示 Table already exists，可先执行 DROP TABLE IF EXISTS t_sinfo;）
 SELECT * FROM t_sinfo;
 ```
 

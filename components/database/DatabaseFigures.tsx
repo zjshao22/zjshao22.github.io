@@ -604,7 +604,7 @@ export function WorkbenchSingleQueryFigure() {
   return (
     <Figure
       title="软件界面：MySQL Workbench 单表查询执行与结果网格 (Result Grid)"
-      caption="执行实验一查询 5：条件筛选 prof = '副教授' 且 tage BETWEEN 30 AND 35，ORDER BY tage DESC 降序排列。结果网格清晰展示 4 位符合条件的教师。"
+      caption="执行实验一查询 5：条件筛选 title = '副教授' 且 age BETWEEN 30 AND 35，ORDER BY age DESC 降序排列。结果网格清晰展示 4 位符合条件的教师。"
     >
       <div className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-[#1a1f30]">
         {/* Editor Toolbar */}
@@ -629,22 +629,22 @@ export function WorkbenchSingleQueryFigure() {
             岁之间的副教授的姓名和年龄，按年龄降序排列
           </div>
           <div className="mt-1 text-sky-300">
-            SELECT <span className="text-white">tname, tage</span>
+            SELECT <span className="text-white">tname, age</span>
           </div>
           <div className="text-sky-300">
             FROM <span className="text-white">t_teacher</span>
           </div>
           <div className="text-sky-300">
-            WHERE <span className="text-white">prof = </span>
+            WHERE <span className="text-white">title = </span>
             <span className="text-amber-300">&apos;副教授&apos;</span>
             <span className="text-sky-300"> AND </span>
-            <span className="text-white">tage BETWEEN </span>
+            <span className="text-white">age BETWEEN </span>
             <span className="text-purple-300">30</span>
             <span className="text-sky-300"> AND </span>
             <span className="text-purple-300">35</span>
           </div>
           <div className="text-sky-300">
-            ORDER BY <span className="text-white">tage DESC</span>;
+            ORDER BY <span className="text-white">age DESC</span>;
           </div>
         </div>
 
@@ -663,7 +663,7 @@ export function WorkbenchSingleQueryFigure() {
                   tname
                 </th>
                 <th className="border border-slate-200 px-3 py-1.5 text-right dark:border-slate-700">
-                  tage
+                  age
                 </th>
               </tr>
             </thead>
@@ -711,7 +711,7 @@ export function WorkbenchSingleQueryFigure() {
           </span>
           <span>14:28:10</span>
           <span className="truncate text-slate-800 dark:text-slate-200">
-            {"SELECT tname, tage FROM t_teacher WHERE prof = '副教授'..."}
+            {"SELECT tname, age FROM t_teacher WHERE title = '副教授'..."}
           </span>
           <span className="ml-auto shrink-0 font-bold text-emerald-600">
             4 row(s) returned
@@ -1222,7 +1222,7 @@ export function GateChainFigure() {
       id: "G5",
       name: "综合迁移",
       pos: "第 8 章",
-      desc: "90 分钟全真陌生场景模拟试卷",
+      desc: "综合场景演练、题型精选自测与迁移",
     },
   ];
 

@@ -65,7 +65,7 @@ description: 数据库设计生命周期、ER 建模与机考文字表达、ER �
 
 ### 规则 2：1:1 与 1:N 联系的转换
 
-- **1:1 联系**：可单独建表；但通常**将任意一方的主键作为外键放入另一方**，并合并联系属性。
+- **1:1 联系**：可单独建表；但常规工程实践中，通常**将任意一方的主键作为外键放入另一方**，并合并联系属性。**关键物理约束**：此时外键列**必须显式添加 UNIQUE（唯一）约束**，以确保不会出现多行引用同一目标行的现象（否则将退化为 1:N 联系）；若业务存在必须参与的全参与约束，外键列还应设为 `NOT NULL`。
 - **1:N 联系**：**在 N 端实体对应的关系模式中，加入 1 端实体的主键作为外键**，并将联系属性也放入 N 端。
   - 例：教师（1）与课程（N）是一对多联系。直接在 `课程` 关系中添加 `教师工号` 作为外键：`课程(课程号, 课程名, 教师工号)`。无需单独建表！
 
@@ -139,66 +139,34 @@ description: 数据库设计生命周期、ER 建模与机考文字表达、ER �
 
 ---
 
-### 可选场景库与真题 ER 模型（五选一）
+### 实验二可选业务场景库（五选一，与实验指南统一）
 
-你可以从以下五个经典业务场景中**任选一个**完成：
+你可以从以下五个与正式实验指南及原始大纲完全一致的业务场景中**任选一个**完成：
 
-#### 场景 1：运动会赛事管理系统
+#### 场景 1：教学管理系统
 
-- **业务实体**：运动员（运动员编号、姓名、性别）、裁判员（裁判员编号、姓名）、比赛（比赛编号、名称、时间）。
-- **实体联系**：裁判员与比赛存在 1:N 执裁联系；比赛与运动员存在 M:N 参赛联系，该联系拥有“成绩”属性。
+- **业务实体**：学生（学号、姓名、性别、年龄）、课程（课程号、课程名、学分）、班级（班级名、班主任）、教师（工号、姓名）。
+- **实体联系**：班级与学生存在 1:N 联系；教师与课程存在 1:N 联系；学生与课程存在 M:N 选课联系，且拥有“成绩”属性。
 
 <div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
   <div className="mb-2 text-xs font-bold text-slate-500">
-    真题 ER 图（场景 1）：运动会赛事概念模型
+    真题 ER 图（场景 1）：教学管理概念模型
   </div>
   <img
-    src="/images/database/er-question-1.png"
-    alt="运动会赛事管理系统 ER 模型图"
+    src="/images/database/er-question-5.png"
+    alt="教学管理系统 ER 模型图"
     className="mx-auto max-h-72 object-contain rounded"
   />
 </div>
 
-#### 场景 2：仓库零件管理系统
-
-- **业务实体**：仓库（仓库号、地址、电话）、零件（零件号、零件名称、规格、单价）、管理员（工号、姓名、性别）。
-- **实体联系**：仓库与管理员存在 1:N 任职联系（一个仓库有多名管理员，一名管理员仅管一个仓库）；仓库与零件存在 M:N 存放联系，该联系拥有“库存量”属性。
-
-<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-  <div className="mb-2 text-xs font-bold text-slate-500">
-    真题 ER 图（场景 2）：仓库零件管理概念模型
-  </div>
-  <img
-    src="/images/database/er-question-2.png"
-    alt="仓库零件管理系统 ER 模型图"
-    className="mx-auto max-h-72 object-contain rounded"
-  />
-</div>
-
-#### 场景 3：商业零售进销存系统
-
-- **业务实体**：商店（商店编号、商店名、地址）、商品（商品编号、商品名、规格、单价）、职工（工号、姓名、性别、业绩）。
-- **实体联系**：商店与职工存在 1:N 聘用联系（含月薪属性）；商店与商品存在 M:N 销售联系，该联系拥有“销售月度”和“月销量”两个属性。
-
-<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-  <div className="mb-2 text-xs font-bold text-slate-500">
-    真题 ER 图（场景 3）：商业零售进销存概念模型
-  </div>
-  <img
-    src="/images/database/er-question-3.png"
-    alt="商业零售进销存系统 ER 模型图"
-    className="mx-auto max-h-72 object-contain rounded"
-  />
-</div>
-
-#### 场景 4：图书借阅管理系统
+#### 场景 2：图书借阅管理系统
 
 - **业务实体**：图书（书号、书名、数量、位置）、借书人（借书证号、姓名、单位）、出版社（出版社名、地址、电话、Email）。
 - **实体联系**：出版社与图书存在 1:N 出版联系；图书与借书人存在 M:N 借阅联系，该联系拥有“借阅时间”属性。
 
 <div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
   <div className="mb-2 text-xs font-bold text-slate-500">
-    真题 ER 图（场景 4）：图书借阅管理概念模型
+    真题 ER 图（场景 2）：图书借阅管理概念模型
   </div>
   <img
     src="/images/database/er-question-4.png"
@@ -207,18 +175,66 @@ description: 数据库设计生命周期、ER 建模与机考文字表达、ER �
   />
 </div>
 
-#### 场景 5：教学管理系统
+#### 场景 3：库存零件管理系统
 
-- **业务实体**：学生（学号、姓名、性别、年龄）、课程（课程号、课程名、学分）、班级（班级名、班主任）、教师（工号、姓名）。
-- **实体联系**：班级与学生存在 1:N 联系；教师与课程存在 1:N 联系；学生与课程存在 M:N 选课联系，且拥有“成绩”属性。
+- **业务实体**：仓库（仓库号、地址、电话）、零件（零件号、零件名称、规格、单价）、管理员（工号、姓名、性别）。
+- **实体联系**：仓库与管理员存在 1:N 任职联系（一个仓库有多名管理员，一名管理员仅管一个仓库）；仓库与零件存在 M:N 存放联系，该联系拥有“库存量”属性。
 
 <div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
   <div className="mb-2 text-xs font-bold text-slate-500">
-    真题 ER 图（场景 5）：教学管理概念模型
+    真题 ER 图（场景 3）：仓库零件管理概念模型
   </div>
   <img
-    src="/images/database/er-question-5.png"
-    alt="教学管理系统 ER 模型图"
+    src="/images/database/er-question-2.png"
+    alt="仓库零件管理系统 ER 模型图"
+    className="mx-auto max-h-72 object-contain rounded"
+  />
+</div>
+
+#### 场景 4：机票订票系统
+
+- **业务实体**：航班（航班号、起飞地、目的地、起飞时间）、飞机（机号、机型、座位数）、旅客（身份证号、姓名、联系电话）。
+- **实体联系**：飞机与航班存在 1:N 执飞联系；旅客与航班存在 M:N 订票联系，包含联系属性“订票日期”、“舱位等级”、“票价”。
+
+#### 场景 5：人事管理系统
+
+- **业务实体**：部门（部门编号、部门名称、办公地点）、员工（工号、姓名、性别、入职时间）、职务（职务编号、职务名称、基本薪资）、项目（项目编号、项目名称、项目预算）。
+- **实体联系**：部门与员工存在 1:N 隶属联系；职务与员工存在 1:N 聘任联系；员工与项目存在 M:N 参与联系，该联系拥有“工作量”属性。
+
+---
+
+### 考试强化拓展场景（期末机考真题训练）
+
+以下两个经典场景常作为期末机考设计大题考查，供同学们完成实验二之余进行迁移巩固：
+
+#### 拓展场景 A：运动会赛事管理系统
+
+- **业务实体**：运动员（运动员编号、姓名、性别）、裁判员（裁判员编号、姓名）、比赛（比赛编号、名称、时间）。
+- **实体联系**：裁判员与比赛存在 1:N 执裁联系；比赛与运动员存在 M:N 参赛联系，该联系拥有“成绩”属性。
+
+<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+  <div className="mb-2 text-xs font-bold text-slate-500">
+    真题 ER 图（拓展场景 A）：运动会赛事概念模型
+  </div>
+  <img
+    src="/images/database/er-question-1.png"
+    alt="运动会赛事管理系统 ER 模型图"
+    className="mx-auto max-h-72 object-contain rounded"
+  />
+</div>
+
+#### 拓展场景 B：商业零售进销存系统
+
+- **业务实体**：商店（商店编号、商店名、地址）、商品（商品编号、商品名、规格、单价）、职工（工号、姓名、性别、业绩）。
+- **实体联系**：商店与职工存在 1:N 聘用联系（含月薪属性）；商店与商品存在 M:N 销售联系，该联系拥有“销售月度”和“月销量”两个属性。
+
+<div className="my-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+  <div className="mb-2 text-xs font-bold text-slate-500">
+    真题 ER 图（拓展场景 B）：商业零售进销存概念模型
+  </div>
+  <img
+    src="/images/database/er-question-3.png"
+    alt="商业零售进销存系统 ER 模型图"
     className="mx-auto max-h-72 object-contain rounded"
   />
 </div>
@@ -320,7 +336,7 @@ CREATE TABLE t_borrow_record (
 
 #### 5. ER 转换规则总结与心得（10 分）
 
-1. **1:1 联系**：可单独建表，但通常将其中一方的主键作为外键放入另一方，并合并联系属性。
+1. **1:1 联系**：可单独建表，但通常将其中一方的主键作为外键放入另一方（合并联系属性）；**外键列必须声明 UNIQUE 唯一约束**，以物理杜绝退化为 1:N 联系。
 2. **1:N 联系**：在 N 端实体对应的关系中，添加 1 端实体的主键作为外键，并将联系属性归入 N 端实体表中。
 3. **M:N 联系**：必须转换为独立的物理表。主键为各参与实体的主键组合（若有重复业务发生条件则加上时间等识别属性），联系属性放入该独立联系表中。外键分别引用各实体主键。
 

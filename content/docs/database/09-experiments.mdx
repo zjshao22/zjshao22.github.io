@@ -100,8 +100,10 @@ CREATE TABLE IF NOT EXISTS t_student_course (
 
 在系统终端中执行数据脚本导入：
 
+> **⚠️ 导入避坑提示（DB-05）**：`p1data.sql` 原始脚本首行通常包含 `use teachingdb_chen;`。如果学校或教师要求您导入到个人自定义数据库（如 `teachingdb_2023001`），**必须先用文本编辑器打开 `p1data.sql`，将首行的 `USE ...;` 修改为您自己的个人数据库名称或直接删除该行**；否则仅在命令行末尾指定数据库名仍会被脚本内的 `USE` 强行切回 `teachingdb_chen`。
+
 ```bash
-# 【系统终端执行】导入基线数据到个人库中
+# 【系统终端执行】导入基线数据到目标库中（确保与脚本内 USE 库名一致）
 mysql -u root -p teachingdb_chen < p1data.sql
 ```
 
@@ -117,9 +119,11 @@ UNION ALL
 SELECT 't_student_course', COUNT(*) FROM t_student_course;
 ```
 
-**标准行数基线**：`t_student`: 12 行，`t_teacher`: 10 行，`t_course`: 10 行，`t_student_course`: 24 行。
+**状态 A（原始基线行数）**：`t_student`: 12 行，`t_teacher`: 10 行，`t_course`: 10 行，`t_student_course`: 24 行。
 
 #### 4. 三道表数据插入、删除与更新（每题5分，共计15分）
+
+执行以下数据维护任务后，数据库进入**状态 B**（学生增至 13 行，课程减至 9 门）：
 
 1. **任务 1（插入个人真实信息）**：向 `t_student` 表中插入一行记录，内容为个人真实信息：
    ```sql
@@ -140,13 +144,14 @@ SELECT 't_student_course', COUNT(*) FROM t_student_course;
 
 ### 三、第二阶段：15 道综合查询实战（每题4分，共计60分）
 
-在 Workbench 中逐题执行并**截取查询结果网格图**：
+在 Workbench 中逐题执行并**截取查询结果网格图**（注意：正式查询在完成前置数据维护的**状态 B**下执行）：
 
 <WorkbenchSingleQueryFigure />
 
-- **第 1 题：根据个人学号查询个人信息**
+- **第 1 题：根据个人学号查询个人信息（查询前置任务 1 插入的本人记录）**
   ```sql
-  SELECT sid, sname, sex, age, major FROM t_student WHERE sid = '2012001';
+  -- 请使用您在任务 1 中刚插入的本人学号（示例中使用 2023001）
+  SELECT sid, sname, sex, age, major FROM t_student WHERE sid = '2023001';
   ```
 - **第 2 题：查询所有姓李的学生的学号，姓名和年龄（预期 4 行）**
   ```sql
@@ -215,13 +220,15 @@ SELECT 't_student_course', COUNT(*) FROM t_student_course;
   SELECT sid, sname, age FROM t_student
   WHERE age > (SELECT age FROM t_student WHERE sname = '李平');
   ```
-- **第 13 题：查询每个专业的学生人数，显示“专业”和“人数”两列（含 NULL 专业 1 人）**
+- **第 13 题：查询每个专业的学生人数，显示“专业”和“人数”两列**
+  > **数据状态差异**：状态 A 原始基线包含 4 个专业与 1 组 NULL；状态 B 插入陈雷后新增“计算机科学与技术：1人”，共 6 组。
   ```sql
   SELECT major AS 专业, COUNT(*) AS 人数
   FROM t_student
   GROUP BY major;
   ```
-- **第 14 题：查询选课人数超过 5 人的课程信息，要求显示课程号，课程名和选修人数（预期 2 门：c003、c008）**
+- **第 14 题：查询选课人数超过 5 人的课程信息，要求显示课程号，课程名和选修人数**
+  > **预期结果**：预期 2 门课程满足条件（`c008 计算机基础` 选修 10 人，`c003 软件测试` 选修 9 人）。
   ```sql
   SELECT c.cid, c.cname, COUNT(sc.sid) AS 选修人数
   FROM t_course c
@@ -229,7 +236,8 @@ SELECT 't_student_course', COUNT(*) FROM t_student_course;
   GROUP BY c.cid, c.cname
   HAVING COUNT(sc.sid) > 5;
   ```
-- **第 15 题：查询没有选修数据库课程的学生的学号（预期 8 人）**
+- **第 15 题：查询没有选修数据库课程的学生的学号**
+  > **数据状态差异**：状态 A 原始基线为 8 人；状态 B 插入陈雷后（陈雷未选课），未选数据库人数变为 9 人。
   ```sql
   SELECT sid FROM t_student
   WHERE sid NOT IN (
@@ -319,8 +327,8 @@ mysqldump -u root -p teachingdb_chen > Dumpteachingdb.sql
 
 #### 场景 5：人事管理系统
 
-- **实体**：部门（部门编号、部门名称、办公地点）、员工（工号、姓名、性别、入职时间）、职务（职务编号、职务名称、基本薪资）。
-- **联系**：部门与员工（1:N 隶属）、职务与员工（1:N 聘任）、员工与项目（M:N 参与，含联系属性“工作量”）。
+- **实体**：部门（部门编号、部门名称、办公地点）、员工（工号、姓名、性别、入职时间）、职务（职务编号、职务名称、基本薪资）、项目（项目编号、项目名称、项目预算、起止日期）。
+- **联系**：部门与员工（1:N 隶属）、职务与员工（1:N 聘任）、员工与项目（M:N 参与，含联系属性“担任角色”、“工作量”）。
 
 ### 三、实验二标杆全案示范（以图书管理系统为例）
 
@@ -388,7 +396,7 @@ CREATE TABLE t_borrow_record (
 
 1. **试描述将 ER 图转换为关系模式的一般规则（5分）**：
    - **实体转换**：一个实体型转换为一个关系模式。实体的属性即为模式的属性，实体的码即为模式的主键。
-   - **1:1 联系**：可转换为一个独立模式，也可以与任意一端合并。若合并，应将另一端的主键及联系属性加入到被合并端作为外键。
+   - **1:1 联系**：可转换为一个独立模式，也可以与任意一端合并。若合并，应将另一端的主键及联系属性加入到被合并端作为外键；**特别注意：外键列必须声明 `UNIQUE` 唯一约束**，防止基数退化为 1:N；若该端为强制参与则外键加 `NOT NULL`，可选参与则允许为 `NULL`。
    - **1:N 联系**：可转换为一个独立模式，但通常合并到**N 端实体对应的关系模式**中。方法是将 1 端实体的主键及联系属性加入到 N 端模式中，作为 N 端的外键。
    - **M:N 联系**：必须转换为一个**独立的关系模式**。该模式的属性为两端实体的主键与联系本身的属性，其主键为两端实体主键组合而成的**联合主键**。
 2. **针对撰写设计文档中遇到的问题阐述心得体会（5分）**：
@@ -428,12 +436,15 @@ mysql -u root -p teachingdb_chen -e "DELETE FROM t_student_course; SELECT COUNT(
 
 # 步骤 3：利用数据导出文件还原表数据并截图核验行数
 mysql -u root -p teachingdb_chen < Dump_sc.sql
-mysql -u root -p teachingdb_chen -e "SELECT COUNT(*) FROM t_student_course;" -- 确认恢复为 24 行
+# 确认恢复为 24 行
+mysql -u root -p teachingdb_chen -e "SELECT COUNT(*) FROM t_student_course;"
 ```
 
 <TerminalBackupRestoreFigure />
 
 #### 3. 表的备份与跨库还原（15分）
+
+> **⚠️ 参照完整性与外键检查提示（DB-06）**：`t_course` 表包含外键引用父表 `t_teacher(tid)`。在跨库仅备份还原 `t_student` 和 `t_course` 两表至空库 `teachingdb2` 时，`mysqldump` 导出的脚本默认在开头包含 `SET FOREIGN_KEY_CHECKS=0;` 允许临时建表与导入数据。但这仅属于**不完整副本**；若未同步恢复父表 `t_teacher`，该新库无法维持正常参照完整性（后续对 `t_course` 正常插入新课程时将因父表缺失而触发错误）。若要构建完整可用的运行环境，需连同父表 `t_teacher` 一并导出恢复。
 
 ```bash
 # 步骤 1：使用 mysqldump 备份 t_student 和 t_course 两张表
@@ -532,11 +543,14 @@ SELECT * FROM teachingdb2.t_course;
 
 ---
 
-### 二、任课教师端 UI 运行界面真机仿真器（可直接交互与截图）
+### 二、任课教师端 UI 运行界面真机仿真器（可直接交互与教学参考）
 
 针对实验说明文档中“**需包括主要运行结果截图**”的核心要求，下方提供完整的任课教师成绩管理系统高保真 UI 仿真组件。
 
-您可以在线切换教师账号（如李明副教授 `t001`、韩伟副教授 `t004`）、切换课程、在线添加退选、修改录入成绩，并可一键切换至 5 大功能的专用截图视图用于实验报告：
+> **⚠️ 实验报告截图与成果真实性规范（DB-12）**：
+> 下方提供的网页仿真器仅用于**业务流转预演、交互体验与界面设计参考**。实验四的教学验收核心是考查学生编写独立后端代码连接真实 MySQL 数据库并实现持久化的能力。因此，**实验报告中的 5 张主要运行结果截图必须来自您在本地电脑实际启动运行的工程（如本地浏览器访问 `http://localhost:3000` 或本地启动的 Python GUI 窗口），并结合 MySQL 命令行或 Workbench 查询结果证明数据真实落盘**。直接截取本网页教学仿真器不能作为本人实验通过的有效证据。
+
+您可以在线体验教师账号切换（如李明副教授 `t001`、韩伟副教授 `t004`）、切换课程、在线添加退选、修改录入成绩，以理解业务流程：
 
 <InteractiveGradeSystem />
 
@@ -544,16 +558,16 @@ SELECT * FROM teachingdb2.t_course;
 
 ### 三、系统说明文档中五大核心 UI 界面截图与填报规范（报告必填项）
 
-实验报告的系统说明文档中必须包含以下 **5 张核心运行结果截图** 及对应文字说明：
+实验报告的系统说明文档中必须包含以下 **5 张本人本地运行的核心结果截图** 及对应文字说明：
 
 #### 截图 1：教师登录与注销界面（身份鉴权与会话控制）
 
 - **界面要素与截图要点**：
   - 界面包含系统标题（学生成绩管理系统 · 教师端）、教师工号输入框（`tid`）、登录密码输入框及“登录进入系统”按钮。
-  - 错误防呆验证：输入不存在的工号（如 `t999`）时，界面显示红字警示“工号不存在或无教师权限”。
+  - 错误防呆验证：输入不存在的工号（如 `t999`）或错误密码时，界面显示红字警示“工号不存在或密码错误”。
   - 成功登录后，顶部导航栏展示当前教师姓名（如“李明 · 副教授”）及显眼的“注销退出”按钮。
 - **报告说明文字模板**：
-  > “系统登录界面面向任课教师。系统获取前端提交的教师工号执行参数化查询 `SELECT tid, tname, title FROM t_teacher WHERE tid = ?`，校验通过后创建教师会话并在页面顶部展示身份信息。点击注销按钮可安全清空本地会话并返回登录窗口。”
+  > “系统登录界面面向任课教师。系统获取前端提交的教师工号执行参数化查询 `SELECT tid, tname, age, title FROM t_teacher WHERE tid = ?`，校验密码凭据通过后在服务端生成安全会话 Token，并在页面顶部展示身份信息。点击注销按钮触发服务端凭证销毁并返回登录窗口。”
 
 #### 截图 2：承担课程及学生选课情况主控台界面（数据范围强制隔离）
 
@@ -594,9 +608,11 @@ SELECT * FROM teachingdb2.t_course;
 
 ### 四、完整可运行全套工程代码（两套技术方案任选）
 
-为了满足提交工程文件与说明文档的要求，本指南提供**两套完整且零配置门槛的参考工程源码**，可根据个人技术栈自由任选：
+为了满足提交工程文件与说明文档的要求，本指南提供**两套具备完整依赖准备与运行步骤的参考工程源码**，可根据个人技术栈自由任选：
 
 #### 方案 A：Web 极简全栈工程（HTML5 + Tailwind UI 前端 + Node.js Express 后端）
+
+**前置依赖准备**：在工程根目录下执行 `npm init -y && npm pkg set type="module" && npm install express mysql2`。将前端单文件保存为 `public/index.html`，后端保存为 `server.mjs`，执行 `node server.mjs` 即可启动服务。
 
 无需任何复杂的前端打包工具，前端单文件 `public/index.html` 放入目录，双击或配合极简 Express 服务即可在浏览器中获得与仿真器一致的现代化 UI 界面！
 
@@ -726,15 +742,24 @@ SELECT * FROM teachingdb2.t_course;
     </div>
 
     <script>
+      let authToken = null;
       let currentTeacher = null;
       let currentCourses = [];
 
+      function getAuthHeaders() {
+        return {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        };
+      }
+
       async function handleLogin() {
         const tid = document.getElementById("tidInput").value.trim();
+        const password = document.getElementById("pwdInput").value.trim();
         const res = await fetch("/api/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tid }),
+          body: JSON.stringify({ tid, password }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -742,6 +767,7 @@ SELECT * FROM teachingdb2.t_course;
           document.getElementById("loginError").classList.remove("hidden");
           return;
         }
+        authToken = data.token;
         currentTeacher = data.teacher;
         document.getElementById("loginCard").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
@@ -750,7 +776,14 @@ SELECT * FROM teachingdb2.t_course;
         await loadCourses();
       }
 
-      function handleLogout() {
+      async function handleLogout() {
+        if (authToken) {
+          await fetch("/api/logout", {
+            method: "POST",
+            headers: getAuthHeaders(),
+          }).catch(() => {});
+        }
+        authToken = null;
         currentTeacher = null;
         document.getElementById("dashboard").classList.add("hidden");
         document.getElementById("loginCard").classList.remove("hidden");
@@ -758,8 +791,12 @@ SELECT * FROM teachingdb2.t_course;
 
       async function loadCourses() {
         const res = await fetch("/api/courses", {
-          headers: { "x-teacher-id": currentTeacher.tid },
+          headers: getAuthHeaders(),
         });
+        if (!res.ok) {
+          alert("会话已失效，请重新登录");
+          return handleLogout();
+        }
         currentCourses = await res.json();
         const sel = document.getElementById("courseSelect");
         sel.innerHTML = currentCourses
@@ -770,8 +807,9 @@ SELECT * FROM teachingdb2.t_course;
 
       async function loadStudents() {
         const cid = document.getElementById("courseSelect").value;
+        if (!cid) return;
         const res = await fetch(`/api/scores?cid=${cid}`, {
-          headers: { "x-teacher-id": currentTeacher.tid },
+          headers: getAuthHeaders(),
         });
         const list = await res.json();
         const tbody = document.getElementById("studentTable");
@@ -816,15 +854,15 @@ SELECT * FROM teachingdb2.t_course;
         const cid = document.getElementById("courseSelect").value;
         const res = await fetch("/api/update-score", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-teacher-id": currentTeacher.tid,
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ sid, cid, score }),
         });
         if (res.ok) {
           alert("成绩已成功更新！");
           loadStudents();
+        } else {
+          const d = await res.json();
+          alert(d.error);
         }
       }
 
@@ -833,15 +871,15 @@ SELECT * FROM teachingdb2.t_course;
         if (!confirm(`确定要退选学生【${sname}】(${sid})吗？`)) return;
         const res = await fetch("/api/delete-enrollment", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-teacher-id": currentTeacher.tid,
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ sid, cid }),
         });
         if (res.ok) {
           alert("退选成功！");
           loadStudents();
+        } else {
+          const d = await res.json();
+          alert(d.error);
         }
       }
 
@@ -851,10 +889,7 @@ SELECT * FROM teachingdb2.t_course;
         const cid = document.getElementById("courseSelect").value;
         const res = await fetch("/api/add-enrollment", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-teacher-id": currentTeacher.tid,
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ sid, cid }),
         });
         if (res.ok) {
@@ -873,9 +908,10 @@ SELECT * FROM teachingdb2.t_course;
 ##### 2. 后端服务源码：`server.mjs`
 
 ```javascript
-// server.mjs - 最小可运行教师成绩管理全栈服务
+// server.mjs - 最小可运行教师成绩管理全栈服务（带 Token 会话鉴权与权限隔离）
 import express from "express";
 import mysql from "mysql2/promise";
+import crypto from "node:crypto";
 
 const app = express();
 app.use(express.json());
@@ -884,27 +920,64 @@ app.use(express.static("public"));
 const pool = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "your_password",
+  password: "your_password", // 请替换为本地实际密码
   database: "teachingdb_chen",
   waitForConnections: true,
   connectionLimit: 10,
 });
 
-// 1. 教师登录
+// 服务端内存会话存储：Map<sessionToken, { tid, tname, title }>()
+const activeSessions = new Map();
+
+// 统一身份认证中间件：提取 Bearer Token，拒绝客户端伪造身份
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "未提供有效身份凭证，请先登录系统" });
+  }
+  const token = authHeader.slice(7).trim();
+  const session = activeSessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: "会话已过期或无效，请重新登录" });
+  }
+  req.currentTeacher = session; // 注入服务端验证后的安全教师上下文
+  next();
+}
+
+// 1. 教师登录（密码凭据校验 + 颁发会话 Token）
 app.post("/api/login", async (req, res) => {
-  const { tid } = req.body;
+  const { tid, password } = req.body;
+
+  // 教学系统默认密码验证（可扩展比对哈希）
+  if (!password || password !== "123456") {
+    return res.status(401).json({ error: "登录密码错误（教学系统默认密码: 123456）" });
+  }
+
   const [rows] = await pool.execute(
     "SELECT tid, tname, age, title FROM t_teacher WHERE tid = ?",
     [tid],
   );
-  if (rows.length === 0)
+  if (rows.length === 0) {
     return res.status(401).json({ error: "教师工号不存在" });
-  res.json({ teacher: rows[0] });
+  }
+
+  const teacher = rows[0];
+  const token = crypto.randomUUID();
+  activeSessions.set(token, teacher);
+
+  res.json({ token, teacher });
 });
 
-// 2. 获取该教师承担的课程列表（强制 WHERE tid = ? 隔离）
-app.get("/api/courses", async (req, res) => {
-  const tid = req.headers["x-teacher-id"];
+// 2. 教师安全注销
+app.post("/api/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization.slice(7).trim();
+  activeSessions.delete(token);
+  res.json({ success: true, message: "已安全退出系统" });
+});
+
+// 3. 获取该教师承担的课程列表（强制取自 req.currentTeacher.tid）
+app.get("/api/courses", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid;
   const [rows] = await pool.execute(
     "SELECT cid, cname FROM t_course WHERE tid = ? ORDER BY cid",
     [tid],
@@ -912,9 +985,9 @@ app.get("/api/courses", async (req, res) => {
   res.json(rows);
 });
 
-// 3. 查看主讲课程的选课花名册与成绩
-app.get("/api/scores", async (req, res) => {
-  const tid = req.headers["x-teacher-id"];
+// 4. 查看主讲课程的选课花名册与成绩（双重校验 tid 与 cid）
+app.get("/api/scores", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid;
   const { cid } = req.query;
   const sql = `
     SELECT c.cid, c.cname, s.sid, s.sname, s.sex, s.age, s.major, sc.score 
@@ -927,16 +1000,17 @@ app.get("/api/scores", async (req, res) => {
   res.json(rows);
 });
 
-// 4. 添加选课记录
-app.post("/api/add-enrollment", async (req, res) => {
-  const tid = req.headers["x-teacher-id"];
+// 5. 添加选课记录（确保课程归属当前教师）
+app.post("/api/add-enrollment", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid;
   const { sid, cid } = req.body;
   const [auth] = await pool.execute(
     "SELECT 1 FROM t_course WHERE cid = ? AND tid = ?",
     [cid, tid],
   );
-  if (auth.length === 0)
+  if (auth.length === 0) {
     return res.status(403).json({ error: "无权为此课程添加选课" });
+  }
   try {
     await pool.execute(
       "INSERT INTO t_student_course (sid, cid, score) VALUES (?, ?, NULL)",
@@ -948,34 +1022,37 @@ app.post("/api/add-enrollment", async (req, res) => {
   }
 });
 
-// 5. 删除选课记录（退选）
-app.post("/api/delete-enrollment", async (req, res) => {
-  const tid = req.headers["x-teacher-id"];
+// 6. 删除选课记录（退选，强制校验课程归属）
+app.post("/api/delete-enrollment", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid;
   const { sid, cid } = req.body;
   const sql = `
     DELETE sc FROM t_student_course sc
     JOIN t_course c ON sc.cid = c.cid
     WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`;
   const [result] = await pool.execute(sql, [sid, cid, tid]);
-  if (result.affectedRows === 0)
-    return res.status(403).json({ error: "无权退选此记录" });
+  if (result.affectedRows === 0) {
+    return res.status(403).json({ error: "无权退选此记录或记录不存在" });
+  }
   res.json({ success: true });
 });
 
-// 6. 成绩录入与修改
-app.post("/api/update-score", async (req, res) => {
-  const tid = req.headers["x-teacher-id"];
+// 7. 成绩录入与修改（边界校验 + 归属校验）
+app.post("/api/update-score", requireAuth, async (req, res) => {
+  const tid = req.currentTeacher.tid;
   const { sid, cid, score } = req.body;
-  if (score < 0 || score > 100)
+  if (score < 0 || score > 100) {
     return res.status(400).json({ error: "成绩必须在 0 到 100 分之间" });
+  }
   const sql = `
     UPDATE t_student_course sc
     JOIN t_course c ON sc.cid = c.cid
     SET sc.score = ?
     WHERE sc.sid = ? AND sc.cid = ? AND c.tid = ?`;
   const [result] = await pool.execute(sql, [score, sid, cid, tid]);
-  if (result.affectedRows === 0)
+  if (result.affectedRows === 0) {
     return res.status(403).json({ error: "无权操作此课程或记录不存在" });
+  }
   res.json({ success: true });
 });
 
@@ -986,10 +1063,17 @@ app.listen(3000, () => console.log("系统运行于 http://localhost:3000"));
 
 #### 方案 B：Python 原生桌面 GUI 客户端工程（`grade_system_gui.py`）
 
-无需任何外部前端框架与 Web 服务器，纯 Python 标准库自带的 `tkinter` 模块即可实现具有系统原生窗口样式的任课教师成绩管理系统客户端，双击直接运行截桌面窗口提交实验报告！
+**前置依赖准备**：本方案基于 Python 标准库 `tkinter` 构建图形界面，访问 MySQL 数据库需安装第三方驱动 `pymysql`：
+
+```bash
+# 安装 Python MySQL 客户端库
+pip install pymysql
+```
+
+配置好本地 MySQL 连接密码后，运行 `python grade_system_gui.py` 即可弹出桌面原生管理窗口：
 
 ```python
-# grade_system_gui.py - Python Tkinter 原生桌面 GUI 客户端
+# grade_system_gui.py - Python Tkinter 原生桌面 GUI 客户端（带口令认证与数据范围隔离）
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 import pymysql
@@ -997,7 +1081,7 @@ import pymysql
 DB_CONFIG = {
     "host": "localhost",
     "user": "root",
-    "password": "your_password",
+    "password": "your_password", # 请替换为您本地真实的 MySQL root 密码
     "database": "teachingdb_chen",
     "charset": "utf8mb4"
 }
@@ -1014,6 +1098,7 @@ class GradeSystemApp:
         return pymysql.connect(**DB_CONFIG, cursorclass=pymysql.cursors.DictCursor)
 
     def show_login_frame(self):
+        self.teacher = None  # 注销退出时清空当前教师身份上下文
         if hasattr(self, "main_frame"):
             self.main_frame.destroy()
 
@@ -1026,10 +1111,22 @@ class GradeSystemApp:
         self.tid_entry.insert(0, "t001")
         self.tid_entry.grid(row=1, column=1, pady=5)
 
-        ttk.Button(self.login_frame, text="登录进入系统", command=self.do_login).grid(row=2, column=0, columnspan=2, pady=15)
+        ttk.Label(self.login_frame, text="登录密码:").grid(row=2, column=0, sticky="e", pady=5)
+        self.pwd_entry = ttk.Entry(self.login_frame, width=20, show="*")
+        self.pwd_entry.insert(0, "123456")
+        self.pwd_entry.grid(row=2, column=1, pady=5)
+
+        ttk.Button(self.login_frame, text="登录进入系统", command=self.do_login).grid(row=3, column=0, columnspan=2, pady=15)
 
     def do_login(self):
         tid = self.tid_entry.get().strip()
+        pwd = self.pwd_entry.get().strip()
+
+        # 凭据校验：教学默认密码 123456
+        if pwd != "123456":
+            messagebox.showwarning("登录失败", "密码错误！教学模拟系统默认口令为: 123456")
+            return
+
         try:
             with self.get_conn() as conn:
                 with conn.cursor() as cur:

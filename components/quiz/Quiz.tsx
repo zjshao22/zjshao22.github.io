@@ -13,9 +13,50 @@ export interface QuizProps {
   id?: string;
 }
 
-// 选项常写成 "A xxx" 的教材式序号，答案则不带序号，比较前统一去除
-function normalizeOption(text: string) {
-  return text.replace(/^[A-D][.、．:：]?\s+/, "").trim();
+// 选项常写成 "A xxx"、"A. xxx" 的教材式序号，答案通常不带序号或直接写 "A"
+function stripOptionPrefix(optionText: string, index?: number): string {
+  if (index !== undefined) {
+    const label = String.fromCharCode(65 + index);
+    const labelRegex = new RegExp(`^${label}[.、．:：]?\\s+`, "i");
+    if (labelRegex.test(optionText)) {
+      return optionText.replace(labelRegex, "").trim();
+    }
+  }
+  return optionText
+    .replace(/^[A-Da-d][.、．:：]\s*/, "")
+    .replace(/^[A-Da-d]\s+/, "")
+    .trim();
+}
+
+export function isOptionCorrect(
+  option: string,
+  index: number,
+  answer: string
+): boolean {
+  const normAns = answer.trim();
+  const label = String.fromCharCode(65 + index);
+
+  // 1. 答案直接给选项字母，如 "A" / "B" / "C" / "D"
+  if (normAns.toUpperCase() === label) return true;
+
+  // 2. 选项去掉前缀序号后与答案严格匹配
+  const stripped = stripOptionPrefix(option, index);
+  if (stripped === normAns) return true;
+
+  // 3. 完整选项内容与答案直接匹配
+  if (option.trim() === normAns) return true;
+
+  // 4. 引号与多余空格兼容比较（处理单双引号混用）
+  const normalizeQuotes = (s: string) =>
+    s.replace(/['"“”]/g, '"').replace(/\s+/g, " ").trim();
+  if (normalizeQuotes(stripped) === normalizeQuotes(normAns)) {
+    return true;
+  }
+  if (normalizeQuotes(option) === normalizeQuotes(normAns)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -65,9 +106,9 @@ export default function Quiz({
 
   const showResult = submitted;
 
-  const normAnswer = normalizeOption(answer);
+  const selectedIndex = selected !== null ? options.indexOf(selected) : -1;
   const isCorrect =
-    selected !== null && normalizeOption(selected) === normAnswer;
+    selectedIndex >= 0 && isOptionCorrect(selected!, selectedIndex, answer);
   const anchorId = id ?? `quiz-${shortHash(question)}`;
 
   function submitAnswer() {
@@ -99,9 +140,9 @@ export default function Quiz({
       </p>
 
       <div className="flex flex-col gap-2" role="radiogroup" aria-label="选项">
-        {options.map((option) => {
+        {options.map((option, idx) => {
           const chosen = selected === option;
-          const isAnswerOption = normalizeOption(option) === normAnswer;
+          const isAnswerOption = isOptionCorrect(option, idx, answer);
           const showState = showResult && (chosen || isAnswerOption);
 
           let className =

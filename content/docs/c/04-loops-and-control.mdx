@@ -116,11 +116,11 @@ for (表达式1; 表达式2; 表达式3) {
 
 int main()
 {
-    char c;
+    int c; // 必须使用 int 接收 getchar() 返回值以正确处理 EOF
     int letters = 0, spaces = 0, digits = 0, others = 0;
 
     printf("请输入一行字符:\n");
-    while ((c = getchar()) != '\n')
+    while ((c = getchar()) != '\n' && c != EOF)
     {
         if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
             letters++;

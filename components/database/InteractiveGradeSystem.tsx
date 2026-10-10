@@ -271,6 +271,10 @@ export default function InteractiveGradeSystem() {
   // Handle Login
   const handleLogin = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!loginPassword || loginPassword.trim() !== "123456") {
+      setLoginError("密码错误！教学模拟系统默认口令为: 123456");
+      return;
+    }
     const found = TEACHERS.find((t) => t.tid === loginInputTid.trim());
     if (!found) {
       setLoginError(
@@ -412,13 +416,13 @@ export default function InteractiveGradeSystem() {
                 <span className="font-bold text-sm tracking-wide text-white">
                   实验四：学生成绩管理系统 UI 真机仿真器
                 </span>
-                <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-300">
-                  可交互 · 支持截图
+                <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-amber-300">
+                  教学交互原型 · 实验报告请使用本地工程真实截图
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
                 面向任课教师 ·
-                满足登录注销、课程选课查看、增删选课记录、成绩录入修改 5 大功能
+                业务逻辑参考原型（报告成果须使用本地代码运行并经真实 MySQL 验证的截图）
               </p>
             </div>
           </div>

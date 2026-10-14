@@ -30,10 +30,11 @@ const courses = [
   },
   {
     title: "计算机网络",
-    description: "从校园网、班级群和课程平台出发，理解数据怎样穿过网络。",
+    description:
+      "从链路与路由到可靠传输、网络应用、安全与诊断，建立完整网络知识体系。",
     href: "/docs/network",
     lesson: "/docs/network/01-how-web-works",
-    count: "8 节课程",
+    count: "32 节课程 · 回顾与 3 个实验",
     Icon: Globe2,
     tone: "border-teal-700/20 bg-[#e8f2ed] text-teal-950 dark:border-teal-200/20 dark:bg-[#183633] dark:text-teal-50",
   },

@@ -1,0 +1,167 @@
+---
+title: 实验二：隔离网络中的地址、ARP 与路由
+description: 在 Linux 网络命名空间建立两网段，观察网关、转发、返回路径与 TTL
+---
+
+# 实验二：地址、ARP 与路由
+
+一台主机已经配了默认网关，就一定能收到另一个网段的回复吗？先画出请求和回复要经过的接口，再在隔离拓扑中检验。
+
+## 一、环境与拓扑
+
+需要 Linux 实验机或虚拟机、管理员权限，以及 `iproute2`、`ping`、`sysctl`（通常由 procps 提供）。抓包可选 `tcpdump`。Windows/macOS 可在自己的 Linux 虚拟机中进行；此处不要求修改宿舍或学校的真实路由设备。
+
+网络命名空间有各自的接口、路由表与网络状态。我们只建立 A、R、B 三个实验空间，不连接外网；地址均采用文档专用地址。
+
+| 空间    | 接口  | 地址               | 角色       |
+| ------- | ----- | ------------------ | ---------- |
+| `nlabA` | `a0`  | `192.0.2.10/24`    | 客户端     |
+| `nlabR` | `ra0` | `192.0.2.1/24`     | A 网段网关 |
+| `nlabR` | `rb0` | `198.51.100.1/24`  | B 网段网关 |
+| `nlabB` | `b0`  | `198.51.100.20/24` | 目标主机   |
+
+<FlowChain
+  steps={[
+    { title: "A · 192.0.2.10", note: "a0，经独立虚拟链路到 ra0" },
+    { title: "R · 两个接口", note: "ra0 为 .2.1；rb0 为 .100.1，进行三层转发" },
+    { title: "B · 198.51.100.20", note: "b0，经另一条虚拟链路到 rb0" },
+  ]}
+/>
+
+## 二、创建两个网段
+
+先运行 `ip netns list`，确认没有同名实验空间，再运行下列命令。若同名已存在，先查清是谁的实验，不直接删除。任何命令失败就停止并查看错误，不把失败后的状态当成功配置。
+
+```bash
+sudo ip netns add nlabA
+sudo ip netns add nlabR
+sudo ip netns add nlabB
+
+sudo ip link add nlab-a type veth peer name nlab-ra
+sudo ip link add nlab-rb type veth peer name nlab-b
+sudo ip link set nlab-a netns nlabA
+sudo ip link set nlab-ra netns nlabR
+sudo ip link set nlab-rb netns nlabR
+sudo ip link set nlab-b netns nlabB
+
+sudo ip -n nlabA link set nlab-a name a0
+sudo ip -n nlabR link set nlab-ra name ra0
+sudo ip -n nlabR link set nlab-rb name rb0
+sudo ip -n nlabB link set nlab-b name b0
+
+sudo ip -n nlabA addr add 192.0.2.10/24 dev a0
+sudo ip -n nlabR addr add 192.0.2.1/24 dev ra0
+sudo ip -n nlabR addr add 198.51.100.1/24 dev rb0
+sudo ip -n nlabB addr add 198.51.100.20/24 dev b0
+
+sudo ip -n nlabA link set lo up
+sudo ip -n nlabR link set lo up
+sudo ip -n nlabB link set lo up
+sudo ip -n nlabA link set a0 up
+sudo ip -n nlabR link set ra0 up
+sudo ip -n nlabR link set rb0 up
+sudo ip -n nlabB link set b0 up
+
+sudo ip -n nlabA route add default via 192.0.2.1
+sudo ip -n nlabB route add default via 198.51.100.1
+sudo ip netns exec nlabR sysctl -w net.ipv4.ip_forward=1
+```
+
+最后一条只改变 R 命名空间的转发设置。veth 是一对相连的虚拟接口，本实验没有配置交换机，也没有验证 VLAN 或 Wi-Fi。
+
+## 三、先验证配置再发包
+
+```bash
+sudo ip -n nlabA addr show
+sudo ip -n nlabR route show
+sudo ip -n nlabB route show
+sudo ip -n nlabA route get 198.51.100.20
+sudo ip netns exec nlabA ping -c 3 192.0.2.1
+sudo ip netns exec nlabA ping -c 3 198.51.100.20
+sudo ip -n nlabA neigh show
+sudo ip -n nlabR neigh show
+```
+
+先预测 A 的邻居表应出现 B 的 MAC，还是网关的 MAC。记录实际地址、接口和状态；MAC 由本机生成，不照抄参考。
+
+<details>
+<summary>提示：先让 A 判断目标是否本地</summary>
+
+A 的直连块是 `192.0.2.0/24`。B 不在其中，路由得到下一跳 `.1`，ARP 只解决 A 当前链路上的交付。
+
+</details>
+
+<details>
+<summary>核对应观察的机制</summary>
+
+A 应解析 `192.0.2.1`，而不是跨网段解析 B；R 在 B 侧解析 `198.51.100.20`。A 的目标 IP 仍为 B。邻居状态会随时间变化，缓存命中时并不需要每次重新广播。
+
+</details>
+
+## 四、观察每跳换帧与 TTL
+
+有 tcpdump 权限时，在两个终端分别运行：
+
+```bash
+sudo ip netns exec nlabR tcpdump -ni ra0 -e 'arp or icmp'
+sudo ip netns exec nlabR tcpdump -ni rb0 -e 'arp or icmp'
+```
+
+另一个终端从 A ping B，保存同一请求在两个接口上的 IP、TTL 与链路地址。若要观察新解析，可先仅在 A 空间清除该接口缓存：
+
+```bash
+sudo ip -n nlabA neigh flush dev a0
+sudo ip netns exec nlabA ping -c 1 -t 1 198.51.100.20
+```
+
+`-t 1` 在此指 Linux ping 的 TTL。预测 R 是否把它继续交给 B，以及 A 会得到何种错误。检查实际 ICMP 类型，不只看“失败”。
+
+<details>
+<summary>核对 TTL 推演</summary>
+
+TTL=1 的请求到 R 转发时到期，正常模型中 R 丢弃并发 ICMP Time Exceeded，B 不收到该请求。普通多跳转发会减 TTL、更新 IPv4 首部校验和并更换链路帧，端到端源/目标 IP 不因下一跳而改变。
+
+</details>
+
+## 五、制造一个只有回程缺路由的故障
+
+先记录成功的 ping，再只在 B 删除默认路由：
+
+```bash
+sudo ip -n nlabB route del default via 198.51.100.1
+sudo ip netns exec nlabA ping -c 3 198.51.100.20
+sudo ip -n nlabB route get 192.0.2.10
+```
+
+同时在 R 的 B 侧抓包，判断请求是否仍到 B，回复为什么不能正常回 A。恢复并复验：
+
+```bash
+sudo ip -n nlabB route add default via 198.51.100.1
+sudo ip netns exec nlabA ping -c 3 198.51.100.20
+```
+
+<details>
+<summary>核对故障解释</summary>
+
+A 与 R 的去程配置未变，请求仍可到 B。B 只有自己的直连网段，找不到回 A 的路由；返回失败不能证明请求没到。重新加入默认路由后再用同条件复验，才支持修复解释。
+
+</details>
+
+## 六、独立变式与清理
+
+将 R 的转发改为 0，先预测“ping R 的接口”和“经 R ping B”是否会一起失败，再运行并记录；最后恢复为 1。说明路由器作为本机接收与替别人转发的区别。
+
+实验结束先 Ctrl+C 停止各抓包进程，再删除仅由本实验创建的三个命名空间：
+
+```bash
+sudo ip netns del nlabA
+sudo ip netns del nlabR
+sudo ip netns del nlabB
+ip netns list
+```
+
+空间中没有残留进程时，其接口与路由随删除释放。若配置在中途失败，还需检查是否留下 `nlab-a` 等尚未迁移的虚拟接口，确认是本次所建后再清理。
+
+提交拓扑表、实际配置、成功/失败/恢复三组记录、同报文的两接口对照与变式解释。无法运行 Linux 环境时先做纸笔预测，报告明确标注“实际运行待完成”。
+
+工具依据：[Linux 网络命名空间](https://man7.org/linux/man-pages/man8/ip-netns.8.html)。

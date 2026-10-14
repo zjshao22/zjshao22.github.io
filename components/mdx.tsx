@@ -7,6 +7,7 @@ import DataShowcase from "./DataShowcase";
 import KeyPoints from "./KeyPoints";
 import AiTimeline from "./AiTimeline";
 import RequestJourney from "./network/RequestJourney";
+import CampusTopologyFigure from "./network/CampusTopologyFigure";
 import {
   ArpFigure,
   ByteOrderFigure,
@@ -79,6 +80,7 @@ export function getMDXComponents(components?: MDXComponents) {
     KeyPoints,
     AiTimeline,
     RequestJourney,
+    CampusTopologyFigure,
     ArpFigure,
     ByteOrderFigure,
     DatagramFigure,

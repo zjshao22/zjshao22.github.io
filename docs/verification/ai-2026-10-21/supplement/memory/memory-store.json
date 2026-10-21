@@ -1,0 +1,27 @@
+{
+  "version": 3,
+  "entries": {
+    "deadline": {
+      "value": "2026-11-02",
+      "source": "T3",
+      "scope": "teaching-project-a",
+      "status": "confirmed teaching notice",
+      "supersedes": {
+        "value": "2026-10-30",
+        "source": "T1",
+        "scope": "teaching-project-a"
+      }
+    },
+    "room": {
+      "value": "B202",
+      "source": "T2",
+      "scope": "teaching-project-a",
+      "status": "confirmed teaching notice",
+      "supersedes": {
+        "value": "A101",
+        "source": "T1",
+        "scope": "teaching-project-a"
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "command": [
+      "python3",
+      "-B",
+      "practice.py",
+      "probe",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/local-model",
+      "--model",
+      "deepseek-r1:7b"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"mode\": \"probe\", \"all_checks_passed\": true, \"output\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/local-model/probe.json\", \"seconds\": 7.07200687500881, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l5",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/local-model/l5",
+      "--local-model",
+      "deepseek-r1:7b"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l5\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/local-model/l5/l5.json\", \"all_checks_passed\": true, \"seconds\": 2.225024375002249, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l6",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/local-model/l6",
+      "--local-model",
+      "deepseek-r1:7b"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"lab\": \"l6\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/local-model/l6/l6.json\", \"all_checks_passed\": false, \"seconds\": 5.3324175419984385, \"error\": null}\n",
+    "stderr": ""
+  }
+]

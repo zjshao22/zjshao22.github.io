@@ -1,0 +1,172 @@
+{
+  "kind": "actual WAV measurements and trained scalar dynamics on constructed fixtures",
+  "audio": {
+    "audio-clean.wav": {
+      "rate": 16000,
+      "frames": 16000,
+      "seconds": 1.0,
+      "pcm_payload_bytes": 32000,
+      "rms": 0.3535531314203401,
+      "sha256": "a77280a67a216c56e50a13d37d2687fe6eed1701c077ef0e343494ee4f55714c"
+    },
+    "audio-noisy.wav": {
+      "rate": 16000,
+      "frames": 16000,
+      "seconds": 1.0,
+      "pcm_payload_bytes": 32000,
+      "rms": 0.3815129513935842,
+      "sha256": "896576c995d237312eb14555370ff837fa94a86f393ca118df67a59924060116"
+    }
+  },
+  "snr_db_using_clean_reference": 7.798486896844361,
+  "dynamics": {
+    "rule": "v_next=v+a; p_next=p+v_next",
+    "train_actions": [0.25, 0.5, 1.0],
+    "history": [
+      {
+        "step": 0,
+        "w": 0.0,
+        "training_loss": 0.21875
+      },
+      {
+        "step": 30,
+        "w": 0.9853159948568768,
+        "training_loss": 4.7166876540714885e-5
+      },
+      {
+        "step": 60,
+        "w": 0.9997843799929568,
+        "training_loss": 1.0170122251914008e-8
+      },
+      {
+        "step": 90,
+        "w": 0.9999968338347076,
+        "training_loss": 2.1928818315979852e-12
+      },
+      {
+        "step": 120,
+        "w": 0.9999999535080125,
+        "training_loss": 4.728291968823702e-16
+      }
+    ],
+    "rollout_on_untrained_actions": [
+      {
+        "action": -1.0,
+        "truth": [-1.0, -1.0],
+        "prediction": [-0.9999999535080125, -0.9999999535080125],
+        "position_error": 4.6491987482077946e-8
+      },
+      {
+        "action": 0.4,
+        "truth": [-1.6, -0.6],
+        "prediction": [-1.5999999256128201, -0.5999999721048075],
+        "position_error": 7.438717997132471e-8
+      },
+      {
+        "action": -0.5,
+        "truth": [-2.7, -1.1],
+        "prediction": [-2.699999874471634, -1.0999999488588137],
+        "position_error": 1.255283663681439e-7
+      },
+      {
+        "action": 0.0,
+        "truth": [-3.8000000000000003, -1.1],
+        "prediction": [-3.7999998233304475, -1.0999999488588137],
+        "position_error": 1.766695527649631e-7
+      }
+    ]
+  },
+  "checks": [
+    {
+      "name": "pcm_payload",
+      "passed": true,
+      "detail": {
+        "audio-clean.wav": {
+          "rate": 16000,
+          "frames": 16000,
+          "seconds": 1.0,
+          "pcm_payload_bytes": 32000,
+          "rms": 0.3535531314203401,
+          "sha256": "a77280a67a216c56e50a13d37d2687fe6eed1701c077ef0e343494ee4f55714c"
+        },
+        "audio-noisy.wav": {
+          "rate": 16000,
+          "frames": 16000,
+          "seconds": 1.0,
+          "pcm_payload_bytes": 32000,
+          "rms": 0.3815129513935842,
+          "sha256": "896576c995d237312eb14555370ff837fa94a86f393ca118df67a59924060116"
+        }
+      }
+    },
+    {
+      "name": "nonzero_noise",
+      "passed": true,
+      "detail": {
+        "noise_power": 0.020752034779672312
+      }
+    },
+    {
+      "name": "dynamics_learned",
+      "passed": true,
+      "detail": {
+        "initial_w": 0,
+        "trained_w": 0.9999999535080125
+      }
+    },
+    {
+      "name": "heldout_action_rollout",
+      "passed": true,
+      "detail": [
+        {
+          "action": -1.0,
+          "truth": [-1.0, -1.0],
+          "prediction": [-0.9999999535080125, -0.9999999535080125],
+          "position_error": 4.6491987482077946e-8
+        },
+        {
+          "action": 0.4,
+          "truth": [-1.6, -0.6],
+          "prediction": [-1.5999999256128201, -0.5999999721048075],
+          "position_error": 7.438717997132471e-8
+        },
+        {
+          "action": -0.5,
+          "truth": [-2.7, -1.1],
+          "prediction": [-2.699999874471634, -1.0999999488588137],
+          "position_error": 1.255283663681439e-7
+        },
+        {
+          "action": 0.0,
+          "truth": [-3.8000000000000003, -1.1],
+          "prediction": [-3.7999998233304475, -1.0999999488588137],
+          "position_error": 1.766695527649631e-7
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Audio is a synthetic tone; no ASR, speech synthesis or natural-language audio model ran.",
+    "SNR uses a known clean reference; arbitrary recordings do not supply this ground truth.",
+    "The dynamic coefficient is shared by design; this is not a trained video or robot model."
+  ],
+  "all_checks_passed": true,
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:45:39.336668+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "mode": "media",
+  "configuration": {
+    "seed": 42,
+    "model": null
+  },
+  "seconds": 0.02061654199496843,
+  "source_sha256": {
+    "practice.py": "665cd7b05af4e67e6621da63a196ff1199d62e9dab59c6f19d36cb277ddf100b",
+    "ai_lab.py": "060606ff2702bf91eba3fd0e1a54f4de853e5e3550563b8e097076ba83ddb23b"
+  }
+}

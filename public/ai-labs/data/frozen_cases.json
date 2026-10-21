@@ -1,0 +1,62 @@
+{
+  "version": "2026-10-21-v2",
+  "kind": "visible_fixed_regression_cases",
+  "cases": [
+    {
+      "id": "network-contact",
+      "query": "校园 网络 报修 电话",
+      "expected_status": "answered",
+      "answer_contains": "1001",
+      "required_sources": ["teaching://campus/network"]
+    },
+    {
+      "id": "lab-booking",
+      "query": "实验室 借用 提前 多久",
+      "expected_status": "answered",
+      "answer_contains": "一天",
+      "required_sources": ["teaching://campus/lab"]
+    },
+    {
+      "id": "course-assessment",
+      "query": "人工智能 课程 怎么 考核",
+      "expected_status": "answered",
+      "answer_contains": "项目答辩",
+      "required_sources": ["teaching://campus/exam"]
+    },
+    {
+      "id": "breakfast-deadline",
+      "query": "食堂 早餐 结束 时间",
+      "expected_status": "answered",
+      "answer_contains": "09:00",
+      "required_sources": ["teaching://campus/meal"]
+    },
+    {
+      "id": "conflicting-opening",
+      "query": "图书馆 开放 时间",
+      "expected_status": "conflicting_evidence",
+      "answer_contains": null,
+      "required_sources": [
+        "teaching://campus/library-a",
+        "teaching://campus/library-b"
+      ]
+    },
+    {
+      "id": "absent-parking-policy",
+      "query": "校外 停车场 收费 规定",
+      "expected_status": "no_evidence",
+      "answer_contains": null,
+      "required_sources": []
+    },
+    {
+      "id": "cross-topic-clarification",
+      "query": "图书馆 和 食堂 的 时间",
+      "expected_status": "clarify",
+      "answer_contains": null,
+      "required_sources": [
+        "teaching://campus/library-a",
+        "teaching://campus/library-b",
+        "teaching://campus/meal"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "base": "http://127.0.0.1:3017",
+  "agg": {
+    "pages": 7,
+    "sparse": 0,
+    "fragments": 0,
+    "overflow": 0,
+    "oversize": 0,
+    "boundaryInside": 0,
+    "hrCrossed": 0
+  },
+  "report": [
+    {
+      "slug": "ai/33-context-and-efficient-architectures",
+      "viewport": "1080p",
+      "total": 7,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 0,
+      "fragments": 0,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 27.5,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    }
+  ]
+}

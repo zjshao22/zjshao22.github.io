@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "lab": "l7",
+  "data_version": "2026-10-21-v2",
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:44:30.743642+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "run_configuration": {
+    "seed": 42,
+    "local_model": null
+  },
+  "sources": {
+    "program": "ai_lab.py",
+    "program_sha256": "060606ff2702bf91eba3fd0e1a54f4de853e5e3550563b8e097076ba83ddb23b",
+    "data": "Included constructed educational fixtures",
+    "evidence_class": "actual local CPU execution"
+  },
+  "seconds": 0.20195045800937805,
+  "all_checks_passed": true,
+  "data": {
+    "kind": "teaching_construction",
+    "train_examples": 48,
+    "heldout_examples": 32,
+    "target_change": "Teacher-generated rank-1 perturbation of a trained linear network"
+  },
+  "quantization": {
+    "format": "signed int8 weights plus one little-endian float64 scale",
+    "weight_bytes_base64": "94JsmytFeD/08vc79oIc6e0KFGE4CMKrFm0D+SyH5ihJ7CAVQqEwgQ==",
+    "scale": 0.005925340977029895,
+    "weight_mse": 2.6521643871569513e-6,
+    "integer_accumulators": [-11765, -20462, 2710, -28611],
+    "prediction": [
+      -0.7963646280476128, -1.3850584801623675, 0.1834380061206146,
+      -1.9366585952460902
+    ],
+    "float_seconds_2000_calls": 0.004463250006665476,
+    "integer_seconds_2000_calls": 0.01079316700634081,
+    "timing_scope": "Python operations, not optimized hardware throughput"
+  },
+  "lora": {
+    "shape": [4, 8],
+    "rank": 1,
+    "full_trainable_parameters": 32,
+    "lora_trainable_parameters": 12,
+    "initialization": "A random, B zero",
+    "history": [
+      {
+        "step": 0,
+        "heldout_mse": 0.22198497357949942
+      },
+      {
+        "step": 100,
+        "heldout_mse": 0.1250405823082591
+      },
+      {
+        "step": 200,
+        "heldout_mse": 0.013020805634740435
+      },
+      {
+        "step": 300,
+        "heldout_mse": 0.0005887145758110641
+      },
+      {
+        "step": 400,
+        "heldout_mse": 2.034071380007278e-5
+      }
+    ],
+    "frozen_baseline_mse": 0.22198497357949942,
+    "lora_heldout_mse": 2.034071380007278e-5,
+    "full_finetune_heldout_mse": 0.0001400398925175934,
+    "checkpoint": {
+      "base": [
+        [
+          -0.07155082210331057, -0.08434722509273816, -0.055431445356679813,
+          0.34966699340042345, -0.061206928827944096, -0.7471344805786474,
+          0.16660586127442253, -0.13421425230530423
+        ],
+        [
+          -0.11323506248475061, 0.06194203406206675, 0.11678632188640875,
+          0.5767003788100054, 0.33083654338223417, 0.05019820770435211,
+          -0.3700560378563236, -0.5027630650564006
+        ],
+        [
+          0.1332245464068746, 0.6446048605063706, 0.01968160766341818,
+          -0.04056267287362316, 0.25791525845153185, -0.7168721034772049,
+          -0.15415098711137404, 0.23596400621778837
+        ],
+        [
+          0.4323657645061965, -0.11842071876921348, 0.18883585397401423,
+          0.12147383972052857, 0.3916235325695981, -0.5611196391887849,
+          0.28295444808407677, -0.7525183040827966
+        ]
+      ],
+      "A": [
+        -0.06504155242954295, 0.27985544422905423, -0.33003806751768805,
+        -0.8078153945793705, 0.6214602292123136, -0.2291398618031711,
+        -0.2300304539356663, 0.0034751370659340326
+      ],
+      "B": [
+        0.2682434315006815, 0.4596364957207243, -0.005274953652258425,
+        -0.8054693686703782
+      ]
+    }
+  },
+  "kv_cache": {
+    "layers": 2,
+    "heads": 2,
+    "context": 16,
+    "head_dimension": 8,
+    "float32_bytes": 4096,
+    "formula": "2(K,V)*layers*heads*context*head_dim*bytes_per_number",
+    "kind": "storage calculation, not measured allocated memory"
+  },
+  "parameters_changed": true,
+  "checks": [
+    {
+      "name": "base_network_actually_trained",
+      "passed": true,
+      "detail": {
+        "before_mse": 0.9784940055207442,
+        "after_mse": 7.93798120047933e-5
+      }
+    },
+    {
+      "name": "actual_int8_serialization",
+      "passed": true,
+      "detail": {
+        "float64_weight_bytes": 256,
+        "int8_weight_plus_float64_scale_bytes": 40
+      }
+    },
+    {
+      "name": "quantization_error_measured",
+      "passed": true,
+      "detail": {
+        "weight_mse": 2.6521643871569513e-6,
+        "prediction_mse": 2.690988878445575e-5
+      }
+    },
+    {
+      "name": "lora_updates_real_parameters",
+      "passed": true,
+      "detail": {
+        "before_heldout_mse": 0.22198497357949942,
+        "after_heldout_mse": 2.034071380007278e-5
+      }
+    },
+    {
+      "name": "base_frozen_during_lora",
+      "passed": true,
+      "detail": {
+        "base_parameter_hash": "e738d5f255f462d9ebae913b8f9b29715f008681477bf7c417c013d16f45c813"
+      }
+    }
+  ],
+  "limits": [
+    "This is a tiny trained linear network, not LoRA on a language model.",
+    "The constructed adaptation has rank one; arbitrary tasks need not fit this rank.",
+    "int8 storage and Python integer accumulation do not imply speedup.",
+    "Serialized bytes and Python object/process memory are different measurements."
+  ]
+}

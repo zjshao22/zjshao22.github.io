@@ -1,0 +1,301 @@
+{
+  "base": "http://127.0.0.1:3017",
+  "agg": {
+    "pages": 169,
+    "sparse": 13,
+    "fragments": 9,
+    "overflow": 0,
+    "oversize": 2,
+    "boundaryInside": 0,
+    "hrCrossed": 0
+  },
+  "report": [
+    {
+      "slug": "ai/02-history-of-ai",
+      "viewport": "1080p",
+      "total": 19,
+      "overflow": 0,
+      "oversize": 2,
+      "sparse": 3,
+      "fragments": 1,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 17.1,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 14,
+          "fill": 0.334,
+          "blocks": 2,
+          "textLen": 105,
+          "kinds": "heading,text",
+          "section": "2. 深度学习凭什么“神”?",
+          "preview": "2. 深度学习凭什么“神”? · 深度学习的“深度”,来自人工神经网络——用海量“人工神经元”一层层堆叠成网络,层数越多,能学到的特征越抽象:看猫照片,浅层学“边缘和色块”,中层学“耳朵和眼睛”,深层学“一整只猫”。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/04-challenges-and-future",
+      "viewport": "1080p",
+      "total": 21,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 4,
+      "fragments": 2,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 29.7,
+      "minCode": null,
+      "minAny": 20,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 18,
+          "fill": 0.26,
+          "blocks": 1,
+          "textLen": 99,
+          "kinds": "text",
+          "section": "六、第一阶段回顾",
+          "preview": "下一阶段，我们先补上理解模型所需的基础：第 5 课讲现实怎样变成 AI 可以处理的数据，第 6 课比较规则、搜索和机器学习，第 7 课区分不同的机器学习方式。之后再逐步讲训练、神经网络和大语言模型。"
+        },
+        {
+          "n": 9,
+          "fill": 0.293,
+          "blocks": 1,
+          "textLen": 80,
+          "kinds": "text",
+          "section": "二、AI 风险与未来争议:多维度的理性审视",
+          "preview": "理解 AI 的风险,既不要陷入“科幻觉醒”式的盲目恐慌,也不能轻率地认为“机器没意识就毫无系统风险”。关键在于深入理解它的目标优化机制,防范误用并做好系统对齐。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/05-data-for-ai",
+      "viewport": "1080p",
+      "total": 19,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 1,
+      "fragments": 1,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 20,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 5,
+          "fill": 0.203,
+          "blocks": 1,
+          "textLen": 76,
+          "kinds": "text",
+          "section": "1. 模型接触到的是记录，不是完整现实",
+          "preview": "每一步都可能丢失细节或引入误差。镜头分辨率有限，麦克风会受到背景噪声影响，表单也可能填错。模型最后只能利用记录下来的内容；它不会凭空恢复从未采集的信息。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/05-how-machines-learn",
+      "viewport": "1080p",
+      "total": 27,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 2,
+      "fragments": 2,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": 26.9,
+      "minAny": 19.5,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 20,
+          "fill": 0.318,
+          "blocks": 1,
+          "textLen": 157,
+          "kinds": "text",
+          "section": "用 Python 复算，再只改一个条件",
+          "preview": "核对输出应分别含 0.1129167、0.0414027、0.9805167。这里每个学习率都从原参数和原梯度独立更新，没有在前一个结果上再走一步。独立变式：再试 0.002，并解释一步改善较小与长期训练快慢为什么不是同一结论。验收既看输出"
+        },
+        {
+          "n": 18,
+          "fill": 0.332,
+          "blocks": 2,
+          "textLen": 102,
+          "kinds": "heading,text",
+          "section": "用 Python 复算，再只改一个条件",
+          "preview": "用 Python 复算，再只改一个条件 · 有 Python 3 即可运行下面的完整程序，无需安装库。教师先让学生写下三次损失的大小关系，再执行；学生提交预测、实际输出和一处差异解释。数据仍是本课六条构造记录。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/06-how-ai-decides",
+      "viewport": "1080p",
+      "total": 16,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 0,
+      "fragments": 0,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 20,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/06-how-neural-networks-work",
+      "viewport": "1080p",
+      "total": 24,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 2,
+      "fragments": 2,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 19.5,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 9,
+          "fill": 0.203,
+          "blocks": 1,
+          "textLen": 83,
+          "kinds": "text",
+          "section": "3. 两个隐藏单元怎样解决异或",
+          "preview": "多层不保证自动得到正确特征：结构决定模型可能表示什么，训练数据与优化决定它实际学到什么。这个区分很重要。能表示异或的网络也可能由于训练不足或数据有问题而没有学会异或。"
+        },
+        {
+          "n": 14,
+          "fill": 0.26,
+          "blocks": 1,
+          "textLen": 95,
+          "kinds": "text",
+          "section": "4. 图像中的局部计算：从边缘开始",
+          "preview": "权重共享也带来具体限制：局部计算先看到的是一小块。要利用更大范围，需要增加层数、扩大感受野或采用其他结构。照片里猫的局部纹理可能也出现在毛绒玩具上；最后的分类需要结合更大范围的形状和上下文。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/07-how-language-models-answer",
+      "viewport": "1080p",
+      "total": 28,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 1,
+      "fragments": 1,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 19.5,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 25,
+          "fill": 0.332,
+          "blocks": 2,
+          "textLen": 105,
+          "kinds": "heading,text",
+          "section": "小案例：同一个问题，知识从哪里来",
+          "preview": "小案例：同一个问题，知识从哪里来 · 构造两条资料：D1“图书馆普通周日 18:00 关闭”，D2“本周日临时闭馆”。问题是“本周日能去借书吗？”教师先只给 D1，让学生回答，再补 D2，要求指出系统应改变哪个环节。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    },
+    {
+      "slug": "ai/07-ways-machines-learn",
+      "viewport": "1080p",
+      "total": 15,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 0,
+      "fragments": 0,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 20,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    }
+  ]
+}

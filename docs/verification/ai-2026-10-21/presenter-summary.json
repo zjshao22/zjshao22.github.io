@@ -1,0 +1,30 @@
+{
+  "method": "1080p batch plus isolated fresh-context retries for two timed-out loads; original reports retained",
+  "active_course_excluding_index": {
+    "lessons": 50,
+    "screens": 374,
+    "errors": [],
+    "overflow": 0,
+    "boundary_inside": 0,
+    "body_font_failures": 0,
+    "code_font_failures": 0,
+    "sparse_screens": 16,
+    "fragment_screens": 9
+  },
+  "retained_legacy": {
+    "lessons": 10,
+    "screens": 187,
+    "errors": [],
+    "overflow": 0,
+    "boundary_inside": 0,
+    "body_font_failures": 0,
+    "code_font_failures": 0,
+    "sparse_screens": 15,
+    "fragment_screens": 9
+  },
+  "retry_reports": [
+    "presenter-retry-33.json",
+    "presenter-retry-legacy-06.json"
+  ],
+  "limits": "Sparse/fragment figures are advisory with default audit; no claim of strict sparse-screen pass or 4K audit"
+}

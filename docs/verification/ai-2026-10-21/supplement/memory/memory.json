@@ -1,0 +1,137 @@
+{
+  "kind": "actual serialized single-writer external memory, not model training",
+  "initial": {
+    "version": 1,
+    "entries": {
+      "deadline": {
+        "value": "2026-10-30",
+        "source": "T1",
+        "scope": "teaching-project-a"
+      },
+      "room": {
+        "value": "A101",
+        "source": "T1",
+        "scope": "teaching-project-a"
+      }
+    }
+  },
+  "after_room_change": {
+    "version": 2,
+    "entries": {
+      "deadline": {
+        "value": "2026-10-30",
+        "source": "T1",
+        "scope": "teaching-project-a"
+      },
+      "room": {
+        "value": "B202",
+        "source": "T2",
+        "scope": "teaching-project-a",
+        "status": "confirmed teaching notice",
+        "supersedes": {
+          "value": "A101",
+          "source": "T1",
+          "scope": "teaching-project-a"
+        }
+      }
+    }
+  },
+  "final_readback": {
+    "version": 3,
+    "entries": {
+      "deadline": {
+        "value": "2026-11-02",
+        "source": "T3",
+        "scope": "teaching-project-a",
+        "status": "confirmed teaching notice",
+        "supersedes": {
+          "value": "2026-10-30",
+          "source": "T1",
+          "scope": "teaching-project-a"
+        }
+      },
+      "room": {
+        "value": "B202",
+        "source": "T2",
+        "scope": "teaching-project-a",
+        "status": "confirmed teaching notice",
+        "supersedes": {
+          "value": "A101",
+          "source": "T1",
+          "scope": "teaching-project-a"
+        }
+      }
+    }
+  },
+  "next_task": {
+    "question": "A项目何时截止",
+    "answer": "2026-11-02",
+    "source": "T3",
+    "retrieval": "exact-key read of persisted external JSON",
+    "parameters_changed": false
+  },
+  "stale_write_rejected": true,
+  "checks": [
+    {
+      "name": "stale_write_rejected",
+      "passed": true,
+      "detail": "optimistic version check"
+    },
+    {
+      "name": "both_changes_retained",
+      "passed": true,
+      "detail": {
+        "version": 3,
+        "entries": {
+          "deadline": {
+            "value": "2026-11-02",
+            "source": "T3",
+            "scope": "teaching-project-a",
+            "status": "confirmed teaching notice",
+            "supersedes": {
+              "value": "2026-10-30",
+              "source": "T1",
+              "scope": "teaching-project-a"
+            }
+          },
+          "room": {
+            "value": "B202",
+            "source": "T2",
+            "scope": "teaching-project-a",
+            "status": "confirmed teaching notice",
+            "supersedes": {
+              "value": "A101",
+              "source": "T1",
+              "scope": "teaching-project-a"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "readback_version",
+      "passed": true,
+      "detail": 3
+    }
+  ],
+  "limits": [
+    "Version check and replace are not a multi-process transaction; use one writer.",
+    "Sources T1/T2/T3 are teaching notices, not real course deadlines.",
+    "The next answer is explicit key retrieval, not autonomous LLM memory selection."
+  ],
+  "all_checks_passed": true,
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:32:15.766493+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "mode": "memory",
+  "configuration": {
+    "seed": 42,
+    "model": null
+  },
+  "seconds": 0.01607083399721887
+}

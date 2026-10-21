@@ -1,0 +1,79 @@
+---
+title: "实验环境｜下载、运行与证据"
+description: "零第三方依赖的 CPU 核心路径，以及独立的预训练本地模型观察分支"
+---
+
+# 实验环境｜下载、运行与证据
+
+本课程核心实验只用 **Python 3 标准库**，不需要 GPU、模型 API、NumPy 或 PyTorch。训练在小数组、微型 Transformer、二维速度场和构造资料上真实发生。通用预训练语言模型是独立的本地观察分支；它的能力与资源需求不计入微型实验的结果。
+
+## 下载并保留完整目录
+
+下载 [完整实验 ZIP](/ai-labs/ai-cpu-labs.zip)，解压后进入 `ai-cpu-labs` 目录。也可查看 [README](/ai-labs/README.md)、[文件校验清单](/ai-labs/SHA256SUMS.txt) 和 [环境说明](/ai-labs/environment.json)。包中含源码、测试、数据、音频与修复任务；单独下载主程序不足以完成全部实验。
+
+建议 Python 3.10 或更新版本；制作机核验版本为 Python 3.14.6。Python 本身需提前安装；若某台机器不能运行，先用教师提供的离线安装包或已准备好的课堂电脑完成诊断，不要求学生临时购买任何服务。Windows 可把下面的 `python3` 换为已确认指向 Python 3 的 `py -3`。
+
+```sh
+python3 --version
+python3 -B ai_lab.py l1 --output ./runs/l1 --seed 42
+python3 -B -m unittest -v test_ai_lab.py
+```
+
+第一条确认解释器；第二条真实训练并写入 `runs/l1/l1.json`；第三条检验因果遮挡、梯度、检索、工具与量化等语义。`-B` 避免生成字节码缓存。终端退出码 0 表示本次明确核验通过，非零需读错误；不能只看程序打印了很多数字。
+
+## 统一运行与提交格式
+
+L1—L8 用相同命令形式，把 `l1` 换成对应编号。补充实践单列命令：
+
+```sh
+python3 -B practice.py sft --output ./runs/sft --seed 42
+python3 -B practice.py media --output ./runs/media --seed 42
+python3 -B practice.py memory --output ./runs/memory --seed 42
+```
+
+记忆实验会真实创建外部文件，再更正读回；重复运行需换一个新输出目录，避免覆盖已有学习记录。L6 在自己的输出目录准备沙盒，若已有不同内容也会拒绝覆盖。其他实验重复写同一结果文件会更新日志，比较实验应使用不同目录。
+
+JSON 中先读环境、种子、配置、`checks` 和 `limits`，再看曲线与轨迹。`parameters_changed` 要和具体实验一起解释：训练可改变参数，检索、记忆文件更新或工具执行不等于模型重新学习。教师参考输出不能代替学生自己的运行。
+
+## 可选：已经安装的通用本地模型
+
+教师可预先依据 [Ollama 官方入口](https://ollama.com/download)准备运行时和合法模型，或按其文档组织离线分发；权重及运行时不在此小包里。先核对硬件、许可和文件哈希，再让学生使用。课程程序不会自动安装、拉取模型或访问云端；无此条件仍可完成全部核心实验。
+
+已安装且服务仅在本机运行时：
+
+```sh
+python3 -B practice.py probe --model deepseek-r1:7b --output ./runs/local-probe
+python3 -B ai_lab.py l5 --local-model deepseek-r1:7b --output ./runs/l5-local
+python3 -B ai_lab.py l6 --local-model deepseek-r1:7b --output ./runs/l6-local
+```
+
+模型名是本机实例选择参数，不意味着每台机器都有。程序访问 `127.0.0.1:11434`，绕过环境代理，显式 `num_gpu=0`、上下文 1024、生成上限 96、固定种子，保存请求和返回。探针检查响应与载入状态；格式与任务正确性仍需另看。L5 检查格式和来源存在，不自动证明事实正确；L6 还要实际完成读文件、求和与结束。
+
+失败就保留失败 JSON，不以脚本答案兜底冒充模型。仅已量化的通用模型被观察时，不得声称完成了该模型量化前后的质量对照；这一机制比较由 L7 的小网络实际完成。制作机的版本和实例证据见教师侧核验记录，学生资源适配须在本人机器上检查。
+
+## 教师动作、学生动作与验收
+
+教师提前解压并跑通 L1/L2、准备终端命令和一份输出示例，再让学生独立从新目录启动。学生先预测一个参数更新方向，运行后指出相应输出字段，并解释一个 `limits` 条目。验收是“能运行、能定位输出、能说明边界”；本课不以安装成功替代机制学习。
+
+<details>
+<summary>提示一：找不到文件时先核对目录</summary>
+
+终端当前目录应能看到 `ai_lab.py`、`practice.py`、`test_ai_lab.py` 和 `data`。不要将终端报错误诊为模型训练失败。
+
+</details>
+
+<details>
+<summary>提示二：核验失败先找具体名称</summary>
+
+查看 `all_checks_passed` 与逐项 `checks`，对照种子、代码、数据版本。不要把字段手改为 true。
+
+</details>
+
+<details>
+<summary>完整解析与环境验收</summary>
+
+交出本人环境、L1 JSON、测试退出状态及一次参数预测解释。不同机器耗时可以不同，不能据耗时不同就认定错误；损失、契约与边界才是对应检查点。
+
+</details>
+
+独立变式：把种子改为 7 并输出到新目录，比较训练波动；如果某项失败，保留两次日志并指出检查条件。下一步进入 [L1](/docs/ai/lab-01-learning)。

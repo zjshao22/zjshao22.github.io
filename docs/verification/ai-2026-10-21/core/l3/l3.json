@@ -1,0 +1,790 @@
+{
+  "schema_version": 1,
+  "lab": "l3",
+  "data_version": "2026-10-21-v2",
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:44:29.191805+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "run_configuration": {
+    "seed": 42,
+    "local_model": null
+  },
+  "sources": {
+    "program": "ai_lab.py",
+    "program_sha256": "060606ff2702bf91eba3fd0e1a54f4de853e5e3550563b8e097076ba83ddb23b",
+    "data": "Included constructed educational fixtures",
+    "evidence_class": "actual local CPU execution"
+  },
+  "seconds": 0.016087290990981273,
+  "all_checks_passed": true,
+  "data": {
+    "kind": "teaching_construction",
+    "contexts": [-2.0, -1.0, 1.0, 2.0],
+    "action_space": [0, 1],
+    "reward": "action == int(context > 0)"
+  },
+  "policy_gradient": {
+    "objective": "Exact expected reward over both actions",
+    "before": [0.0, 0.0],
+    "after": [3.0800813708987365, 1.8800065670898688e-17],
+    "history": [
+      {
+        "step": 0,
+        "expected_reward": 0.5
+      },
+      {
+        "step": 25,
+        "expected_reward": 0.8578212131663332
+      },
+      {
+        "step": 50,
+        "expected_reward": 0.9198960445759973
+      },
+      {
+        "step": 75,
+        "expected_reward": 0.9436425051919347
+      },
+      {
+        "step": 100,
+        "expected_reward": 0.9563519930774245
+      },
+      {
+        "step": 125,
+        "expected_reward": 0.9643202122716183
+      },
+      {
+        "step": 150,
+        "expected_reward": 0.9698009753937096
+      },
+      {
+        "step": 175,
+        "expected_reward": 0.9738088936494401
+      },
+      {
+        "step": 200,
+        "expected_reward": 0.9768705403094466
+      }
+    ]
+  },
+  "dpo": {
+    "reference": "uniform fixed policy",
+    "after": [4.02491509224264, 0.0],
+    "history": [
+      {
+        "step": 0,
+        "preferred_probability": 0.5
+      },
+      {
+        "step": 50,
+        "preferred_probability": 0.9377829440295988
+      },
+      {
+        "step": 100,
+        "preferred_probability": 0.9750336036711897
+      },
+      {
+        "step": 150,
+        "preferred_probability": 0.9860861340383653
+      },
+      {
+        "step": 200,
+        "preferred_probability": 0.9909958192928893
+      }
+    ]
+  },
+  "inference": {
+    "candidate_budget_per_method": 5,
+    "trials": [
+      {
+        "context": -2.0,
+        "candidates": [0, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 0, 1, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 0, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 1, 0, 0],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 0, 1, 0, 1],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 0, 1, 0, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 1, 0, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 1, 1, 0, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 0, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 0, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 1, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 0, 0, 1, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 0, 0, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 0, 1, 0, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [1, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 1, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [0, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 1, 0, 0, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 0, 0, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 1, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 0, 0, 1, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 0, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [1, 0, 1, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 0, 1, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 1, 1, 0, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 0, 1, 1, 0],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 1, 1, 0, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [0, 1, 1, 0, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 0, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [0, 1, 0, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 1, 1, 0, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 0, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 1, 1, 0, 1],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 0, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [0, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 1, 0, 0, 1],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 1, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 0, 1, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 0, 0, 1, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [0, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 1, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 1, 0, 1, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [0, 1, 0, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 0,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 0, 1, 0, 1],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 1, 0, 1, 0],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 0, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 0, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [0, 1, 0, 1, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [1, 0, 0, 0, 1],
+        "majority": 0,
+        "verified": 1,
+        "majority_reward": 0,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 1, 0],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -2.0,
+        "candidates": [0, 1, 1, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": -1.0,
+        "candidates": [1, 1, 0, 0, 0],
+        "majority": 0,
+        "verified": 0,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 1.0,
+        "candidates": [0, 0, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      },
+      {
+        "context": 2.0,
+        "candidates": [1, 1, 1, 1, 1],
+        "majority": 1,
+        "verified": 1,
+        "majority_reward": 1,
+        "verified_reward": 1
+      }
+    ],
+    "selection_policy": "fixed deliberately imperfect checkpoint w=0.4,b=0",
+    "majority_accuracy": 0.725,
+    "verified_accuracy": 1.0
+  },
+  "parameters_changed": true,
+  "checks": [
+    {
+      "name": "policy_parameters_really_updated",
+      "passed": true,
+      "detail": {
+        "before": 0.5,
+        "after": 0.9769780720052021
+      }
+    },
+    {
+      "name": "preference_training_really_updated",
+      "passed": true,
+      "detail": {
+        "after": 0.9910647796174026,
+        "beta": 0.5
+      }
+    },
+    {
+      "name": "inference_does_not_train",
+      "passed": true,
+      "detail": {
+        "before_hash": "601fe5fd384440813fa96f8b2185eca261cf76ec5d745aa497ad719c53c44cea",
+        "after_hash": "601fe5fd384440813fa96f8b2185eca261cf76ec5d745aa497ad719c53c44cea"
+      }
+    },
+    {
+      "name": "verifier_counterexample_exposed",
+      "passed": true,
+      "detail": {
+        "input": "unrelated 999",
+        "weak_accepts": true,
+        "strict_accepts": false,
+        "question": "2+2"
+      }
+    }
+  ],
+  "limits": [
+    "This is a two-action policy mechanism, not a general reasoning model.",
+    "The verifier has direct access to this constructed task's reward.",
+    "Expected-reward training enumerates actions; it is not sampled PPO/GRPO."
+  ]
+}

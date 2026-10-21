@@ -1,0 +1,6 @@
+{
+  "command": "npm run build",
+  "exit_code": 0,
+  "stdout": "\n> tech-courses-pages@0.0.14 build\n> next build --webpack\n\n▲ Next.js 16.3.0 (webpack)\n[MDX] generated files in 1.5577079999999341ms\n✓ Running next.config.ts took 194ms\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 5.5s\n  Running TypeScript ...\n  Finished TypeScript in 1290ms ...\n  Collecting page data using 5 workers ...\n  Generating static pages using 5 workers (0/75) ...\n  Generating static pages using 5 workers (18/75) \n  Generating static pages using 5 workers (37/75) \n  Generating static pages using 5 workers (56/75) \n✓ Generating static pages using 5 workers (75/75) in 1285ms\n  Finalizing page optimization ...\n  Collecting build traces ...\n\nRoute (app)\n┌ ○ /\n├ ○ /_not-found\n└   /docs/[[...slug]]\n  ├ ● /docs/c/00-intro-and-compilation\n  ├ ● /docs/c/01-types-variables-operators\n  ├ ● /docs/c/02-input-output\n  └ ● [+69 more paths]\n\n\n○  (Static)  prerendered as static content\n●  (SSG)     prerendered as static HTML (uses generateStaticParams)\n\n",
+  "stderr": ""
+}

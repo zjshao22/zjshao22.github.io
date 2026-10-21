@@ -1,0 +1,21 @@
+[
+  {
+    "command": ["python3", "-B", "ai_lab.py", "l8", "--output", "./runs/l8"],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l8\", \"result\": \"/private/var/folders/k4/fzvc3fvs1knc0cjhgmjft5c80000gn/T/ai-zip-fyk38858/ai-cpu-labs/runs/l8/l8.json\", \"all_checks_passed\": true, \"seconds\": 0.24627233399951365, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "practice.py",
+      "media",
+      "--output",
+      "./runs/media"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"mode\": \"media\", \"all_checks_passed\": true, \"output\": \"/private/var/folders/k4/fzvc3fvs1knc0cjhgmjft5c80000gn/T/ai-zip-fyk38858/ai-cpu-labs/runs/media/media.json\", \"seconds\": 0.020949291007127613, \"error\": null}\n",
+    "stderr": ""
+  }
+]

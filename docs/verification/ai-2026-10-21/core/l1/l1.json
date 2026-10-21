@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "lab": "l1",
+  "data_version": "2026-10-21-v2",
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:44:21.704692+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "run_configuration": {
+    "seed": 42,
+    "local_model": null
+  },
+  "sources": {
+    "program": "ai_lab.py",
+    "program_sha256": "060606ff2702bf91eba3fd0e1a54f4de853e5e3550563b8e097076ba83ddb23b",
+    "data": "Included constructed educational fixtures",
+    "evidence_class": "actual local CPU execution"
+  },
+  "seconds": 0.2640133329987293,
+  "all_checks_passed": true,
+  "data": {
+    "kind": "teaching_construction",
+    "linear": [
+      [-1, -1],
+      [-0.6, -0.19999999999999996],
+      [-0.2, 0.6],
+      [0.2, 1.4],
+      [0.6, 2.2],
+      [1, 3]
+    ],
+    "xor": [
+      [[0, 0], -1],
+      [[0, 1], 1],
+      [[1, 0], 1],
+      [[1, 1], -1]
+    ]
+  },
+  "linear": {
+    "parameters_before": [-0.4, 0.2],
+    "parameters_after": [1.9999999932827928, 0.9999999999999999],
+    "history": [
+      {
+        "step": 0,
+        "loss": 3.3280000000000007,
+        "w": -0.4,
+        "b": 0.2
+      },
+      {
+        "step": 25,
+        "loss": 0.02004516700662246,
+        "w": 1.7927939295839468,
+        "b": 0.9969776854509634
+      },
+      {
+        "step": 50,
+        "loss": 0.00014934633691992283,
+        "w": 1.9821106851594739,
+        "b": 0.9999885820184583
+      },
+      {
+        "step": 75,
+        "loss": 1.1132088806959329e-6,
+        "w": 1.9984555105706079,
+        "b": 0.9999999568640854
+      },
+      {
+        "step": 100,
+        "loss": 8.297726715319337e-9,
+        "w": 1.9998666551727238,
+        "b": 0.9999999998370372
+      },
+      {
+        "step": 125,
+        "loss": 6.185026902865726e-11,
+        "w": 1.9999884875593041,
+        "b": 0.9999999999993844
+      },
+      {
+        "step": 150,
+        "loss": 4.610245567398897e-13,
+        "w": 1.999999006063501,
+        "b": 0.9999999999999977
+      },
+      {
+        "step": 175,
+        "loss": 3.4364222643242522e-15,
+        "w": 1.999999914187635,
+        "b": 0.9999999999999999
+      },
+      {
+        "step": 200,
+        "loss": 2.5614683352555873e-17,
+        "w": 1.9999999925913154,
+        "b": 0.9999999999999999
+      }
+    ],
+    "unseen_inputs": [
+      {
+        "x": -0.8,
+        "expected": -0.6000000000000001,
+        "prediction": -0.5999999946262343
+      },
+      {
+        "x": 0,
+        "expected": 1,
+        "prediction": 0.9999999999999999
+      },
+      {
+        "x": 0.8,
+        "expected": 2.6,
+        "prediction": 2.599999994626234
+      },
+      {
+        "x": 1.4,
+        "expected": 3.8,
+        "prediction": 3.79999999059591
+      }
+    ]
+  },
+  "xor": {
+    "architecture": "2-4(tanh)-1(tanh)",
+    "steps": 700,
+    "predictions": [
+      {
+        "x": [0, 0],
+        "target": -1,
+        "prediction": -0.9922095805153774
+      },
+      {
+        "x": [0, 1],
+        "target": 1,
+        "prediction": 0.9825222792143867
+      },
+      {
+        "x": [1, 0],
+        "target": 1,
+        "prediction": 0.9874990428139899
+      },
+      {
+        "x": [1, 1],
+        "target": -1,
+        "prediction": -0.9812609083250428
+      }
+    ],
+    "parameter_hash_before": "3225c687ead817a6b2de62d20ef59ac64cd5e1ab3acd2631aa16702c78763308",
+    "parameter_hash_after": "fa39442aa31f5b462ab3939c42ec590ec02f19d3da219f5117e45dc3b025ec46"
+  },
+  "parameters_changed": true,
+  "checks": [
+    {
+      "name": "analytic_gradient_matches_finite_difference",
+      "passed": true,
+      "detail": {
+        "max_absolute_error": 2.0604407069413355e-11
+      }
+    },
+    {
+      "name": "linear_training_reduces_loss",
+      "passed": true,
+      "detail": {
+        "before": 3.3280000000000007,
+        "after": 2.1056407118680844e-17
+      }
+    },
+    {
+      "name": "xor_real_training",
+      "passed": true,
+      "detail": {
+        "before_mse": 1.1213551680377611,
+        "after_mse": 0.00021839721174378844
+      }
+    },
+    {
+      "name": "large_learning_rate_failure_observed",
+      "passed": true,
+      "detail": {
+        "learning_rate": 1.2,
+        "final_loss": 2057.0878082673494
+      }
+    }
+  ],
+  "limits": [
+    "XOR evaluates its four training points; this is not a generalization claim.",
+    "The linear data are constructed, not real rent observations."
+  ]
+}

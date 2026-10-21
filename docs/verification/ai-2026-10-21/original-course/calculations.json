@@ -1,0 +1,51 @@
+{
+  "kind": "actual Python execution of constructed classroom examples, not student or product performance",
+  "interpreter": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+  "rental_code": "samples = [(2.0, 1.2), (2.5, 1.4), (3.0, 1.6),\n           (3.5, 1.8), (4.0, 2.0), (4.5, 2.2)]\n\ndef mse(w, b):\n    return sum((w * x + b - y) ** 2 for x, y in samples) / len(samples)\n\nw, b = 0.3, 0.4\nx_c, y_c = 3.0, 1.6\nerror = w * x_c + b - y_c\ndw, db = 2 * error * x_c, 2 * error\nprint(\"更新前\", round(mse(w, b), 7))\nfor rate in [0.02, 0.2]:\n    new_w, new_b = w - rate * dw, b - rate * db\n    print(rate, round(new_w, 3), round(new_b, 3),\n          round(mse(new_w, new_b), 7))",
+  "rental_exit": 0,
+  "rental_stdout": "更新前 0.1129167\n0.02 0.336 0.412 0.0414027\n0.2 0.66 0.52 0.9805167\n",
+  "bfs": {
+    "trace": [
+      {
+        "expanded": "A",
+        "queue": ["B", "C"]
+      },
+      {
+        "expanded": "B",
+        "queue": ["C", "D"]
+      },
+      {
+        "expanded": "C",
+        "queue": ["D", "E"]
+      },
+      {
+        "expanded": "D",
+        "queue": ["E", "F"]
+      },
+      {
+        "expanded": "E",
+        "queue": ["F"]
+      }
+    ],
+    "path": ["A", "B", "D", "F"]
+  },
+  "clustering_centers": [1.5, 8.5],
+  "discounted_returns": {
+    "0.9": [6.200000000000001, 2.0],
+    "0.1": [-1.0, 2.0]
+  },
+  "relu_inactive": {
+    "activation": 0,
+    "prediction": 0,
+    "loss": 4,
+    "gradients": [0, 0]
+  },
+  "large_step_relu_loss": 2.6896,
+  "confusion_metrics": {
+    "accuracy": 0.65,
+    "precision": 0.6666666666666666,
+    "recall": 0.6
+  },
+  "language_loss_changed": 0.9985774245179969,
+  "all_checks_passed": true
+}

@@ -1,0 +1,139 @@
+{
+  "kind": "actual optional pretrained local-model probe",
+  "runtime": {
+    "version": "0.40.6"
+  },
+  "installed_weight": {
+    "name": "deepseek-r1:7b",
+    "model": "deepseek-r1:7b",
+    "modified_at": "2025-02-09T14:02:46.963281711+08:00",
+    "size": 4683075271,
+    "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen2",
+      "families": ["qwen2"],
+      "parameter_size": "7.6B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 131072,
+      "embedding_length": 3584,
+      "runner": "ggml"
+    },
+    "capabilities": ["tools", "thinking", "completion"]
+  },
+  "model_call": {
+    "endpoint": "http://127.0.0.1:11434/api/generate",
+    "model_requested": "deepseek-r1:7b",
+    "request": {
+      "model": "deepseek-r1:7b",
+      "prompt": "只输出JSON对象，不作解释：{\"sum\":19}",
+      "stream": false,
+      "format": "json",
+      "options": {
+        "num_gpu": 0,
+        "num_ctx": 1024,
+        "num_predict": 96,
+        "temperature": 0,
+        "seed": 42
+      }
+    },
+    "response": {
+      "model": "deepseek-r1:7b",
+      "created_at": "2026-10-21T05:45:44.906394Z",
+      "response": "{ \"sum\": 19 }",
+      "done": true,
+      "done_reason": "stop",
+      "context": [
+        151644, 91680, 66017, 5370, 64429, 3837, 16530, 19403, 104136, 5122,
+        4913, 1242, 788, 16, 24, 92, 151645, 90, 330, 1242, 788, 220, 16, 24,
+        335
+      ],
+      "total_duration": 7033705375,
+      "load_duration": 6338355875,
+      "prompt_eval_count": 18,
+      "prompt_eval_cached_count": 0,
+      "prompt_eval_duration": 212384000,
+      "eval_count": 9,
+      "eval_duration": 479038000
+    },
+    "seconds": 7.034760707989335,
+    "answer_mode": "local_lm_generation",
+    "fallback_used": false
+  },
+  "loaded_model_state": [
+    {
+      "name": "deepseek-r1:7b",
+      "model": "deepseek-r1:7b",
+      "size": 4890610891,
+      "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen2",
+        "families": ["qwen2"],
+        "parameter_size": "7.6B",
+        "quantization_level": "Q4_K_M"
+      },
+      "expires_at": "2026-10-21T13:50:44.906883+08:00",
+      "size_vram": 0,
+      "context_length": 1024,
+      "runner": "llamacpp"
+    }
+  ],
+  "checks": [
+    {
+      "name": "response_returned",
+      "passed": true,
+      "detail": "Nonempty is not a correctness or JSON-format guarantee"
+    },
+    {
+      "name": "cpu_only_observed",
+      "passed": true,
+      "detail": [
+        {
+          "name": "deepseek-r1:7b",
+          "model": "deepseek-r1:7b",
+          "size": 4890610891,
+          "digest": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen2",
+            "families": ["qwen2"],
+            "parameter_size": "7.6B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-10-21T13:50:44.906883+08:00",
+          "size_vram": 0,
+          "context_length": 1024,
+          "runner": "llamacpp"
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "This is one installed machine, not a student hardware compatibility claim.",
+    "Only this quantized weight was run; no unquantized pretrained-model comparison.",
+    "Returned text and schema/task correctness must be inspected separately."
+  ],
+  "all_checks_passed": true,
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:45:44.924480+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "mode": "probe",
+  "configuration": {
+    "seed": 42,
+    "model": "deepseek-r1:7b"
+  },
+  "seconds": 7.07200687500881,
+  "source_sha256": {
+    "practice.py": "665cd7b05af4e67e6621da63a196ff1199d62e9dab59c6f19d36cb277ddf100b",
+    "ai_lab.py": "060606ff2702bf91eba3fd0e1a54f4de853e5e3550563b8e097076ba83ddb23b"
+  }
+}

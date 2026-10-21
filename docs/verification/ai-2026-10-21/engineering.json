@@ -1,0 +1,20 @@
+[
+  {
+    "command": ["npm", "run", "types:check"],
+    "exit_code": 0,
+    "stdout": "\n> tech-courses-pages@0.0.14 types:check\n> next typegen && tsc --noEmit\n\n[MDX] generated files in 1.5229589999999575ms\nGenerating route types...\n✓ Types generated successfully\n",
+    "stderr": ""
+  },
+  {
+    "command": ["npm", "run", "lint"],
+    "exit_code": 0,
+    "stdout": "\n> tech-courses-pages@0.0.14 lint\n> eslint\n\n",
+    "stderr": ""
+  },
+  {
+    "command": ["npm", "run", "build"],
+    "exit_code": 0,
+    "stdout": "\n> tech-courses-pages@0.0.14 build\n> next build --webpack\n\n▲ Next.js 16.3.0 (webpack)\n[MDX] generated files in 1.4023750000000064ms\n✓ Running next.config.ts took 198ms\n\n  Creating an optimized production build ...\n✓ Compiled successfully in 3.9s\n  Running TypeScript ...\n  Finished TypeScript in 1212ms ...\n  Collecting page data using 5 workers ...\n  Generating static pages using 5 workers (0/125) ...\n  Generating static pages using 5 workers (31/125) \n  Generating static pages using 5 workers (62/125) \n  Generating static pages using 5 workers (93/125) \n✓ Generating static pages using 5 workers (125/125) in 1502ms\n  Finalizing page optimization ...\n  Collecting build traces ...\n\nRoute (app)\n┌ ○ /\n├ ○ /_not-found\n└   /docs/[[...slug]]\n  ├ ● /docs/database/00-intro-and-environment\n  ├ ● /docs/database/01-relational-tables-and-crud\n  ├ ● /docs/database/02-single-table-queries\n  └ ● [+119 more paths]\n\n\n○  (Static)  prerendered as static content\n●  (SSG)     prerendered as static HTML (uses generateStaticParams)\n\n",
+    "stderr": ""
+  }
+]

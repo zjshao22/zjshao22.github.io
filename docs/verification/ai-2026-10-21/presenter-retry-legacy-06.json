@@ -1,0 +1,58 @@
+{
+  "base": "http://127.0.0.1:3017",
+  "agg": {
+    "pages": 22,
+    "sparse": 2,
+    "fragments": 2,
+    "overflow": 0,
+    "oversize": 0,
+    "boundaryInside": 0,
+    "hrCrossed": 0
+  },
+  "report": [
+    {
+      "slug": "ai/06-how-neural-networks-work",
+      "viewport": "1080p",
+      "total": 22,
+      "overflow": 0,
+      "oversize": 0,
+      "sparse": 2,
+      "fragments": 2,
+      "boundaryInside": 0,
+      "hrCrossed": 0,
+      "badBody": 0,
+      "badCode": 0,
+      "minBody": 32,
+      "minCode": null,
+      "minAny": 19.5,
+      "packVer": 2,
+      "overflowPages": [],
+      "worst": [
+        {
+          "n": 9,
+          "fill": 0.203,
+          "blocks": 1,
+          "textLen": 83,
+          "kinds": "text",
+          "section": "3. 两个隐藏单元怎样解决异或",
+          "preview": "多层不保证自动得到正确特征：结构决定模型可能表示什么，训练数据与优化决定它实际学到什么。这个区分很重要。能表示异或的网络也可能由于训练不足或数据有问题而没有学会异或。"
+        },
+        {
+          "n": 14,
+          "fill": 0.26,
+          "blocks": 1,
+          "textLen": 95,
+          "kinds": "text",
+          "section": "4. 图像中的局部计算：从边缘开始",
+          "preview": "权重共享也带来具体限制：局部计算先看到的是一小块。要利用更大范围，需要增加层数、扩大感受野或采用其他结构。照片里猫的局部纹理可能也出现在毛绒玩具上；最后的分类需要结合更大范围的形状和上下文。"
+        }
+      ],
+      "reading": {
+        "presenting": false,
+        "hidden": 0,
+        "oversized": 0,
+        "overlay": 0
+      }
+    }
+  ]
+}

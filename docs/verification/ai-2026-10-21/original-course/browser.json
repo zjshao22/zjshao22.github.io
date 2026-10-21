@@ -1,0 +1,249 @@
+{
+  "date": "2026-10-21T06:59:27.453Z",
+  "pages": [
+    {
+      "slug": "index",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 0,
+      "opens": null,
+      "title": "人工智能\n从此演示"
+    },
+    {
+      "slug": "01-what-is-ai",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 0,
+      "opens": null,
+      "title": "什么是人工智能\n从此演示"
+    },
+    {
+      "slug": "02-history-of-ai",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 0,
+      "opens": null,
+      "title": "人工智能发展简史\n从此演示"
+    },
+    {
+      "slug": "03-abilities-and-applications",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 0,
+      "opens": null,
+      "title": "人工智能的能力与应用\n从此演示"
+    },
+    {
+      "slug": "04-challenges-and-future",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 0,
+      "opens": null,
+      "title": "人工智能的挑战与未来\n从此演示"
+    },
+    {
+      "slug": "05-data-for-ai",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 3,
+      "opens": true,
+      "title": "AI 怎样把现实变成数据\n从此演示"
+    },
+    {
+      "slug": "06-how-ai-decides",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 3,
+      "opens": true,
+      "title": "AI 怎样作出判断\n从此演示"
+    },
+    {
+      "slug": "07-ways-machines-learn",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 6,
+      "opens": true,
+      "title": "机器学习有哪些学习方式\n从此演示"
+    },
+    {
+      "slug": "05-how-machines-learn",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 3,
+      "opens": true,
+      "title": "机器怎样从数据中学习\n从此演示"
+    },
+    {
+      "slug": "06-how-neural-networks-work",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 6,
+      "opens": true,
+      "title": "神经网络怎样识别事物\n从此演示"
+    },
+    {
+      "slug": "07-how-language-models-answer",
+      "status": 200,
+      "mathErrors": 0,
+      "disclosures": 6,
+      "opens": true,
+      "title": "大语言模型怎样生成回答\n从此演示"
+    }
+  ],
+  "links": [
+    {
+      "path": "/docs/ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-data-for-ai",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-how-ai-decides",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-ways-machines-learn",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-how-machines-learn",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-how-neural-networks-work",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-how-language-models-answer",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-data-for-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-how-ai-decides/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-ways-machines-learn/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-how-machines-learn/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-how-neural-networks-work/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-how-language-models-answer/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/01-what-is-ai",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/01-what-is-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/02-history-of-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/03-abilities-and-applications/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/04-challenges-and-future/",
+      "status": 200
+    }
+  ],
+  "mobile": [
+    {
+      "slug": "index",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "slug": "05-data-for-ai",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "slug": "07-how-language-models-answer",
+      "width": 390,
+      "scrollWidth": 390
+    }
+  ],
+  "retired_route_status": 404,
+  "presenter": [
+    {
+      "slug": "01-what-is-ai",
+      "pages": 17,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "02-history-of-ai",
+      "pages": 19,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "03-abilities-and-applications",
+      "pages": 19,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "04-challenges-and-future",
+      "pages": 21,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "05-data-for-ai",
+      "pages": 19,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "06-how-ai-decides",
+      "pages": 16,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "07-ways-machines-learn",
+      "pages": 15,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "05-how-machines-learn",
+      "pages": 27,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "06-how-neural-networks-work",
+      "pages": 24,
+      "overflow": 0,
+      "boundaryInside": 0
+    },
+    {
+      "slug": "07-how-language-models-answer",
+      "pages": 28,
+      "overflow": 0,
+      "boundaryInside": 0
+    }
+  ],
+  "errors": [],
+  "failures": []
+}

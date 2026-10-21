@@ -1,0 +1,90 @@
+{
+  "verified_date": "2026-10-21",
+  "method": "Primary pages accessed using web tools; annual cases checked by read-only delegated researcher; no large model benchmark reproduced",
+  "items": [
+    {
+      "name": "DeepSeek-R1",
+      "url": "https://arxiv.org/abs/2501.12948",
+      "source_date": "初稿2025-01-22，修订2026-01-04",
+      "supported_scope": "后训练、奖励与蒸馏；结果限定于报告条件。"
+    },
+    {
+      "name": "Qwen3.8-Next",
+      "url": "https://arxiv.org/abs/2608.30320",
+      "source_date": "2026-08-31",
+      "supported_scope": "125B骨干、每词元激活6B，另有51B主机端n-gram表；参数口径分别记录。"
+    },
+    {
+      "name": "DeepSeek-V4.1-Flash",
+      "url": "https://www.deepseek.com/en/news/deepseek-v4-1-flash/",
+      "source_date": "2026-09-10",
+      "supported_scope": "原生视觉、非对称激活与KV压缩；优势属于官方报告。"
+    },
+    {
+      "name": "Gemini 4 Argon",
+      "url": "https://deepmind.google/models/model-cards/gemini-4-argon/",
+      "source_date": "2026-10-13",
+      "supported_scope": "文本图像音频视频输入，文本输出；不推出任意模态生成。"
+    },
+    {
+      "name": "Kimi K2.5",
+      "url": "https://arxiv.org/abs/2602.02276",
+      "source_date": "初稿2026-02-02，修订2026-08-07",
+      "supported_scope": "图文联合优化、Agent Swarm；并行延迟收益依赖任务条件。"
+    },
+    {
+      "name": "Project Genie",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/google-deepmind/project-genie/",
+      "source_date": "2026-01-29",
+      "supported_scope": "实验原型，物理真实性、控制延迟、60秒时长限制。"
+    },
+    {
+      "name": "Gemini Robotics On-Device 2",
+      "url": "https://deepmind.google/models/model-cards/gemini-robotics-on-device-2/",
+      "source_date": "2026-07-30",
+      "supported_scope": "图像文本本体感觉输入，动作数值输出；受信测试者。"
+    },
+    {
+      "name": "DiffusionGemma",
+      "url": "https://ai.google.dev/gemma/docs/diffusiongemma/model_card",
+      "source_date": "页面更新2026-06-10",
+      "supported_scope": "块内迭代去噪、块间递推，不能写成全文一次并行。"
+    },
+    {
+      "name": "Test-time Calibration Learning",
+      "url": "https://arxiv.org/html/2610.02695v1",
+      "source_date": "初稿2026-10-02",
+      "supported_scope": "GRPO优化策略参数，属于测试时学习。"
+    },
+    {
+      "name": "AlphaEvolve",
+      "url": "https://arxiv.org/abs/2506.13131",
+      "source_date": "2025-06-16",
+      "supported_scope": "模型提代码、程序评估器、进化搜索；程序检验不等于现实实验。"
+    },
+    {
+      "name": "AlphaEvolve 2026 update",
+      "url": "https://deepmind.google/blog/alphaevolve-impact/",
+      "source_date": "2026-05-07",
+      "supported_scope": "官方后续案例，保留评价条件。"
+    },
+    {
+      "name": "LoRA",
+      "url": "https://arxiv.org/abs/2106.09685",
+      "source_date": "2021-06-17",
+      "supported_scope": "冻结基础权重，训练低秩更新。"
+    },
+    {
+      "name": "FlashAttention",
+      "url": "https://arxiv.org/abs/2205.14135",
+      "source_date": "2022-05-27",
+      "supported_scope": "精确注意力通过分块减少IO，不能宣称全注意力计算变线性。"
+    },
+    {
+      "name": "Ollama generate",
+      "url": "https://docs.ollama.com/api/generate",
+      "source_date": "动态接口文档",
+      "supported_scope": "本机generate请求参数与返回字段；固定包装器以源码为准。"
+    }
+  ]
+}

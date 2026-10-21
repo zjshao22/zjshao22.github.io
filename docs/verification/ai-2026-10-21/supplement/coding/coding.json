@@ -1,0 +1,14 @@
+{
+  "kind": "actual contract verification; teacher reference copied after baseline, not an autonomous coding agent",
+  "baseline": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "test_empty (test_average.AverageContract.test_empty) ... ERROR\ntest_fraction (test_average.AverageContract.test_fraction) ... FAIL\ntest_negative (test_average.AverageContract.test_negative) ... FAIL\ntest_single (test_average.AverageContract.test_single) ... ok\n\n======================================================================\nERROR: test_empty (test_average.AverageContract.test_empty)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/var/folders/k4/fzvc3fvs1knc0cjhgmjft5c80000gn/T/ai-coding-qjr8sxjo/test_average.py\", line 15, in test_empty\n    self.assertIsNone(average([]))\n                      ~~~~~~~^^^^\n  File \"/private/var/folders/k4/fzvc3fvs1knc0cjhgmjft5c80000gn/T/ai-coding-qjr8sxjo/average.py\", line 8, in average\n    return sum(values) // len(values)\n           ~~~~~~~~~~~~^^~~~~~~~~~~~~\nZeroDivisionError: division by zero\n\n======================================================================\nFAIL: test_fraction (test_average.AverageContract.test_fraction)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/var/folders/k4/fzvc3fvs1knc0cjhgmjft5c80000gn/T/ai-coding-qjr8sxjo/test_average.py\", line 9, in test_fraction\n    self.assertEqual(average([1, 2]), 1.5)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 1.5\n\n======================================================================\nFAIL: test_negative (test_average.AverageContract.test_negative)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/private/var/folders/k4/fzvc3fvs1knc0cjhgmjft5c80000gn/T/ai-coding-qjr8sxjo/test_average.py\", line 12, in test_negative\n    self.assertEqual(average([-2, -1]), -1.5)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: -2 != -1.5\n\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nFAILED (failures=2, errors=1)\n"
+  },
+  "reference": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_empty (test_average.AverageContract.test_empty) ... ok\ntest_fraction (test_average.AverageContract.test_fraction) ... ok\ntest_negative (test_average.AverageContract.test_negative) ... ok\ntest_single (test_average.AverageContract.test_single) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n"
+  },
+  "all_checks_passed": true
+}

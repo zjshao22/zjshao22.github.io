@@ -1,0 +1,128 @@
+[
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l1",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l1",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l1\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l1/l1.json\", \"all_checks_passed\": true, \"seconds\": 0.2640133329987293, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l2",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l2",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l2\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l2/l2.json\", \"all_checks_passed\": true, \"seconds\": 7.1780568749964, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l3",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l3",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l3\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l3/l3.json\", \"all_checks_passed\": true, \"seconds\": 0.016087290990981273, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l4",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l4",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l4\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l4/l4.json\", \"all_checks_passed\": true, \"seconds\": 0.6919132080074633, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l5",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l5",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l5\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l5/l5.json\", \"all_checks_passed\": true, \"seconds\": 0.2469918339920696, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l6",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l6",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l6\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l6/l6.json\", \"all_checks_passed\": true, \"seconds\": 0.0381461670040153, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l7",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l7",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l7\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l7/l7.json\", \"all_checks_passed\": true, \"seconds\": 0.20195045800937805, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "python3",
+      "-B",
+      "ai_lab.py",
+      "l8",
+      "--output",
+      "/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l8",
+      "--seed",
+      "42"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"lab\": \"l8\", \"result\": \"/Users/shaozhenjie/class-server/github.io/docs/verification/ai-2026-10-21/core/l8/l8.json\", \"all_checks_passed\": true, \"seconds\": 0.24794487499457318, \"error\": null}\n",
+    "stderr": ""
+  },
+  {
+    "command": ["python3", "-B", "-m", "unittest", "-v", "test_ai_lab.py"],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_answerer_cannot_restore_unretrieved_sources (test_ai_lab.CoreSemantics.test_answerer_cannot_restore_unretrieved_sources) ... ok\ntest_causal_model_cannot_read_future (test_ai_lab.CoreSemantics.test_causal_model_cannot_read_future) ... ok\ntest_failed_local_action_retains_raw_call (test_ai_lab.CoreSemantics.test_failed_local_action_retains_raw_call) ... ok\ntest_flow_samples_follow_condition (test_ai_lab.CoreSemantics.test_flow_samples_follow_condition) ... ok\ntest_frozen_cases_and_ablation_expose_failure (test_ai_lab.CoreSemantics.test_frozen_cases_and_ablation_expose_failure) ... ok\ntest_int8_is_really_bytes_and_lora_changes_frozen_task (test_ai_lab.CoreSemantics.test_int8_is_really_bytes_and_lora_changes_frozen_task) ... ok\ntest_invalid_http_model_payload_is_logged (test_ai_lab.CoreSemantics.test_invalid_http_model_payload_is_logged) ... ok\ntest_local_model_numeric_and_invented_sources_fail (test_ai_lab.CoreSemantics.test_local_model_numeric_and_invented_sources_fail) ... ok\ntest_missing_and_conflicting_evidence (test_ai_lab.CoreSemantics.test_missing_and_conflicting_evidence) ... ok\ntest_real_read_calculate_finish_and_bounds (test_ai_lab.CoreSemantics.test_real_read_calculate_finish_and_bounds) ... ok\ntest_retrieval_query_strings_are_separate (test_ai_lab.CoreSemantics.test_retrieval_query_strings_are_separate) ... ok\ntest_shared_parameter_chain_rule (test_ai_lab.CoreSemantics.test_shared_parameter_chain_rule) ... ok\ntest_transformer_trains_context_dependent_copy (test_ai_lab.CoreSemantics.test_transformer_trains_context_dependent_copy) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 8.639s\n\nOK\n"
+  }
+]

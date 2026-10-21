@@ -1,0 +1,48 @@
+---
+title: 现代人工智能
+description: 从表示、学习与生成，到后训练、多模态、智能体和证据核验
+icon: Bot
+---
+
+# 现代人工智能：原理、系统与前沿
+
+一个会回答、查资料、看图和使用工具的系统，内部到底发生了什么？这门课从具体任务出发，沿输入表示、参数学习、内容生成、知识接入、行动执行和结果核验逐步拆开。面向有计算机与 Python 基础、尚未接触 AI 的学习者；数学随问题补齐，不要求先掌握深度学习框架。
+
+40 个知识单元不等于 40 个课时。先预测、再复算或运行，随后解释反例并完成陌生变式。没有 GPU 和模型 API 也能完成八组 CPU 核心实验；微型训练与大型前沿案例分别标明范围。
+
+## 按机制逐步学习
+
+| 模块            | 学习入口与范围                                                                                                 | 完成时应能做什么                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| A｜从程序到学习 | [01 拆开系统](/docs/ai/01-modern-ai-system) → [05 表示与反传](/docs/ai/05-representation-and-backprop)         | 定义输入，复算损失与梯度，区分训练和使用         |
+| B｜语言模型     | [06 分词](/docs/ai/06-tokenization) → [12 生成](/docs/ai/12-generation)                                        | 重建词元、注意力、Transformer 到逐步生成的数据流 |
+| C｜后训练与推理 | [13 预训练数据](/docs/ai/13-pretraining-data) → [18 推理预算](/docs/ai/18-inference-time-compute)              | 解释示范、偏好、奖励和搜索改变的状态             |
+| D｜多模态       | [19 图文对齐](/docs/ai/19-vision-and-alignment) → [24 视频与世界模型](/docs/ai/24-video-and-world-models)      | 比较视觉、声音和生成机制，辨认现实差距           |
+| E｜系统与行动   | [25 提示与上下文](/docs/ai/25-prompts-and-context) → [31 编程与多智能体](/docs/ai/31-coding-ui-and-multiagent) | 追踪检索、来源、工具、记忆和终止条件             |
+| F｜运行与可靠性 | [32 CPU 推断](/docs/ai/32-local-cpu-inference) → [36 安全与权限](/docs/ai/36-safety-and-permissions)           | 估资源、做适配与对照，核查执行边界               |
+| G｜前沿与项目   | [37 2026 年版图](/docs/ai/37-modern-ai-landscape) → [40 独立答辩](/docs/ai/40-transfer-and-defense)            | 读懂一手报告，提交项目并接受未见变式             |
+
+年度材料核验截至 2026-10-21；报告披露、课程微型实测与课堂学习表现是不同证据。模型名与排名可能变化，学习主线保留对机制与验证的解释。
+
+## 动手路径
+
+先完成 [环境、下载与运行](/docs/ai/lab-00-environment)，再随相关单元进入实验：
+
+1. [L1 模型真的学到了什么](/docs/ai/lab-01-learning)：参数、梯度与泛化。
+2. [L2 从词元到生成](/docs/ai/lab-02-token-to-generation)：完整微型 Transformer。
+3. [L3 反馈、验证与推理预算](/docs/ai/lab-03-feedback-and-budget)：监督、偏好和推理对照。
+4. [L4 多模态与生成机制](/docs/ai/lab-04-multimodal-generation)：速度场、信号和状态预测。
+5. [L5 带来源的资料问答](/docs/ai/lab-05-retrieval-and-sources)：检索、冲突和拒答。
+6. [L6 受限工具、记忆与修复](/docs/ai/lab-06-tools-and-memory)：执行、读回和测试。
+7. [L7 资源与适配对照](/docs/ai/lab-07-resources-and-adaptation)：int8、KV 和 LoRA。
+8. [L8 综合项目与独立复测](/docs/ai/lab-08-project-and-defense)：基线、消融和答辩。
+
+[下载完整实验包](/ai-labs/ai-cpu-labs.zip)。包内数据为明确构造的教学材料，自己的运行日志才是本次实验证据。
+
+## 怎样判断学会了
+
+每个单元都给出具体问题、朴素方案及其缺陷、机制与状态推演、学生任务、三级提示和独立变式。第一次先不展开提示，保留预测；需要时逐级查看，最后核对验收。完成作品、运行通过、个人能解释和能独立迁移分别检查。
+
+旧版十课保留在[历史材料入口](/docs/ai/legacy-materials)，旧链接继续可用；完整学习按本页的新主线进行。
+
+→ [从第 01 单元开始](/docs/ai/01-modern-ai-system)

@@ -1,0 +1,14 @@
+[
+  {
+    "command": ["npm", "run", "types:check"],
+    "exit_code": 0,
+    "stdout": "\n> tech-courses-pages@0.0.14 types:check\n> next typegen && tsc --noEmit\n\n[MDX] generated files in 1.8629169999999249ms\nGenerating route types...\n✓ Types generated successfully\n",
+    "stderr": ""
+  },
+  {
+    "command": ["npm", "run", "lint"],
+    "exit_code": 0,
+    "stdout": "\n> tech-courses-pages@0.0.14 lint\n> eslint\n\n",
+    "stderr": ""
+  }
+]

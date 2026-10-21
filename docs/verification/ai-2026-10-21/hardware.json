@@ -1,0 +1,8 @@
+{
+  "kind": "actual local host observation, not a student-machine claim",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "hw.model": "MacBookPro18,1",
+  "hw.memsize": "34359738368",
+  "machdep.cpu.brand_string": "Apple M1 Pro"
+}

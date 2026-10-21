@@ -1,0 +1,603 @@
+{
+  "schema_version": 1,
+  "lab": "l8",
+  "data_version": "2026-10-21-v2",
+  "environment": {
+    "python": "3.14.6 (main, Jun 10 2026, 10:03:53) [Clang 21.0.0 (clang-2100.0.123.102)]",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "logical_cpus": 10,
+    "timestamp_utc": "2026-10-21T05:44:31.080300+00:00",
+    "dependencies": "Python 3 standard library only"
+  },
+  "run_configuration": {
+    "seed": 42,
+    "local_model": null
+  },
+  "sources": {
+    "program": "ai_lab.py",
+    "program_sha256": "060606ff2702bf91eba3fd0e1a54f4de853e5e3550563b8e097076ba83ddb23b",
+    "data": "Included constructed educational fixtures",
+    "evidence_class": "actual local CPU execution"
+  },
+  "seconds": 0.24794487499457318,
+  "all_checks_passed": true,
+  "data": {
+    "kind": "visible fixed regression suite, not hidden generalization evaluation",
+    "version": "2026-10-21-v2",
+    "source": "/Users/shaozhenjie/class-server/github.io/public/ai-labs/data/frozen_cases.json",
+    "sha256": "46a7fa75459c2007f607d2ab7064fc8352a1f104d757355aa7e8b2fcfca870d2",
+    "cases": [
+      {
+        "id": "network-contact",
+        "query": "校园 网络 报修 电话",
+        "expected_status": "answered",
+        "answer_contains": "1001",
+        "required_sources": ["teaching://campus/network"]
+      },
+      {
+        "id": "lab-booking",
+        "query": "实验室 借用 提前 多久",
+        "expected_status": "answered",
+        "answer_contains": "一天",
+        "required_sources": ["teaching://campus/lab"]
+      },
+      {
+        "id": "course-assessment",
+        "query": "人工智能 课程 怎么 考核",
+        "expected_status": "answered",
+        "answer_contains": "项目答辩",
+        "required_sources": ["teaching://campus/exam"]
+      },
+      {
+        "id": "breakfast-deadline",
+        "query": "食堂 早餐 结束 时间",
+        "expected_status": "answered",
+        "answer_contains": "09:00",
+        "required_sources": ["teaching://campus/meal"]
+      },
+      {
+        "id": "conflicting-opening",
+        "query": "图书馆 开放 时间",
+        "expected_status": "conflicting_evidence",
+        "answer_contains": null,
+        "required_sources": [
+          "teaching://campus/library-a",
+          "teaching://campus/library-b"
+        ]
+      },
+      {
+        "id": "absent-parking-policy",
+        "query": "校外 停车场 收费 规定",
+        "expected_status": "no_evidence",
+        "answer_contains": null,
+        "required_sources": []
+      },
+      {
+        "id": "cross-topic-clarification",
+        "query": "图书馆 和 食堂 的 时间",
+        "expected_status": "clarify",
+        "answer_contains": null,
+        "required_sources": [
+          "teaching://campus/library-a",
+          "teaching://campus/library-b",
+          "teaching://campus/meal"
+        ]
+      }
+    ],
+    "freeze_claim": "Released fixed contents; no claim of independence from package authors' development"
+  },
+  "configuration": {
+    "full": "trained small retriever + explicit answerability/conflict rules",
+    "modes": [
+      "lexical_naive",
+      "learned_full",
+      "no_retrieval",
+      "no_conflict_check"
+    ]
+  },
+  "summary": {
+    "lexical_naive": {
+      "correct": 4,
+      "total": 7,
+      "accuracy": 0.5714285714285714,
+      "failure_ids": [
+        "conflicting-opening",
+        "absent-parking-policy",
+        "cross-topic-clarification"
+      ]
+    },
+    "learned_full": {
+      "correct": 7,
+      "total": 7,
+      "accuracy": 1.0,
+      "failure_ids": []
+    },
+    "no_retrieval": {
+      "correct": 1,
+      "total": 7,
+      "accuracy": 0.14285714285714285,
+      "failure_ids": [
+        "network-contact",
+        "lab-booking",
+        "course-assessment",
+        "breakfast-deadline",
+        "conflicting-opening",
+        "cross-topic-clarification"
+      ]
+    },
+    "no_conflict_check": {
+      "correct": 6,
+      "total": 7,
+      "accuracy": 0.8571428571428571,
+      "failure_ids": ["conflicting-opening"]
+    }
+  },
+  "results": [
+    {
+      "mode": "lexical_naive",
+      "case_id": "network-contact",
+      "query": "校园 网络 报修 电话",
+      "answer": {
+        "status": "answered",
+        "answer": "校园网络报修电话为 1001。",
+        "citations": ["teaching://campus/network"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "lexical_naive",
+      "case_id": "lab-booking",
+      "query": "实验室 借用 提前 多久",
+      "answer": {
+        "status": "answered",
+        "answer": "计算机实验室须提前一天预约。",
+        "citations": ["teaching://campus/lab"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "lexical_naive",
+      "case_id": "course-assessment",
+      "query": "人工智能 课程 怎么 考核",
+      "answer": {
+        "status": "answered",
+        "answer": "人工智能课程采用项目答辩。",
+        "citations": ["teaching://campus/exam"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "lexical_naive",
+      "case_id": "breakfast-deadline",
+      "query": "食堂 早餐 结束 时间",
+      "answer": {
+        "status": "answered",
+        "answer": "食堂早餐供应至 09:00。",
+        "citations": ["teaching://campus/meal"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "lexical_naive",
+      "case_id": "conflicting-opening",
+      "query": "图书馆 开放 时间",
+      "answer": {
+        "status": "answered",
+        "answer": "图书馆 08:00 开门。",
+        "citations": ["teaching://campus/library-a"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "missing_source"]
+    },
+    {
+      "mode": "lexical_naive",
+      "case_id": "absent-parking-policy",
+      "query": "校外 停车场 收费 规定",
+      "answer": {
+        "status": "answered",
+        "answer": "图书馆 08:00 开门。",
+        "citations": ["teaching://campus/library-a"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": false,
+      "failure_reasons": ["status"]
+    },
+    {
+      "mode": "lexical_naive",
+      "case_id": "cross-topic-clarification",
+      "query": "图书馆 和 食堂 的 时间",
+      "answer": {
+        "status": "answered",
+        "answer": "食堂早餐供应至 09:00。",
+        "citations": ["teaching://campus/meal"],
+        "answer_mode": "extractive_baseline"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "missing_source"]
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "network-contact",
+      "query": "校园 网络 报修 电话",
+      "answer": {
+        "status": "answered",
+        "answer": "校园网络报修电话为 1001。",
+        "citations": ["teaching://campus/network"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "lab-booking",
+      "query": "实验室 借用 提前 多久",
+      "answer": {
+        "status": "answered",
+        "answer": "计算机实验室须提前一天预约。",
+        "citations": ["teaching://campus/lab"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "course-assessment",
+      "query": "人工智能 课程 怎么 考核",
+      "answer": {
+        "status": "answered",
+        "answer": "人工智能课程采用项目答辩。",
+        "citations": ["teaching://campus/exam"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "breakfast-deadline",
+      "query": "食堂 早餐 结束 时间",
+      "answer": {
+        "status": "answered",
+        "answer": "食堂早餐供应至 09:00。",
+        "citations": ["teaching://campus/meal"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "conflicting-opening",
+      "query": "图书馆 开放 时间",
+      "answer": {
+        "status": "conflicting_evidence",
+        "answer": "同一主题的材料相互矛盾，需核对原文。",
+        "citations": [
+          "teaching://campus/library-a",
+          "teaching://campus/library-b"
+        ],
+        "answer_mode": "extractive",
+        "decision_rule": "distinct source answers for one topic; no silent resolution"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "absent-parking-policy",
+      "query": "校外 停车场 收费 规定",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "extractive",
+        "decision_rule": "explicit topic-term evidence gate"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "learned_full",
+      "case_id": "cross-topic-clarification",
+      "query": "图书馆 和 食堂 的 时间",
+      "answer": {
+        "status": "clarify",
+        "answer": null,
+        "citations": [
+          "teaching://campus/library-b",
+          "teaching://campus/library-a",
+          "teaching://campus/meal"
+        ],
+        "answer_mode": "extractive",
+        "decision_rule": "multiple topics need clarification"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "network-contact",
+      "query": "校园 网络 报修 电话",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "answer", "missing_source"]
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "lab-booking",
+      "query": "实验室 借用 提前 多久",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "answer", "missing_source"]
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "course-assessment",
+      "query": "人工智能 课程 怎么 考核",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "answer", "missing_source"]
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "breakfast-deadline",
+      "query": "食堂 早餐 结束 时间",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "answer", "missing_source"]
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "conflicting-opening",
+      "query": "图书馆 开放 时间",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "missing_source"]
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "absent-parking-policy",
+      "query": "校外 停车场 收费 规定",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_retrieval",
+      "case_id": "cross-topic-clarification",
+      "query": "图书馆 和 食堂 的 时间",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "missing_source"]
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "network-contact",
+      "query": "校园 网络 报修 电话",
+      "answer": {
+        "status": "answered",
+        "answer": "校园网络报修电话为 1001。",
+        "citations": ["teaching://campus/network"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "lab-booking",
+      "query": "实验室 借用 提前 多久",
+      "answer": {
+        "status": "answered",
+        "answer": "计算机实验室须提前一天预约。",
+        "citations": ["teaching://campus/lab"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "course-assessment",
+      "query": "人工智能 课程 怎么 考核",
+      "answer": {
+        "status": "answered",
+        "answer": "人工智能课程采用项目答辩。",
+        "citations": ["teaching://campus/exam"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "breakfast-deadline",
+      "query": "食堂 早餐 结束 时间",
+      "answer": {
+        "status": "answered",
+        "answer": "食堂早餐供应至 09:00。",
+        "citations": ["teaching://campus/meal"],
+        "answer_mode": "extractive",
+        "decision_rule": "extract from highest-ranked matching source"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "conflicting-opening",
+      "query": "图书馆 开放 时间",
+      "answer": {
+        "status": "answered",
+        "answer": "图书馆 08:00 开门。",
+        "citations": ["teaching://campus/library-a"],
+        "answer_mode": "ablation"
+      },
+      "passed": false,
+      "failure_reasons": ["status", "missing_source"]
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "absent-parking-policy",
+      "query": "校外 停车场 收费 规定",
+      "answer": {
+        "status": "no_evidence",
+        "answer": null,
+        "citations": [],
+        "answer_mode": "extractive",
+        "decision_rule": "explicit topic-term evidence gate"
+      },
+      "passed": true,
+      "failure_reasons": []
+    },
+    {
+      "mode": "no_conflict_check",
+      "case_id": "cross-topic-clarification",
+      "query": "图书馆 和 食堂 的 时间",
+      "answer": {
+        "status": "clarify",
+        "answer": null,
+        "citations": [
+          "teaching://campus/library-b",
+          "teaching://campus/library-a",
+          "teaching://campus/meal"
+        ],
+        "answer_mode": "extractive",
+        "decision_rule": "multiple topics need clarification"
+      },
+      "passed": true,
+      "failure_reasons": []
+    }
+  ],
+  "parameters_changed": true,
+  "checks": [
+    {
+      "name": "frozen_regression_unchanged",
+      "passed": true,
+      "detail": {
+        "case_hash_before": "0e378632d3196115bcd9b6cda5b43cc060e5cf17548e46922cd0999ba203bda5",
+        "case_hash_after": "0e378632d3196115bcd9b6cda5b43cc060e5cf17548e46922cd0999ba203bda5",
+        "file_sha256": "46a7fa75459c2007f607d2ab7064fc8352a1f104d757355aa7e8b2fcfca870d2"
+      }
+    },
+    {
+      "name": "integrated_system_really_trains_retriever",
+      "passed": true,
+      "detail": {
+        "before_hash": "0a66eb2395841b554bf8ffeb1912405f7dcf007fd02b7a2754e6aeb005a00f16",
+        "after_hash": "3b7e234d82a87c116e179dc886d7cfe29587dc85407e16d8b64a975ad785a268"
+      }
+    },
+    {
+      "name": "complete_system_meets_fixed_behavior",
+      "passed": true,
+      "detail": {
+        "correct": 7,
+        "total": 7,
+        "accuracy": 1.0,
+        "failure_ids": []
+      }
+    },
+    {
+      "name": "baseline_and_ablation_failures_are_visible",
+      "passed": true,
+      "detail": {
+        "lexical_naive": {
+          "correct": 4,
+          "total": 7,
+          "accuracy": 0.5714285714285714,
+          "failure_ids": [
+            "conflicting-opening",
+            "absent-parking-policy",
+            "cross-topic-clarification"
+          ]
+        },
+        "learned_full": {
+          "correct": 7,
+          "total": 7,
+          "accuracy": 1.0,
+          "failure_ids": []
+        },
+        "no_retrieval": {
+          "correct": 1,
+          "total": 7,
+          "accuracy": 0.14285714285714285,
+          "failure_ids": [
+            "network-contact",
+            "lab-booking",
+            "course-assessment",
+            "breakfast-deadline",
+            "conflicting-opening",
+            "cross-topic-clarification"
+          ]
+        },
+        "no_conflict_check": {
+          "correct": 6,
+          "total": 7,
+          "accuracy": 0.8571428571428571,
+          "failure_ids": ["conflicting-opening"]
+        }
+      }
+    }
+  ],
+  "limits": [
+    "These released cases are a regression specification, not an unseen ability benchmark.",
+    "The fixture corpus and queries are constructed; zero failures do not establish real-world reliability.",
+    "Core system is extractive; model fluency or pretrained-model correctness is not measured here.",
+    "Independent oral explanation and teacher-held transfer questions remain classroom activities."
+  ]
+}

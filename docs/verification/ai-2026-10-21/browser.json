@@ -1,0 +1,733 @@
+{
+  "timestamp": "2026-10-21T05:49:28.189Z",
+  "checks": [
+    {
+      "slug": "index",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 0,
+      "disclosure": null,
+      "heading": "现代人工智能：原理、系统与前沿\n从此演示"
+    },
+    {
+      "slug": "01-modern-ai-system",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "01｜拆开一个现代 AI 系统\n从此演示"
+    },
+    {
+      "slug": "02-input-representation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "02｜现实怎样成为模型输入\n从此演示"
+    },
+    {
+      "slug": "03-math-bridge",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "03｜运算需要的数学桥梁\n从此演示"
+    },
+    {
+      "slug": "04-learning-and-loss",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "04｜学习究竟改变了什么\n从此演示"
+    },
+    {
+      "slug": "05-representation-and-backprop",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "05｜从直线到表示学习\n从此演示"
+    },
+    {
+      "slug": "06-tokenization",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "06｜词元与分词器\n从此演示"
+    },
+    {
+      "slug": "07-embeddings",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "07｜嵌入与表示空间\n从此演示"
+    },
+    {
+      "slug": "08-next-token-model",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "08｜从下一词元预测到语言模型\n从此演示"
+    },
+    {
+      "slug": "09-attention",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "09｜一次完整的注意力计算\n从此演示"
+    },
+    {
+      "slug": "10-position-and-causality",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "10｜顺序、位置与因果遮挡\n从此演示"
+    },
+    {
+      "slug": "11-transformer",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "11｜完整 Transformer 的数据流\n从此演示"
+    },
+    {
+      "slug": "12-generation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "12｜从得分到一段回答\n从此演示"
+    },
+    {
+      "slug": "13-pretraining-data",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "13｜预训练的数据与目标\n从此演示"
+    },
+    {
+      "slug": "14-scale-data-compute",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "14｜规模、数据与计算\n从此演示"
+    },
+    {
+      "slug": "15-instruction-tuning",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "15｜指令微调与对话格式\n从此演示"
+    },
+    {
+      "slug": "16-preference-and-alignment",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "16｜偏好、奖励与对齐\n从此演示"
+    },
+    {
+      "slug": "17-verifiable-rewards",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "17｜可验证奖励与推理训练\n从此演示"
+    },
+    {
+      "slug": "18-inference-time-compute",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "18｜推理时怎样花更多计算\n从此演示"
+    },
+    {
+      "slug": "19-vision-and-alignment",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "19｜视觉表示与图文对齐\n从此演示"
+    },
+    {
+      "slug": "20-vision-language-models",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "20｜视觉语言模型怎样读图回答\n从此演示"
+    },
+    {
+      "slug": "21-diffusion",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "21｜扩散：从噪声预测到生成\n从此演示"
+    },
+    {
+      "slug": "22-flow-matching",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "22｜流匹配：学习一个速度场\n从此演示"
+    },
+    {
+      "slug": "23-audio-and-realtime",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "23｜语音与实时多模态\n从此演示"
+    },
+    {
+      "slug": "24-video-and-world-models",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "24｜视频、状态预测与世界模型\n从此演示"
+    },
+    {
+      "slug": "25-prompts-and-context",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "25｜提示与上下文组织\n从此演示"
+    },
+    {
+      "slug": "26-retrieval",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "26｜检索怎样找到证据\n从此演示"
+    },
+    {
+      "slug": "27-rag-and-verification",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "27｜检索增强回答与来源核验\n从此演示"
+    },
+    {
+      "slug": "28-tools-and-protocols",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "28｜工具调用与接口协议\n从此演示"
+    },
+    {
+      "slug": "29-agents-and-workflows",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "29｜智能体与工作流\n从此演示"
+    },
+    {
+      "slug": "30-memory-and-adaptation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "30｜记忆与持续适应\n从此演示"
+    },
+    {
+      "slug": "31-coding-ui-and-multiagent",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "31｜编程、界面操作与多智能体\n从此演示"
+    },
+    {
+      "slug": "32-local-cpu-inference",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "32｜本地模型与 CPU 推断\n从此演示"
+    },
+    {
+      "slug": "33-context-and-efficient-architectures",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "33｜长上下文与高效架构\n从此演示"
+    },
+    {
+      "slug": "34-task-adaptation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "34｜怎样适配一个任务\n从此演示"
+    },
+    {
+      "slug": "35-evaluation-and-reproducibility",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "35｜评测、误差与可复现性\n从此演示"
+    },
+    {
+      "slug": "36-safety-and-permissions",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "36｜安全、权限与社会影响\n从此演示"
+    },
+    {
+      "slug": "37-modern-ai-landscape",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "37｜读懂 2026 年现代 AI 版图\n从此演示"
+    },
+    {
+      "slug": "38-world-embodied-and-scientific-ai",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "38｜世界模型、具身与科学 AI\n从此演示"
+    },
+    {
+      "slug": "39-integrated-project",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "39｜综合项目：定义、实现与评测\n从此演示"
+    },
+    {
+      "slug": "40-transfer-and-defense",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 4,
+      "disclosure": true,
+      "heading": "40｜独立解释、迁移与答辩\n从此演示"
+    },
+    {
+      "slug": "lab-00-environment",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "实验环境｜下载、运行与证据\n从此演示"
+    },
+    {
+      "slug": "lab-01-learning",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L1｜模型真的学到了什么\n从此演示"
+    },
+    {
+      "slug": "lab-02-token-to-generation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L2｜从词元到生成\n从此演示"
+    },
+    {
+      "slug": "lab-03-feedback-and-budget",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L3｜反馈、验证与推理预算\n从此演示"
+    },
+    {
+      "slug": "lab-04-multimodal-generation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L4｜多模态与生成机制\n从此演示"
+    },
+    {
+      "slug": "lab-05-retrieval-and-sources",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L5｜带来源的资料问答\n从此演示"
+    },
+    {
+      "slug": "lab-06-tools-and-memory",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L6｜受限工具、记忆与代码修复\n从此演示"
+    },
+    {
+      "slug": "lab-07-resources-and-adaptation",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L7｜资源与适配对照\n从此演示"
+    },
+    {
+      "slug": "lab-08-project-and-defense",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 3,
+      "disclosure": true,
+      "heading": "L8｜综合项目与独立复测\n从此演示"
+    },
+    {
+      "slug": "legacy-materials",
+      "status": 200,
+      "mathErrors": 0,
+      "summaries": 0,
+      "disclosure": null,
+      "heading": "旧版人工智能材料\n从此演示"
+    }
+  ],
+  "linkResults": [
+    {
+      "path": "/docs/ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/01-modern-ai-system/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-representation-and-backprop/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-tokenization/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/12-generation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/13-pretraining-data/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/18-inference-time-compute/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/19-vision-and-alignment/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/24-video-and-world-models/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/25-prompts-and-context/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/31-coding-ui-and-multiagent/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/32-local-cpu-inference/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/36-safety-and-permissions/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/37-modern-ai-landscape/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/40-transfer-and-defense/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-00-environment/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-01-learning/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-02-token-to-generation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-03-feedback-and-budget/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-04-multimodal-generation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-05-retrieval-and-sources/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-06-tools-and-memory/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-07-resources-and-adaptation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/lab-08-project-and-defense/",
+      "status": 200
+    },
+    {
+      "path": "/ai-labs/ai-cpu-labs.zip",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/legacy-materials/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/02-input-representation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/03-math-bridge/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/04-learning-and-loss/",
+      "status": 200
+    },
+    {
+      "path": "/ai-labs/README.md",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-embeddings/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/08-next-token-model/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/09-attention/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/10-position-and-causality/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/11-transformer/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/14-scale-data-compute/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/15-instruction-tuning/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/16-preference-and-alignment/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/17-verifiable-rewards/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/20-vision-language-models/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/21-diffusion/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/22-flow-matching/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/23-audio-and-realtime/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/26-retrieval/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/27-rag-and-verification/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/28-tools-and-protocols/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/29-agents-and-workflows/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/30-memory-and-adaptation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/33-context-and-efficient-architectures/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/34-task-adaptation/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/35-evaluation-and-reproducibility/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/38-world-embodied-and-scientific-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/39-integrated-project/",
+      "status": 200
+    },
+    {
+      "path": "/ai-labs/SHA256SUMS.txt",
+      "status": 200
+    },
+    {
+      "path": "/ai-labs/environment.json",
+      "status": 200
+    },
+    {
+      "path": "/ai-labs/data/audio-clean.wav",
+      "status": 200
+    },
+    {
+      "path": "/ai-labs/data/audio-noisy.wav",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/01-what-is-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/02-history-of-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/03-abilities-and-applications/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/04-challenges-and-future/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-data-for-ai/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-how-ai-decides/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-ways-machines-learn/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/05-how-machines-learn/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/06-how-neural-networks-work/",
+      "status": 200
+    },
+    {
+      "path": "/docs/ai/07-how-language-models-answer/",
+      "status": 200
+    }
+  ],
+  "downloads": [
+    {
+      "name": "ai-cpu-labs.zip",
+      "status": 200,
+      "bytes": 75818
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "status": 200,
+      "bytes": 1367
+    },
+    {
+      "name": "environment.json",
+      "status": 200,
+      "bytes": 1379
+    },
+    {
+      "name": "data/audio-clean.wav",
+      "status": 200,
+      "bytes": 32044
+    },
+    {
+      "name": "data/audio-noisy.wav",
+      "status": 200,
+      "bytes": 32044
+    }
+  ],
+  "mobile": [
+    {
+      "slug": "index",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "slug": "33-context-and-efficient-architectures",
+      "width": 390,
+      "scrollWidth": 390
+    },
+    {
+      "slug": "lab-04-multimodal-generation",
+      "width": 390,
+      "scrollWidth": 390
+    }
+  ],
+  "presenter": {
+    "pages": 7,
+    "active": "flex min-h-screen flex-col"
+  },
+  "errors": [],
+  "failures": []
+}

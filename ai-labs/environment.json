@@ -1,0 +1,35 @@
+{
+  "package_version": "2026-10-21-v2",
+  "core": {
+    "language": "Python",
+    "suggested_minimum": "3.10",
+    "verified_interpreter": "3.14.6",
+    "third_party_dependencies": [],
+    "network_required": false,
+    "gpu_required": false,
+    "cloud_api_required": false,
+    "platform_verified": "macOS arm64; other student hardware requires local diagnosis"
+  },
+  "optional_pretrained_model_observation": {
+    "runtime_verified": "Ollama 0.40.6",
+    "installed_model_observed": "deepseek-r1:7b",
+    "weight_digest_observed": "0a8c266910232fd3291e71e5ba1e058cc5af9d411192cf88b6d30e92b6e73163",
+    "quantization_observed": "Q4_K_M",
+    "endpoint": "http://127.0.0.1:11434",
+    "automatic_download": false,
+    "weights_included": false,
+    "runtime_included": false,
+    "num_gpu": 0,
+    "num_ctx": 1024,
+    "num_predict": 96,
+    "note": "One installed CPU-only instance; not a student hardware guarantee or an unquantized-model comparison. Inspect original task responses."
+  },
+  "data": "Constructed educational fixtures, not actual campus policies or recordings of people",
+  "reproduction": {
+    "fixed_seed": 42,
+    "entry": "python3 -B ai_lab.py l1 --output ./runs/l1 --seed 42",
+    "tests": "python3 -B -m unittest -v test_ai_lab.py",
+    "supplement": ["sft", "media", "memory"],
+    "probe": "python3 -B practice.py probe --output ./runs/probe"
+  }
+}

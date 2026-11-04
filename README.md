@@ -10,4 +10,4 @@ pnpm build
 
 `pnpm build` 会在 `out/` 生成可直接部署到 GitHub Pages 的静态网站。部署分支为 `gh-pages`，仓库根目录存放构建产物。进入任一课程页后，点击“演示”可切换逐屏模式。
 
-人工智能沿用原有十课主线，并在第 5—10 课补充推演与练习；教学说明见 `docs/teaching/ai-course-design.md`。40 单元重建稿保存在 `docs/teaching/ai-rebuild-archive/`，供后续取材，不参与课程路由与导航。
+人工智能课程共 13 课，并在后半部分（第 5—13 课）补充推演、实验与练习；教学说明见 `docs/teaching/ai-course-design.md`。40 单元重建稿保存在 `docs/teaching/ai-rebuild-archive/`，供后续取材，不参与课程路由与导航。

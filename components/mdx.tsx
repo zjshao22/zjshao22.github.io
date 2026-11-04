@@ -29,6 +29,11 @@ import {
   TokenGenerationFigure,
 } from "./ai/LanguageModelFigures";
 import {
+  RagPipelineFigure,
+  AgentLoopFigure,
+  VisionLanguageFigure,
+} from "./ai/SystemAndMultimodalFigures";
+import {
   AIDataRepresentationFigure,
   AIMethodsFigure,
   LearningParadigmsFigure,
@@ -93,6 +98,9 @@ export function getMDXComponents(components?: MDXComponents) {
     ConvolutionFigure,
     CausalAttentionFigure,
     TokenGenerationFigure,
+    RagPipelineFigure,
+    AgentLoopFigure,
+    VisionLanguageFigure,
     AIDataRepresentationFigure,
     AIMethodsFigure,
     LearningParadigmsFigure,

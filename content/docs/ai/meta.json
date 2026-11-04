@@ -12,6 +12,9 @@
     "07-ways-machines-learn",
     "05-how-machines-learn",
     "06-how-neural-networks-work",
-    "07-how-language-models-answer"
+    "07-how-language-models-answer",
+    "08-how-rag-finds-evidence",
+    "09-how-tools-and-agents-work",
+    "10-how-multimodal-models-see"
   ]
 }

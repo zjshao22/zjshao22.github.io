@@ -17,16 +17,21 @@ icon: Bot
   - [8. 机器怎样从数据中学习](./05-how-machines-learn)：深入损失函数与梯度下降；
   - [9. 神经网络怎样识别事物](./06-how-neural-networks-work)：深入反向传播与链式法则；
   - [10. 大语言模型怎样生成回答](./07-how-language-models-answer)：深入注意力机制、向量点积与 Softmax。
+- **系统、行动与多模态前沿（从语言模型迈向真实系统）**：
+  - [11. 检索增强生成怎样找到真实证据](./08-how-rag-finds-evidence)：深入切块、余弦相似度检索与引用核验；
+  - [12. 工具调用与智能体怎样在环境中行动](./09-how-tools-and-agents-work)：深入结构化调用、ReAct 循环与沙盒安全边界；
+  - [13. 视觉语言模型怎样读图回答](./10-how-multimodal-models-see)：深入图像切块（Patch）、跨模态对齐与联合自注意力。
 
 > **💡 先修与学习提示**：进阶章节包含少量微积分（导数/偏导）、线性代数（向量/点积）与概率统计概念。正文均配有直观的物理类比与手算例题；零基础读者可侧重理解概念图解与学习循环，推导公式已标为进阶选读，不影响对核心机制的掌握。
 
-## 在原有十课中多走一步
+## 在课程中多走一步
 
-后半课程增加了可以直接课堂操作的小任务，仍沿用原来的例子和讲解顺序：
+后半课程增加了可以直接课堂操作的小任务，仍沿用统一的教学推演与逐级提示：
 
 - [数据与解题方法](/docs/ai/05-data-for-ai)：判断预测时可用字段，再在[搜索课](/docs/ai/06-how-ai-decides)逐轮走一遍队列。
 - [学习方式](/docs/ai/07-ways-machines-learn)：亲手分一次组、算两条行动轨迹的回报；[训练课](/docs/ai/05-how-machines-learn)用 Python 复算租金更新后的整批损失。
 - [神经网络](/docs/ai/06-how-neural-networks-work)：检查未激活单元的梯度与分类错误；[语言模型](/docs/ai/07-how-language-models-answer)补移位目标、因果可见性和资料来源判断。
+- [检索增强](/docs/ai/08-how-rag-finds-evidence)：手算切块余弦相似度与召回，排查伪引用与过度推断；[智能体](/docs/ai/09-how-tools-and-agents-work)追踪多步 ReAct 状态流与预算熔断；[多模态](/docs/ai/10-how-multimodal-models-see)推演 Patch 投影并排查视觉幻觉。
 
 先独立预测，需要时再逐级展开提示，最后核对解释。课堂例子均为教学构造；基础活动不需要 GPU 或模型 API。
 

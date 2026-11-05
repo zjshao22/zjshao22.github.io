@@ -1,7 +1,7 @@
 /* The mechanism guide's visual grammar, driven by the editable simulator's events. */
 .mechanism-boundary{fill:#10212b;stroke:#365867;stroke-width:1.4}.mechanism-boundary:not(.source-boundary){fill:#14232e;stroke:#3b5263}.mechanism-user-lane{fill:#17343c}.mechanism-kernel-lane{fill:#142e3b}
 .mechanism-domain{font:600 24px var(--sans);fill:#d5e8ec}.mechanism-domain-sub{font:16px var(--sans);fill:#aec9d2}.mechanism-lane-label{font:16px var(--sans);fill:#afcbd5}
-.mechanism-edge{fill:none;stroke:#527887;stroke-width:2;opacity:.9}.mechanism-edge.physical-edge{stroke:#6c899b;stroke-width:2.2}.mechanism-edge.passed{stroke:#d4b478;stroke-width:3.2}.mechanism-edge.disabled{stroke:#b28483;stroke-dasharray:7 6}
+.mechanism-edge{fill:none;stroke:#527887;stroke-width:2;opacity:.9}.mechanism-edge.physical-edge{stroke:#6c899b;stroke-width:2.2}.mechanism-edge.passed{stroke:var(--mechanism-color);stroke-width:3;stroke-dasharray:8 5;opacity:.72}.mechanism-edge.disabled{stroke:#b28483;stroke-dasharray:7 6}
 .mechanism-link-caption{font:16px var(--sans);fill:#bdd3db;text-anchor:middle;paint-order:stroke;stroke:#10212b;stroke-width:6;stroke-linejoin:round}
 .mechanism-halo{fill:none;stroke:var(--mechanism-color);stroke-width:13;opacity:.1;pointer-events:none}.mechanism-active{fill:none;stroke:var(--mechanism-color);stroke-width:3.5;marker-end:url(#mechanism-arrow);pointer-events:none}.mechanism-active.dropped{stroke-dasharray:7 5}
 .mechanism-node{display:flex;align-items:center;gap:12px;width:210px;height:92px;padding:14px 12px;border:1.5px solid #557f89;border-radius:9px;background:#17343d;color:#d8efee;text-align:left;position:relative;line-height:1.4}

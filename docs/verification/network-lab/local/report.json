@@ -1,7 +1,7 @@
 {
   "result": "PASS",
   "url": "http://127.0.0.1:8768/network-lab/",
-  "verified_at": "2026-11-05T09:50:46.216376+00:00",
+  "verified_at": "2026-11-05T10:02:14.856669+00:00",
   "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "checks": [
     "Home, shared navigation and network course entries; existing course remains available",
@@ -126,18 +126,42 @@
     }
   ],
   "runtime_resources": [
-    "http://127.0.0.1:8768/network-lab/simulator.css?v=20261105-unified-4",
-    "http://127.0.0.1:8768/network-lab/app-shell.css?v=20261105-unified-4",
-    "http://127.0.0.1:8768/network-lab/mechanism.css?v=20261105-unified-4",
-    "http://127.0.0.1:8768/network-lab/floating-windows.css?v=20261105-unified-4",
-    "http://127.0.0.1:8768/network-lab/floating-windows.js?v=20261105-unified-4",
-    "http://127.0.0.1:8768/network-lab/vendor/simulator.bundle.js?v=20261105-unified-4"
+    "http://127.0.0.1:8768/network-lab/simulator.css?v=20261105-unified-5",
+    "http://127.0.0.1:8768/network-lab/app-shell.css?v=20261105-unified-5",
+    "http://127.0.0.1:8768/network-lab/mechanism.css?v=20261105-unified-5",
+    "http://127.0.0.1:8768/network-lab/floating-windows.css?v=20261105-unified-5",
+    "http://127.0.0.1:8768/network-lab/floating-windows.js?v=20261105-unified-5",
+    "http://127.0.0.1:8768/network-lab/vendor/simulator.bundle.js?v=20261105-unified-5"
   ],
   "page_errors": [],
   "http_errors": [],
   "failed_requests": [],
   "cancelled_course_prefetches": [
     {
+      "url": "http://127.0.0.1:8768/_next/static/chunks/495-2c01b396b931c2b0.js",
+      "error": "net::ERR_CONNECTION_RESET"
+    },
+    {
+      "url": "http://127.0.0.1:8768/_next/static/chunks/722-81a319f242e7b61d.js",
+      "error": "net::ERR_CONNECTION_RESET"
+    },
+    {
+      "url": "http://127.0.0.1:8768/_next/static/chunks/461-920e1dd88ab8a389.js",
+      "error": "net::ERR_SOCKET_NOT_CONNECTED"
+    },
+    {
+      "url": "http://127.0.0.1:8768/_next/static/chunks/611-3df7fc9f59d72c1a.js",
+      "error": "net::ERR_CONNECTION_RESET"
+    },
+    {
+      "url": "http://127.0.0.1:8768/_next/static/chunks/909-349b9b5026fb8f70.js",
+      "error": "net::ERR_CONNECTION_RESET"
+    },
+    {
+      "url": "http://127.0.0.1:8768/_next/static/chunks/app/(home)/layout-ccf52ff44e680093.js",
+      "error": "net::ERR_SOCKET_NOT_CONNECTED"
+    },
+    {
       "url": "http://127.0.0.1:8768/",
       "error": "net::ERR_ABORTED"
     },
@@ -151,26 +175,6 @@
     },
     {
       "url": "http://127.0.0.1:8768/docs/network/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "http://127.0.0.1:8768/docs/ai/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "http://127.0.0.1:8768/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "http://127.0.0.1:8768/docs/network/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "http://127.0.0.1:8768/docs/c/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "http://127.0.0.1:8768/docs/database/",
       "error": "net::ERR_ABORTED"
     },
     {

@@ -27,8 +27,9 @@ export function mechanismScene(config){
     add('host:'+h.id,h.name,(h.nat?'NAT · ':'')+(h.interfaces.find(f=>f.enabled)?.address.split('/')[0]||''),h.id,'kernel',networkX+120,185+i*230,'net');hosts.set(h.id,'host:'+h.id);
   }
   for(const [i,h] of services.entries()){
-    const role=h.id===config.proxy.host&&(config.proxy.tun||config.proxy.system)?'代理进程 · ':h.id===config.vpn.peer&&config.vpn.enabled?'WireGuard / SSH · ':h.type==='dns'?'DNS · ':h.id===target?.id?config.request.kind.toUpperCase()+' · ':'';
-    const node=add('host:'+h.id,h.name,role+(h.interfaces.find(f=>f.enabled&&f.id!=='utun')||h.interfaces[0]).address.split('/')[0],h.id,h.type==='proxy'||h.type==='vpn'?'agent':'app',remoteX+130+(i%2)*260,185+Math.floor(i/2)*230,h.type==='dns'?'dns':h.type==='proxy'||h.type==='vpn'?'proxy':'google',h.type==='proxy'?'proxy':h.id===target?.id?'target':'');
+    const activeProxy=h.id===config.proxy.host&&(config.proxy.tun||config.proxy.system);
+    const role=activeProxy?'代理进程 · ':h.id===config.vpn.peer&&config.vpn.enabled?'WireGuard / SSH · ':h.type==='dns'?'DNS · ':h.id===target?.id?config.request.kind.toUpperCase()+' · ':'';
+    const node=add('host:'+h.id,h.name,role+(h.interfaces.find(f=>f.enabled&&f.id!=='utun')||h.interfaces[0]).address.split('/')[0],h.id,h.type==='proxy'||h.type==='vpn'?'agent':'app',remoteX+130+(i%2)*260,185+Math.floor(i/2)*230,h.type==='dns'?'dns':h.type==='proxy'||h.type==='vpn'?'proxy':'google',activeProxy?'proxy':h.id===target?.id?'target':'');
     hosts.set(h.id,node.id);
   }
   const byId=new Map(nodes.map(n=>[n.id,n]));
@@ -91,5 +92,5 @@ export function mechanismEvent(scene,config,event,snapshot){
     const unit=e.unit||(/^proxy\.|^vpn\.|^tls\./.test(e.type)?'agent':/^tcp\.|^ip\.|^route\.|^nat\./.test(e.type)?'kernel':'app');pulse(unit);
   }else pulse(scene.hosts.get(e.host));
   if(!active.length&&e.host)pulse(scene.hosts.get(e.host));
-  return {active:[...new Set(active)],parts,color:e.type==='link.drop'||e.type==='failure'||e.type==='icmp.error'||e.type==='icmp.receive'||p?.meta?.kind==='icmp-error'?'#f4a98e':connection?.role==='proxy'||e.tls?.role==='proxy'?'#eec98a':connection?.role==='target'?'#96bff7':'#83e6cf'};
+  return {active:[...new Set(active)],parts,color:e.type==='link.drop'||e.type==='failure'||e.type==='icmp.error'||e.type==='icmp.receive'||p?.meta?.kind==='icmp-error'?'#f4a98e':connection?.role==='proxy'||e.tls?.role==='proxy'||p?.meta?.kind==='wireguard'||e.type.startsWith('vpn.')?'#eec98a':connection?.role==='target'?'#96bff7':'#83e6cf'};
 }

@@ -428,7 +428,7 @@ function setDiagramMode(mode){
   $('network-edit-toggle').setAttribute('aria-pressed',String(mode==='network'));$('network-edit-toggle').textContent=mode==='network'?'返回流转':'编辑网络';
   $('config-tools').hidden=mode!=='network';$('network-canvas').setAttribute('aria-label',mode==='network'?'可编辑二维拓扑，拖动设备调整位置，点击设备或链路配置':'按本机程序、内核、实体网络与服务端分区的流转图，拖动平移，手动缩放，点击节点理解职责');
   $('network-canvas').querySelector('.canvas-instruction').textContent=mode==='network'?'拖动设备布置网络 · 点击设备或链路配置':'拖动平移 · 滚轮或 ＋ 放大 · 点击节点理解职责';
-  $('network-canvas').querySelector('.path-legend').innerHTML=mode==='network'?'<span class="legend-base">物理链路</span><span class="legend-trail">已走路径</span><span class="legend-current">当前一跳</span>':'<span class="legend-current">本机 / 原始连接</span><span class="legend-trail">代理传输</span><span class="legend-target">目标连接</span>';
+  $('network-canvas').querySelector('.path-legend').innerHTML=mode==='network'?'<span class="legend-base">物理链路</span><span class="legend-trail">已走路径</span><span class="legend-current">当前一跳</span>':'<span class="legend-current">本机 / 直连 (实线当前跳·虚线已走跳)</span><span class="legend-trail">代理 / 隧道传输</span><span class="legend-target">代理 → 目标连接</span>';
   if(modeViews[mode])Object.assign(view,modeViews[mode]);
   drawGraph();if(modeViews[mode])transform();else fit();
 }

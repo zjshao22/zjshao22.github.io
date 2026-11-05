@@ -10,6 +10,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".source/**",
     "public/vs/**",
+    "public/network-lab/**",
   ]),
 ]);
 

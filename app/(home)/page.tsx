@@ -96,6 +96,14 @@ export default function HomePage() {
                 >
                   <Presentation className="size-4" /> 进入第一课
                 </Link>
+                {href === "/docs/network" && (
+                  <a
+                    href="/network-lab/"
+                    className="inline-flex items-center gap-1.5 hover:underline"
+                  >
+                    打开网络实验台 <ArrowRight className="size-4" />
+                  </a>
+                )}
               </div>
             </section>
           ),

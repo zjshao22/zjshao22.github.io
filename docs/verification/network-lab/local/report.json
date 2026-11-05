@@ -1,0 +1,182 @@
+{
+  "result": "PASS",
+  "url": "http://127.0.0.1:8766/network-lab/",
+  "verified_at": "2026-11-05T06:12:36.664958+00:00",
+  "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "checks": [
+    "Home, shared navigation and network course entries; existing course remains available",
+    "Independent subdirectory loads all scripts/styles locally with HTTP 200 and original 18px body text",
+    "All 18 presets compute the expected success or fault result",
+    "Step, play/pause, rewind and timeline replay preserve manual pan/zoom",
+    "All-packet and connection/state inspection; draggable, minimizable, resizable modeless windows",
+    "Deleting proxy /32 route changes SUCCESS to TUN_LOOP; auto-save survives refresh; restoring fixes it",
+    "Device add/edit/delete, link failure editor and packet-loss setting affect computed state",
+    "JSON config and run record export/import; deterministic full replay; SIMULATED pcap download",
+    "Local pcap and pcapng parsing/filter/hex inspection; input files unchanged and zero network requests during parsing; #capture refresh",
+    "Legacy guide redirect, direct refresh and stable layout/playback at 1280, 747 and 390px"
+  ],
+  "presets": [
+    {
+      "id": "tun",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 1033
+    },
+    {
+      "id": "system",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 976
+    },
+    {
+      "id": "direct",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 465
+    },
+    {
+      "id": "tail",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 453
+    },
+    {
+      "id": "home-wifi",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 465
+    },
+    {
+      "id": "office-proxy",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 976
+    },
+    {
+      "id": "home-nas",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 327
+    },
+    {
+      "id": "remote-office",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 453
+    },
+    {
+      "id": "double-nat",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 490
+    },
+    {
+      "id": "wifi-loss",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 470
+    },
+    {
+      "id": "long-distance",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 465
+    },
+    {
+      "id": "dns-outage",
+      "expected": "DNS_TIMEOUT",
+      "code": "DNS_TIMEOUT",
+      "events": 20
+    },
+    {
+      "id": "proxy-offline",
+      "expected": "CONNECTION_REFUSED",
+      "code": "CONNECTION_REFUSED",
+      "events": 57
+    },
+    {
+      "id": "tun-loop",
+      "expected": "TUN_LOOP",
+      "code": "TUN_LOOP",
+      "events": 59
+    },
+    {
+      "id": "routing-loop",
+      "expected": "TTL_EXCEEDED",
+      "code": "TTL_EXCEEDED",
+      "events": 366
+    },
+    {
+      "id": "small-mtu",
+      "expected": "MTU_EXCEEDED",
+      "code": "MTU_EXCEEDED",
+      "events": 252
+    },
+    {
+      "id": "remote-dns",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 998
+    },
+    {
+      "id": "fake-ip",
+      "expected": "SUCCESS",
+      "code": "SUCCESS",
+      "events": 998
+    }
+  ],
+  "runtime_resources": [
+    "http://127.0.0.1:8766/network-lab/simulator.css?v=20261105-unified-2",
+    "http://127.0.0.1:8766/network-lab/app-shell.css?v=20261105-unified-2",
+    "http://127.0.0.1:8766/network-lab/mechanism.css?v=20261105-unified-2",
+    "http://127.0.0.1:8766/network-lab/floating-windows.css?v=20261105-unified-2",
+    "http://127.0.0.1:8766/network-lab/floating-windows.js?v=20261105-unified-2",
+    "http://127.0.0.1:8766/network-lab/vendor/simulator.bundle.js?v=20261105-unified-2"
+  ],
+  "page_errors": [],
+  "http_errors": [],
+  "failed_requests": [],
+  "cancelled_course_prefetches": [
+    {
+      "url": "http://127.0.0.1:8766/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/c/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/database/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/network/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/ai/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/network/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/database/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/c/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://127.0.0.1:8766/docs/ai/",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "runtime_request_methods": ["GET"]
+}

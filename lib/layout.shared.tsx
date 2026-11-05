@@ -8,6 +8,7 @@ export function baseOptions(): BaseLayoutProps {
       { text: "C 语言", url: "/docs/c" },
       { text: "数据库原理", url: "/docs/database" },
       { text: "计算机网络", url: "/docs/network" },
+      { text: "网络实验台", url: "/network-lab/", external: true },
       { text: "人工智能", url: "/docs/ai" },
     ],
   };

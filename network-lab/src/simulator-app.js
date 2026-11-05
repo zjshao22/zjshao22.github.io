@@ -244,13 +244,38 @@ function renderPhasesAndSpotlight(e,s){
     if(config.lesson?.focus)items.push(`<div><span class="spotlight-label">观察重点</span>${esc(config.lesson.focus)}</div>`);
     if(config.lesson?.tryIt)items.push(`<div class="spotlight-try"><span class="spotlight-label">动手验证</span>${esc(config.lesson.tryIt)}</div>`);
   }else{
+    if(b&&p){
+      if(b.id!==p.id){
+        items.push(`<div class="spotlight-diff"><span class="spotlight-label">封装转换</span><code>${esc(b.id)}</code> (${esc(fmtIP(b.src))} → ${esc(fmtIP(b.dst))}) ⇒ <code>${esc(p.id)}</code> (${esc(fmtIP(p.src))} → ${esc(fmtIP(p.dst))})</div>`);
+      }else{
+        const diffs=['src','sport','dst','dport','ttl','flags','seq','ack','length'].filter(k=>b[k]!==p[k]).map(k=>`${k}: ${b[k]} → ${p[k]}`);
+        if(diffs.length)items.push(`<div class="spotlight-diff"><span class="spotlight-label">首部改写</span><code>${esc(diffs.join(' · '))}</code></div>`);
+      }
+    }else if(e.type==='route.lookup'&&p){
+      const nextHop=e.route?(e.route.via?(config.hosts.find(h=>h.id===e.route.via)?.name||e.route.via):'直达 / 虚拟接口'):'无';
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">最长前缀匹配</span>目的 <code>${esc(p.dst)}</code> → ${e.route?`命中 <code>${esc(e.route.prefix)}</code> · 出口 <code>${esc(e.route.iface)}</code> (${esc(nextHop)})`:'无匹配路由（丢弃）'}</div>`);
+    }else if(e.type==='dns.fake'&&e.record){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">Fake-IP 映射</span><code>${esc(e.record.name)} ⇄ ${esc(e.record.ip)}</code>（代理进程内存保留反查表）</div>`);
+    }else if(e.type.startsWith('dns.')){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">DNS 解析</span><code>${esc(e.record?`${e.record.name} → ${e.record.ip}`:`查询 ${config.request.destination} (${config.dns.mode})`)}</code></div>`);
+    }else if(e.type==='proxy.rule'){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">分流规则命中</span>目标 <code>${esc(config.request.destination)}</code> → 策略 <code>${esc(e.action||e.rule?.action||'proxy')}</code></div>`);
+    }else if((e.type==='icmp.error'||e.type==='icmp.receive')&&p){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">ICMP 差错回传</span><code>${esc(p.src)} → ${esc(p.dst)}</code> · 引用触发差错原包 <code>${esc(p.innerError?.id||'')}</code> (原目的 <code>${esc(p.innerError?.dst||'')}</code>)</div>`);
+    }
     if(p){
       const tuple=`[${p.id}] ${p.src}${p.sport?':'+p.sport:''} → ${p.dst}${p.dport?':'+p.dport:''} · ${p.protocol}${p.flags?' '+p.flags:''}${p.protocol==='TCP'?` · seq=${p.seq} ack=${p.ack}`:''} · TTL=${p.ttl}`;
       const inner=p.inner?` · 内层 [${p.inner.id}: ${p.inner.src}→${p.inner.dst}]`:p.innerError?` · 引用原包 [${p.innerError.id}]`:'';
-      items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组</span><code>${esc(tuple+inner)}</code></div>`);
+      const flagMeaning=tcpFlagMeaning(p);
+      items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组与报文信封</span><code>${esc(tuple+inner)}</code><div class="spotlight-tuple-detail"><div><b>发送端：</b><code>${esc(fmtIP(p.src,p.sport))}</code></div><div><b>接收端：</b><code>${esc(fmtIP(p.dst,p.dport))}</code></div><div><b>传输标志：</b><span>${esc(flagMeaning)}</span></div><div><b>报文寿命：</b><span>TTL = ${p.ttl} (经过每台路由器减 1)</span></div></div></div>`);
+      if(p.inner){
+        items.push(`<div class="spotlight-diff"><span class="spotlight-label">VPN 隧道套娃视窗</span>外层为发往 VPN 对端的 UDP 数据报；内部封装了受保护的原生 IP 报文 <code>[${esc(p.inner.id)}] ${esc(fmtIP(p.inner.src))} → ${esc(fmtIP(p.inner.dst))}</code>，中间网络无法窥探。</div>`);
+      }else if(p.meta?.outerTls){
+        items.push(`<div class="spotlight-diff"><span class="spotlight-label">代理隧道密文视窗</span>本数据包包含发往 <code>${esc(config.request.destination)}</code> 的加密指令与数据流，仅远端代理能够使用 TLS 会话密钥解密。</div>`);
+      }
     }else if(e.connection){
       const c=s?.connections?.find(c=>c.id===e.connection);
-      if(c)items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组</span><code>[${esc(c.id)} / ${esc(c.role)}] ${esc(c.a.ip)}:${c.a.port} ⇄ ${esc(c.b.ip)}:${c.b.port} · ${esc(c.aState)}/${esc(c.bState)} · seq=${c.aNext} acked=${c.bytesAcked}B</code></div>`);
+      if(c)items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组与连接记账</span><code>[${esc(c.id)} / ${esc(c.role)}] ${esc(c.a.ip)}:${c.a.port} ⇄ ${esc(c.b.ip)}:${c.b.port} · ${esc(c.aState)}/${esc(c.bState)} · seq=${c.aNext} acked=${c.bytesAcked}B</code><div class="spotlight-tuple-detail"><div><b>连接标识：</b><code>${esc(c.id)} (${esc(c.role)})</code></div><div><b>两端地址：</b><code>${esc(fmtIP(c.a.ip,c.a.port))} ⇄ ${esc(fmtIP(c.b.ip,c.b.port))}</code></div><div><b>状态机：</b><span>发起端 ${esc(c.aState)} ⇄ 接收端 ${esc(c.bState)}</span></div><div><b>数据确认：</b><span>已确认 ${c.bytesAcked} 字节 · 下一发送序号 ${c.aNext}</span></div></div></div>`);
     }
     if(index===run.events.length-1&&config.lesson?.tryIt){
       items.push(`<div class="spotlight-try"><span class="spotlight-label">动手验证</span>${esc(config.lesson.tryIt)}</div>`);
@@ -272,6 +297,42 @@ function render(){
   $('event-description').textContent=e?.why||(e?.link&&e.from&&e.to?`报文从${config.hosts.find(h=>h.id===e.from).name}传向${config.hosts.find(h=>h.id===e.to).name}。这是相邻设备间的一跳；报文中的目的 IP ${e.packet.dst} 表示网络层的目的地址。`:e?.record?`应用取得域名对应的地址 ${e.record.ip}，接下来的路由与连接由当前实验配置决定。`:e?.type==='request.start'?`应用准备访问 ${q.destination}。随后逐步观察域名解析、连接建立和数据传输。`:s?.result&&e===run.events.at(-1)?s.result.message:e?.packet?`${e.packet.id} · ${e.packet.protocol} ${e.packet.flags||''}。全图高亮本步的处理位置；点击「报文分层」可查看具体字段。`:e?`本步更新设备或连接的本地状态。点击「查看本步」或「连接与状态」检查变化。`:run?`已生成 ${visible.length} 个观察步骤，可单步前进或播放。`:'直接发起请求，或先修改实验条件。');
   renderPhasesAndSpotlight(e,s);
   const p=e?.packet;
+  const colorBadge=$('event-color-badge');
+  if(colorBadge){
+    if(!e){
+      colorBadge.className='event-color-badge role-orig';
+      colorBadge.innerHTML='<span class="color-dot"></span><div><b>🟢 绿色流线 · 本机/直连流量（准备就绪）</b><small>点击「↗ 发起请求」后，画面将通过绿色、黄色、蓝色流线直观区分直连与多段代理隧道</small></div>';
+    }else{
+      const isFault=e.type==='link.drop'||e.type==='failure'||e.type==='icmp.error'||e.type==='icmp.receive'||p?.meta?.kind==='icmp-error';
+      const connection=s?.connections.find(c=>c.id===e.connection);
+      const isProxy=connection?.role==='proxy'||e.tls?.role==='proxy'||p?.meta?.kind==='wireguard'||e.type.startsWith('vpn.');
+      const isTarget=connection?.role==='target';
+      if(isFault){
+        colorBadge.className='event-color-badge role-fault';
+        colorBadge.innerHTML='<span class="color-dot"></span><div><b>🔴 珊瑚红流线 · 网络异常 / 丢包 / 退信</b><small>检测到异常：路由不可达、TTL 耗尽或链路丢包，正在退信或重传</small></div>';
+      }else if(isProxy){
+        colorBadge.className='event-color-badge role-proxy';
+        colorBadge.innerHTML='<span class="color-dot"></span><div><b>🟡 黄色流线 · 本机 ↔ 代理隧道加密传输</b><small>本机代理程序与远端代理服务建立的安全隧道（外网路由器仅能看到密文，看不到最终目标）</small></div>';
+      }else if(isTarget){
+        colorBadge.className='event-color-badge role-target';
+        colorBadge.innerHTML='<span class="color-dot"></span><div><b>🔵 蓝色流线 · 代理远端 ↔ 目标网站独立连接</b><small>远端代理服务器在海外代为建立的第 3 段连接，正在与真实目标服务器交换数据</small></div>';
+      }else{
+        colorBadge.className='event-color-badge role-orig';
+        colorBadge.innerHTML='<span class="color-dot"></span><div><b>🟢 绿色流线 · 本机原始发起 / 端到端直连流</b><small>应用程序发出的原始数据流，由本机网络栈直接发往实体网关或本地 DNS 解析器</small></div>';
+      }
+    }
+  }
+  const legend=$('path-legend');
+  if(legend){
+    const isFault=e&&(e.type==='link.drop'||e.type==='failure'||e.type==='icmp.error'||e.type==='icmp.receive'||p?.meta?.kind==='icmp-error');
+    const connection=s?.connections.find(c=>c.id===e?.connection);
+    const isProxy=e&&(connection?.role==='proxy'||e.tls?.role==='proxy'||p?.meta?.kind==='wireguard'||e.type.startsWith('vpn.'));
+    const isTarget=e&&connection?.role==='target';
+    legend.querySelector('.legend-current')?.classList.toggle('active',!e||(!isFault&&!isProxy&&!isTarget));
+    legend.querySelector('.legend-trail')?.classList.toggle('active',!!isProxy);
+    legend.querySelector('.legend-target')?.classList.toggle('active',!!isTarget);
+    legend.querySelector('.legend-fault')?.classList.toggle('active',!!isFault);
+  }
   $('packet-summary').textContent=p?`${p.id} · ${p.protocol}${p.flags?' '+p.flags:''} · ${p.length} 字节${e.type==='link.drop'?' · 本包丢弃':e?.unit?' · '+({app:'应用程序',kernel:'网络内核',tun:'TUN 接口',agent:'用户态程序'}[e.unit]||e.unit):''}`:'全图视角 · 播放时画面保持固定';
   const connection=s?.connections.find(c=>c.id===e?.connection),role={original:'应用原始连接',proxy:'本机 ↔ 代理连接',target:'代理 ↔ 目标连接'}[connection?.role];
   if(role)$('packet-summary').textContent=role+' · '+(p?$('packet-summary').textContent:`${connection.id} · ${connection.aState} / ${connection.bState}`);else if(e&&!p)$('packet-summary').textContent=e.title;

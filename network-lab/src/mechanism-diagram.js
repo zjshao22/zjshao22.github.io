@@ -91,5 +91,5 @@ export function mechanismEvent(scene,config,event,snapshot){
     const unit=e.unit||(/^proxy\.|^vpn\.|^tls\./.test(e.type)?'agent':/^tcp\.|^ip\.|^route\.|^nat\./.test(e.type)?'kernel':'app');pulse(unit);
   }else pulse(scene.hosts.get(e.host));
   if(!active.length&&e.host)pulse(scene.hosts.get(e.host));
-  return {active:[...new Set(active)],parts,color:e.type==='link.drop'||e.type==='failure'?'#f4a98e':connection?.role==='proxy'||e.tls?.role==='proxy'?'#eec98a':connection?.role==='target'?'#96bff7':'#83e6cf'};
+  return {active:[...new Set(active)],parts,color:e.type==='link.drop'||e.type==='failure'||e.type==='icmp.error'||e.type==='icmp.receive'||p?.meta?.kind==='icmp-error'?'#f4a98e':connection?.role==='proxy'||e.tls?.role==='proxy'?'#eec98a':connection?.role==='target'?'#96bff7':'#83e6cf'};
 }

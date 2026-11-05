@@ -18,30 +18,30 @@ const route=(prefix,iface,via='',metric=100)=>({prefix,iface,via,metric,enabled:
 const service=(kind,port,protocol='TCP')=>({kind,port,protocol,enabled:true});
 const iface=(id,address)=>({id,address,enabled:true});
 export const PRESETS = [
-  {id:'tun',name:'TUN + sing-box 代理',base:'tun',focus:'观察原始连接、代理连接和目标连接的独立四元组。',expected:'SUCCESS'},
-  {id:'system',name:'系统 HTTP 代理',base:'system',focus:'观察本机 CONNECT 入口，以及远端如何获知域名。',expected:'SUCCESS'},
-  {id:'direct',name:'无代理直连',base:'direct',focus:'观察 DNS、路由、家庭 NAT 和端到端 HTTPS。',expected:'SUCCESS'},
-  {id:'tail',name:'WireGuard + SSH',base:'tail',focus:'比较 UDP 外层与被完整保留的内层 IP 包。',expected:'SUCCESS'},
-  {id:'home-wifi',name:'家庭 Wi-Fi：浏览网页',base:'direct',focus:'普通家用网络：电脑 → Wi-Fi 路由器 → 互联网 → 网站，查看 NAT 回程。',expected:'SUCCESS'},
-  {id:'office-proxy',name:'公司网络：HTTP 代理上网',base:'system',focus:'办公电脑遵从公司 HTTP 代理设置；浏览器通过 CONNECT 告知目标。',expected:'SUCCESS'},
-  {id:'home-nas',name:'家庭局域网：访问 NAS',base:'direct',focus:'访问同一家庭 LAN 的 NAS。网页 TCP 不应经过公网，也不应被 NAT。DNS 查询仍可能访问外部解析器。',expected:'SUCCESS'},
-  {id:'remote-office',name:'异地办公：VPN 连接 SSH',base:'tail',focus:'通过 WireGuard 访问异地设备的 Tailnet SSH 地址，检查完整内层包恢复。',expected:'SUCCESS'},
-  {id:'double-nat',name:'光猫 + 路由器：双重 NAT',base:'direct',focus:'经过两级地址端口转换，回程需要依次恢复两张 NAT 会话表。',expected:'SUCCESS'},
-  {id:'wifi-loss',name:'无线丢包：SYN 重传恢复',base:'direct',focus:'可重复地丢弃第一个 SYN；等待超时后，以相同序号重传并恢复。',expected:'SUCCESS'},
-  {id:'long-distance',name:'跨地域访问：高延迟链路',base:'direct',focus:'单向链路延迟提高到 60 ms；比较握手和整次请求的虚拟耗时。',expected:'SUCCESS'},
-  {id:'dns-outage',name:'域名打不开：DNS 停服',base:'direct',focus:'DNS 解析器关闭监听。查询发出但没有回答，连接尚未进入网站 TCP 阶段。',expected:'DNS_TIMEOUT'},
-  {id:'proxy-offline',name:'代理失效：服务端口关闭',base:'system',focus:'网络可达，远端代理端口未监听。观察 TCP RST 与拒绝连接。',expected:'CONNECTION_REFUSED'},
-  {id:'tun-loop',name:'TUN 故障：漏配例外路由',base:'tun',focus:'缺少代理地址的 /32 例外，代理自己的出站又进入 TUN。补回例外路由可修复。',expected:'TUN_LOOP'},
-  {id:'routing-loop',name:'路由故障：两台路由器互指',base:'direct',focus:'目标站路由错误地指回家庭网关，报文循环转发，最终 TTL 耗尽。',expected:'TTL_EXCEEDED'},
-  {id:'small-mtu',name:'能握手但打不开：路径 MTU 小',base:'direct',focus:'链路 MTU 为 300，较大的数据段被 DF/MTU 约束拒绝。降低 MSS 后重试；模型不自动执行 PMTUD。',expected:'MTU_EXCEEDED'},
-  {id:'remote-dns',name:'代理解析：域名交给远端',base:'tun',focus:'先建立代理通道，DNS 在代理侧执行，再把解析结果交给应用。比较查询的来源位置。',expected:'SUCCESS'},
-  {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'应用先获得本地占位地址 198.18.0.1；代理仍按原域名在远端解析真实 IP。',expected:'SUCCESS'}
+  {id:'tun',name:'TUN + sing-box 代理',base:'tun',focus:'观察原始连接、代理连接和目标连接的独立四元组。',tryIt:'动手验证：点「编辑网络 → 我的电脑」，删除 203.0.113.10/32 例外路由后重跑，观察代理出站如何再次进入 TUN 触发回环。',expected:'SUCCESS'},
+  {id:'system',name:'系统 HTTP 代理',base:'system',focus:'观察本机 CONNECT 入口，以及远端如何获知域名。',tryIt:'动手验证：打开「请求与配置」，取消勾选「此应用遵从系统代理」后重跑，对比应用为何不再连 127.0.0.1:7890 而是直接查询 DNS。',expected:'SUCCESS'},
+  {id:'direct',name:'无代理直连',base:'direct',focus:'观察 DNS、路由、家庭 NAT 和端到端 HTTPS。',tryIt:'动手验证：单步经过「家庭网关」，对比转换前后的源 IP（192.168.1.10 → 198.51.100.25）及回程时 NAT 会话表如何恢复内网地址。',expected:'SUCCESS'},
+  {id:'tail',name:'WireGuard + SSH',base:'tail',focus:'比较 UDP 外层与被完整保留的内层 IP 包。',tryIt:'动手验证：点「全部报文」展开 WireGuard 外层包，对比它保留同一个内层 packet ID 的方式与普通 TCP 代理新建连接的差异。',expected:'SUCCESS'},
+  {id:'home-wifi',name:'家庭 Wi-Fi：浏览网页',base:'direct',focus:'普通家用网络：电脑 → Wi-Fi 路由器 → 互联网 → 网站，查看 NAT 回程。',tryIt:'动手验证：点「编辑网络 → 家用 Wi-Fi 路由器」，若关闭「出口启用 NAT」或「允许转发」，观察外网回包或转发在何处中断。',expected:'SUCCESS'},
+  {id:'office-proxy',name:'公司网络：HTTP 代理上网',base:'system',focus:'办公电脑遵从公司 HTTP 代理设置；浏览器通过 CONNECT 告知目标。',tryIt:'动手验证：打开「请求与配置」，在代理规则首行将 www.google.com 设为 reject 或 direct，观察分流规则如何改变连接路径。',expected:'SUCCESS'},
+  {id:'home-nas',name:'家庭局域网：访问 NAS',base:'direct',focus:'访问同一家庭 LAN 的 NAS。网页 TCP 不应经过公网，也不应被 NAT。DNS 查询仍可能访问外部解析器。',tryIt:'动手验证：跳转到「目标连接」阶段，确认网页 TCP 只在家庭网关内网转发、未产生 TCP NAT 映射。',expected:'SUCCESS'},
+  {id:'remote-office',name:'异地办公：VPN 连接 SSH',base:'tail',focus:'通过 WireGuard 访问异地设备的 Tailnet SSH 地址，检查完整内层包恢复。',tryIt:'动手验证：打开「请求与配置」，取消勾选「VPN 密钥有效」后重跑，观察握手阶段如何因身份校验失败而终止。',expected:'SUCCESS'},
+  {id:'double-nat',name:'光猫 + 路由器：双重 NAT',base:'direct',focus:'经过两级地址端口转换，回程需要依次恢复两张 NAT 会话表。',tryIt:'动手验证：观察去程连续两次 NAT 改写源地址，并在「连接与状态」中核对两台网关各自的 NAT 会话表。',expected:'SUCCESS'},
+  {id:'wifi-loss',name:'无线丢包：SYN 重传恢复',base:'direct',focus:'可重复地丢弃第一个 SYN；等待超时后，以相同序号重传并恢复。',tryIt:'动手验证：点「全部报文」对比首次丢弃的 SYN 与重传的 SYN：二者 packet ID 不同，但 TCP 序号（seq）与 segment ID 完全相同。',expected:'SUCCESS'},
+  {id:'long-distance',name:'跨地域访问：高延迟链路',base:'direct',focus:'单向链路延迟提高到 60 ms；比较握手和整次请求的虚拟耗时。',tryIt:'动手验证：对比右上角步骤毫秒耗时与「无代理直连」（12 ms 链路）的差距，体会每次 RTT 往返对总耗时的放大。',expected:'SUCCESS'},
+  {id:'dns-outage',name:'域名打不开：DNS 停服',base:'direct',focus:'DNS 解析器关闭监听。查询发出但没有回答，连接尚未进入网站 TCP 阶段。',tryIt:'动手验证：点「编辑网络 → DNS 解析器」，勾选启用 53 端口 dns 服务并保存，重新发起即可恢复正常解析。',expected:'DNS_TIMEOUT'},
+  {id:'proxy-offline',name:'代理失效：服务端口关闭',base:'system',focus:'网络可达，远端代理端口未监听。观察 TCP RST 与拒绝连接。',tryIt:'动手验证：观察远端代理收到 SYN 后立即回传 TCP RST,ACK；再去「编辑网络 → 日本代理」开启 443 服务即可修复。',expected:'CONNECTION_REFUSED'},
+  {id:'tun-loop',name:'TUN 故障：漏配例外路由',base:'tun',focus:'缺少代理地址的 /32 例外，代理自己的出站又进入 TUN。补回例外路由可修复。',tryIt:'动手验证：点「编辑网络 → 我的电脑」，新增路由 203.0.113.10/32 → 接口 en0 → 下一跳 家庭网关（metric 10），保存后重跑即可消除回环。',expected:'TUN_LOOP'},
+  {id:'routing-loop',name:'路由故障：两台路由器互指',base:'direct',focus:'目标站路由错误地指回家庭网关，报文循环转发，最终 TTL 耗尽。',tryIt:'动手验证：观察 TTL 逐跳递减至 0 后路由器发回 ICMP Time Exceeded 差错包；将互联网路由的 142.250.72.0/24 下一跳改回「目标网站」即可修复。',expected:'TTL_EXCEEDED'},
+  {id:'small-mtu',name:'能握手但打不开：路径 MTU 小',base:'direct',focus:'链路 MTU 为 300，较大的数据段被 DF/MTU 约束拒绝。降低 MSS 后重试；模型不自动执行 PMTUD。',tryIt:'动手验证：观察 40 字节握手能过、552 字节数据段触发网关发回 ICMP Fragmentation Needed；在「请求与配置」将 TCP MSS 调为 128 重跑即可通过。',expected:'MTU_EXCEEDED'},
+  {id:'remote-dns',name:'代理解析：域名交给远端',base:'tun',focus:'先建立代理通道，DNS 在代理侧执行，再把解析结果交给应用。比较查询的来源位置。',tryIt:'动手验证：观察第 1 阶段先建立本机到日本代理的加密通道，DNS 查询从「日本代理」发出而非本机发出，避免本地 DNS 泄漏。',expected:'SUCCESS'},
+  {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'应用先获得本地占位地址 198.18.0.1；代理仍按原域名在远端解析真实 IP。',tryIt:'动手验证：观察原始 TCP 连接目的 IP 为 198.18.0.1，本机代理反查 fake-IP 映射表还原出 www.google.com 后再由远端解析真实 IP。',expected:'SUCCESS'}
 ];
 export function preset(name='tun') {
   const item=PRESETS.find(p=>p.id===name)||PRESETS[0];
   if(!['tun','system','direct','tail'].includes(name)) {
     const c=preset(item.base),host=id=>c.hosts.find(h=>h.id===id);
-    c.name=item.name;c.presetId=item.id;c.lesson={focus:item.focus,expected:item.expected};
+    c.name=item.name;c.presetId=item.id;c.lesson={focus:item.focus,tryIt:item.tryIt,expected:item.expected};
     if(name==='home-wifi'){host('gateway').name='家用 Wi-Fi 路由器';host('client').name='家用电脑';}
     if(name==='office-proxy'){host('client').name='办公电脑';host('gateway').name='公司网关';host('proxy').name='公司代理服务';}
     if(name==='remote-office'){host('client').name='异地办公电脑';host('peer').name='办公室 SSH 设备';}
@@ -90,7 +90,7 @@ export function preset(name='tun') {
   };
   if(name==='tun')hosts[0].routes.unshift(route('192.0.2.53/32','en0','gateway',10),route('0.0.0.0/1','utun'),route('128.0.0.0/1','utun'));
   if(name==='tail')hosts[0].routes.unshift(route('100.64.0.0/10','utun'));
-  config.presetId=name;config.lesson={focus:item.focus,expected:item.expected};
+  config.presetId=name;config.lesson={focus:item.focus,tryIt:item.tryIt,expected:item.expected};
   return config;
 }
 

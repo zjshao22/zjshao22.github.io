@@ -63,3 +63,22 @@ test('repair MTU case by lowering MSS',()=>{const r=run('small-mtu',c=>c.transpo
 test('loopback belongs to the requesting host rather than another computer',()=>{const r=run('direct',c=>{c.request.source='proxy';c.request.destination='127.0.0.1';c.request.kind='http';c.request.port=80;c.hosts.find(h=>h.id==='proxy').services.push({kind:'http',port:80,protocol:'TCP',enabled:true});});assert.equal(r.result.ok,true);assert.equal(r.final.connections[0].b.host,'proxy');assert.equal(r.final.connections[0].a.ip,'127.0.0.1');assert.ok(!r.events.some(e=>e.type==='link.send'));});
 test('common cases only keep participating devices and permit inactive service references',()=>{const home=preset('home-wifi'),vpn=preset('remote-office');assert.equal(home.hosts.length,5);assert.equal(vpn.hosts.length,4);assert.equal(validateConfig(home).length,0);assert.equal(validateConfig(vpn).length,0);assert.equal(simulate(home).result.ok,true);});
 test('unknown single-label DNS names return NXDOMAIN instead of inherited properties',()=>{const c=preset('direct');c.request.destination='constructor';assert.equal(simulate(c).result.code,'DNS_NXDOMAIN');});
+test('all 18 presets provide focus and counterfactual tryIt guidance',()=>{
+  for(const p of PRESETS){
+    const c=preset(p.id);
+    assert.ok(c.lesson?.focus&&c.lesson.focus.length>10,`${p.id} focus`);
+    assert.ok(c.lesson?.tryIt&&c.lesson.tryIt.length>10,`${p.id} tryIt`);
+  }
+});
+test('router ICMP errors route back to client and traverse NAT restoration',()=>{
+  const mtuRun=simulate(preset('small-mtu'));
+  const mtuReceive=mtuRun.events.find(e=>e.type==='icmp.receive'&&e.host==='client');
+  assert.ok(mtuReceive,'small-mtu delivers ICMP Fragmentation Needed back to client');
+  assert.equal(mtuReceive.packet.meta.kind,'icmp-error');
+  assert.ok(mtuReceive.packet.innerError?.id,'carries offending packet header');
+
+  const loopRun=simulate(preset('routing-loop'));
+  const loopReceive=loopRun.events.find(e=>e.type==='icmp.receive'&&e.host==='client');
+  assert.ok(loopReceive,'routing-loop delivers ICMP Time Exceeded through NAT back to client');
+  assert.equal(loopReceive.packet.dst,'192.168.1.10');
+});

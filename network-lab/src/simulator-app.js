@@ -61,9 +61,11 @@ function transform(){
   minimap.innerHTML=config.links.map(l=>{const a=mapHosts.find(n=>n.id===l.a),b=mapHosts.find(n=>n.id===l.b);return `<path d="M${a.x},${a.y}L${b.x},${b.y}" class="mini-link"/>`;}).join('')+mapHosts.map(n=>`<g data-focus-host="${esc(n.id)}" role="button" tabindex="0" aria-label="定位${esc(n.name)}"><title>${esc(n.name)}</title><circle cx="${n.x}" cy="${n.y}" r="80" class="mini-hit"/><circle cx="${n.x}" cy="${n.y}" r="${n.id===current()?.host?28:22}" class="mini-node ${n.id===current()?.host?'active':''}"/></g>`).join('')+`<rect x="${-view.x/view.scale}" y="${-view.y/scaleY}" width="${w/view.scale}" height="${h/scaleY}" class="mini-viewport"/>`;
 
 }
+let lastCanvasSize='';
 function fit(){
   const b=$('network-canvas').getBoundingClientRect();
-  if(diagramMode==='mechanism'){const s=currentScene();view.scale=Math.max(.05,Math.min((b.width-32)/s.width,(b.height-32)/s.height,1.4));view.stretchY=1;view.x=(b.width-s.width*view.scale)/2;view.y=(b.height-s.height*view.scale)/2;transform();return;}
+  lastCanvasSize=`${Math.round(b.width)}x${Math.round(b.height)}`;
+  if(diagramMode==='mechanism'){const s=currentScene();view.scale=Math.max(.05,Math.min((b.width-24)/s.width,(b.height-24)/s.height,1.4));view.stretchY=1;view.x=(b.width-s.width*view.scale)/2;view.y=(b.height-s.height*view.scale)/2;transform();return;}
   const left=Math.min(...config.hosts.map(h=>h.x-hostSize(h)[0]/2/nodeBaseScale)),right=Math.max(...config.hosts.map(h=>h.x+hostSize(h)[0]/2/nodeBaseScale));
   const top=Math.min(...config.hosts.map(h=>h.y-hostSize(h)[1]/2/nodeBaseScale)),bottom=Math.max(...config.hosts.map(h=>h.y+hostSize(h)[1]/2/nodeBaseScale));
   view.scale=Math.max(.05,Math.min((b.width-48)/(right-left),(b.height-64)/(bottom-top),1));view.stretchY=1;
@@ -116,13 +118,89 @@ function drawGraph(){
   }
   $('network-count').textContent=`${config.hosts.length} 台设备 · ${config.links.length} 条链路`;
 }
+function eventPhase(e){
+  if(!e)return null;
+  if(e.type.startsWith('dns.'))return ['dns','域名解析'];
+  if(['request.complete','request.fail','tcp.close'].includes(e.type)||e.packet?.flags?.includes('FIN'))return ['close','收尾与结果'];
+  if(['icmp.error','icmp.receive','tcp.timeout','tcp.retransmit','link.drop'].includes(e.type)||e.packet?.meta?.kind==='icmp-error')return ['fault','丢包/差错/重传'];
+  if(['tls.handshake','ssh.banner','http.request','http.response','udp.echo','icmp.echo','icmp.reply'].includes(e.type)||/ClientHello|ServerHello|请求|响应|SSH/.test(e.packet?.segment||''))return ['app','应用层传输'];
+  if(e.connection==='connection-3')return ['target','代理 ↔ 目标'];
+  if(e.type.startsWith('proxy.')||e.type.startsWith('vpn.')||e.connection==='connection-2'||e.packet?.meta?.kind==='wireguard')return ['tunnel',config.vpn.enabled?'VPN 隧道':'本机 ↔ 代理'];
+  return ['orig','本机原始发起'];
+}
+function renderPhasesAndSpotlight(e,s){
+  const phaseBar=$('phase-bar'),spotlight=$('step-spotlight');
+  if(!phaseBar||!spotlight)return;
+  if(run&&visible.length){
+    const seen=new Map();
+    visible.forEach((evIdx,pos)=>{
+      const ph=eventPhase(run.events[evIdx]);
+      if(ph&&!seen.has(ph[0]))seen.set(ph[0],{id:ph[0],label:ph[1],firstIdx:evIdx,pos:pos+1});
+    });
+    const activePhase=eventPhase(e)?.[0];
+    phaseBar.hidden=false;
+    phaseBar.innerHTML=[...seen.values()].map(p=>`<button type="button" class="phase-pill" data-phase-jump="${p.firstIdx}" ${activePhase===p.id?'aria-current="step"':''}>${esc(p.label)} · #${p.pos}</button>`).join('');
+    phaseBar.querySelectorAll('[data-phase-jump]').forEach(b=>b.onclick=()=>{pause();go(+b.dataset.phaseJump);});
+  }else{
+    phaseBar.hidden=true;phaseBar.innerHTML='';
+  }
+  const items=[];
+  if(!e){
+    if(config.lesson?.focus)items.push(`<div><span class="spotlight-label">观察重点</span>${esc(config.lesson.focus)}</div>`);
+    if(config.lesson?.tryIt)items.push(`<div class="spotlight-try"><span class="spotlight-label">动手验证</span>${esc(config.lesson.tryIt)}</div>`);
+  }else{
+    const p=e.packet,b=e.before;
+    if(b&&p){
+      if(b.id!==p.id){
+        items.push(`<div class="spotlight-diff"><span class="spotlight-label">封装转换</span><code>${esc(b.id)}</code> (${esc(b.src)} → ${esc(b.dst)}) ⇒ <code>${esc(p.id)}</code> (${esc(p.src)} → ${esc(p.dst)})</div>`);
+      }else{
+        const diffs=['src','sport','dst','dport','ttl','flags','seq','ack','length'].filter(k=>b[k]!==p[k]).map(k=>`${k}: ${b[k]} → ${p[k]}`);
+        if(diffs.length)items.push(`<div class="spotlight-diff"><span class="spotlight-label">首部改写</span><code>${esc(diffs.join(' · '))}</code></div>`);
+      }
+    }else if(e.type==='route.lookup'&&p){
+      const nextHop=e.route?(e.route.via?(config.hosts.find(h=>h.id===e.route.via)?.name||e.route.via):'直达 / 虚拟接口'):'无';
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">最长前缀匹配</span>目的 <code>${esc(p.dst)}</code> → ${e.route?`命中 <code>${esc(e.route.prefix)}</code> · 出口 <code>${esc(e.route.iface)}</code> (${esc(nextHop)})`:'无匹配路由（丢弃）'}</div>`);
+    }else if(e.type==='dns.fake'&&e.record){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">Fake-IP 映射</span><code>${esc(e.record.name)} ⇄ ${esc(e.record.ip)}</code>（代理进程内存保留反查表）</div>`);
+    }else if(e.type.startsWith('dns.')){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">DNS 解析</span><code>${esc(e.record?`${e.record.name} → ${e.record.ip}`:`查询 ${config.request.destination} (${config.dns.mode})`)}</code></div>`);
+    }else if(e.type==='proxy.rule'){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">分流规则命中</span>目标 <code>${esc(config.request.destination)}</code> → 策略 <code>${esc(e.action||e.rule?.action||'proxy')}</code></div>`);
+    }else if((e.type==='icmp.error'||e.type==='icmp.receive')&&p){
+      items.push(`<div class="spotlight-diff"><span class="spotlight-label">ICMP 差错回传</span><code>${esc(p.src)} → ${esc(p.dst)}</code> · 引用触发差错原包 <code>${esc(p.innerError?.id||'')}</code> (原目的 <code>${esc(p.innerError?.dst||'')}</code>)</div>`);
+    }
+    if(p){
+      const tuple=`[${p.id}] ${p.src}${p.sport?':'+p.sport:''} → ${p.dst}${p.dport?':'+p.dport:''} · ${p.protocol}${p.flags?' '+p.flags:''}${p.protocol==='TCP'?` · seq=${p.seq} ack=${p.ack}`:''} · TTL=${p.ttl}`;
+      const inner=p.inner?` · 内层 [${p.inner.id}: ${p.inner.src}→${p.inner.dst}]`:p.innerError?` · 引用原包 [${p.innerError.id}]`:'';
+      items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组</span><code>${esc(tuple+inner)}</code></div>`);
+    }else if(e.connection){
+      const c=s?.connections?.find(c=>c.id===e.connection);
+      if(c)items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组</span><code>[${esc(c.id)} / ${esc(c.role)}] ${esc(c.a.ip)}:${c.a.port} ⇄ ${esc(c.b.ip)}:${c.b.port} · ${esc(c.aState)}/${esc(c.bState)} · seq=${c.aNext} acked=${c.bytesAcked}B</code></div>`);
+    }
+    if(s?.connections?.length>1){
+      const roleMap={original:'原始连接',proxy:'代理通道',target:'目标连接'};
+      const connStrip=s.connections.map(c=>`${c.id===e.connection?'▶ ':''}${c.id}(${roleMap[c.role]||c.role}: ${c.a.ip}⇄${c.b.ip} ${c.aState}/${c.bState})`).join(' ｜ ');
+      items.push(`<div class="spotlight-tuple"><span class="spotlight-label">多段连接并存</span><code>${esc(connStrip)}</code></div>`);
+    }
+    if(index===run.events.length-1&&config.lesson?.tryIt){
+      items.push(`<div class="spotlight-try"><span class="spotlight-label">动手验证</span>${esc(config.lesson.tryIt)}</div>`);
+    }
+  }
+  items.push(`<label class="spotlight-predict"><input id="prediction-inline" type="checkbox" ${$('prediction').checked?'checked':''}>遇到路由查表时先预测出口再揭晓答案</label>`);
+  spotlight.innerHTML=items.join('');
+  const inlinePred=$('prediction-inline');
+  if(inlinePred)inlinePred.onchange=()=>{
+    $('prediction').checked=inlinePred.checked;
+  };
+}
 function render(){
   const e=current(),s=snapshot(),q=config.request,position=visible.indexOf(index);
   $('preset').title=config.lesson?.focus||'';
   $('experiment-summary').textContent=`${config.hosts.find(h=>h.id===q.source).name} → ${q.destination}:${q.port} · ${q.kind.toUpperCase()} · ${q.bytes} 字节请求`;
-  $('event-type').textContent=e?`${e.type.startsWith('dns.')?'域名解析':e.type.startsWith('tun.')?'本机接口交接':e.type.startsWith('link.')?'物理网络传送':e.type.startsWith('nat.')?'地址转换':e.type.startsWith('route.')?'选择出口':'连接与应用处理'} · ${e.time} ms`:'准备就绪';
+  $('event-type').textContent=e?`${e.type.startsWith('dns.')?'域名解析':e.type.startsWith('tun.')?'本机接口交接':e.type.startsWith('link.')?'物理网络传送':e.type.startsWith('nat.')?'地址转换':e.type.startsWith('route.')?'选择出口':e.type.startsWith('icmp.')?'ICMP 控制报文':'连接与应用处理'} · ${e.time} ms`:'准备就绪';
   $('event-title').textContent=e?.title.replace(/\boriginal\b/g,'应用原始连接').replace(/\bproxy\b/g,'代理通道连接').replace(/\btarget\b/g,'目标服务连接')||(run?'请求已发起，接下来逐步观察。':'发起一次请求，观察数据如何送达。');
   $('event-description').textContent=e?.why||(e?.link&&e.from&&e.to?`报文从${config.hosts.find(h=>h.id===e.from).name}传向${config.hosts.find(h=>h.id===e.to).name}。这是相邻设备间的一跳；报文中的目的 IP ${e.packet.dst} 表示网络层的目的地址。`:e?.record?`应用取得域名对应的地址 ${e.record.ip}，接下来的路由与连接由当前实验配置决定。`:e?.type==='request.start'?`应用准备访问 ${q.destination}。随后逐步观察域名解析、连接建立和数据传输。`:s?.result&&e===run.events.at(-1)?s.result.message:e?.packet?`${e.packet.id} · ${e.packet.protocol} ${e.packet.flags||''}。全图高亮本步的处理位置；点击「报文分层」可查看具体字段。`:e?`本步更新设备或连接的本地状态。点击「查看本步」或「连接与状态」检查变化。`:run?`已生成 ${visible.length} 个观察步骤，可单步前进或播放。`:'直接发起请求，或先修改实验条件。');
+  renderPhasesAndSpotlight(e,s);
   const p=e?.packet;
   $('packet-summary').textContent=p?`${p.id} · ${p.protocol}${p.flags?' '+p.flags:''} · ${p.length} 字节${e.type==='link.drop'?' · 本包丢弃':e?.unit?' · '+({app:'应用程序',kernel:'网络内核',tun:'TUN 接口',agent:'用户态程序'}[e.unit]||e.unit):''}`:'全图视角 · 播放时画面保持固定';
   const connection=s?.connections.find(c=>c.id===e?.connection),role={original:'应用原始连接',proxy:'本机 ↔ 代理连接',target:'代理 ↔ 目标连接'}[connection?.role];
@@ -234,6 +312,13 @@ document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.c
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
 document.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||e.target.closest('button,a,input,select,textarea')||$('lab-view').hidden)return;if(e.key==='ArrowRight'){e.preventDefault();$('next').click();}if(e.key==='ArrowLeft'){e.preventDefault();$('back').click();}if(e.key===' '&&run){e.preventDefault();play();}});
 window.addEventListener('resize',()=>{if(!$('lab-view').hidden)fit();});
+if(typeof ResizeObserver!=='undefined'){
+  new ResizeObserver(()=>{
+    if($('lab-view').hidden)return;
+    const b=$('network-canvas').getBoundingClientRect(),size=`${Math.round(b.width)}x${Math.round(b.height)}`;
+    if(b.width>0&&b.height>0&&size!==lastCanvasSize)fit();
+  }).observe($('network-canvas'));
+}
 render();fit();renderCapture();
 // Exposed for deterministic regression inspection, not for communicating with real networks.
 window.NetworkLab={get diagramMode(){return diagramMode;},get scene(){return currentScene();},get config(){return config;},get run(){return run;},get index(){return index;},simulate,startRun,go,get view(){return view;}};
@@ -255,14 +340,14 @@ $('network-canvas').addEventListener('click',e=>{const node=e.target.closest('[d
 if(location.hash==='#capture')showView('capture');
 window.addEventListener('hashchange',()=>showView(location.hash==='#capture'?'capture':'lab'));
 
-$('preset-details').onclick=()=>{inspectTab='case';$('inspector-kicker').textContent='SCENARIO / 固定初始条件';$('inspector-title').textContent=config.name;$('inspector-tabs').innerHTML='';$('inspector-body').innerHTML='<p>'+esc(config.lesson?.focus||'自由编辑的网络实验')+'</p><h3>本次请求</h3>'+rows({发起设备:config.hosts.find(h=>h.id===config.request.source).name,目标:config.request.destination,应用协议:config.request.kind,端口:config.request.port,请求字节:config.request.bytes,响应字节:config.request.responseBytes,设备数量:config.hosts.length,链路数量:config.links.length})+'<h3>如何探索</h3><p>先按默认条件发起一次请求，再修改设备路由、服务、链路或传输参数重新运行。全部报文可查看每个包，点击包检查首部和处理前后变化。</p><p class="notice">这是常见网络机制的固定实验配置，使用示例地址，不代表本机真实配置或实时联网结果。</p>';openDialog('inspector');};
+$('preset-details').onclick=()=>{inspectTab='case';$('inspector-kicker').textContent='SCENARIO / 固定初始条件';$('inspector-title').textContent=config.name;$('inspector-tabs').innerHTML='';$('inspector-body').innerHTML='<p>'+esc(config.lesson?.focus||'自由编辑的网络实验')+'</p>'+(config.lesson?.tryIt?'<h3>动手验证（反事实实验）</h3><p>'+esc(config.lesson.tryIt)+'</p>':'')+'<h3>本次请求</h3>'+rows({发起设备:config.hosts.find(h=>h.id===config.request.source).name,目标:config.request.destination,应用协议:config.request.kind,端口:config.request.port,请求字节:config.request.bytes,响应字节:config.request.responseBytes,设备数量:config.hosts.length,链路数量:config.links.length})+'<h3>如何探索</h3><p>先按默认条件发起一次请求，再修改设备路由、服务、链路或传输参数重新运行。全部报文可查看每个包，点击包检查首部和处理前后变化。</p><p class="notice">这是常见网络机制的固定实验配置，使用示例地址，不代表本机真实配置或实时联网结果。</p>';openDialog('inspector');};
 
 $('network-minimap').addEventListener('click',e=>{const node=e.target.closest('[data-focus-host]');if(node){focusHost(node.dataset.focusHost);$('overview-menu').hidePopover();}});
 
 $('network-minimap').addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const node=e.target.closest('[data-focus-host]');if(node){e.preventDefault();e.stopPropagation();focusHost(node.dataset.focusHost);$('overview-menu').hidePopover();}});
 
 $('file-menu').addEventListener('click',e=>{if(e.target.closest('button'))$('file-menu').hidePopover();});
-$('prediction').addEventListener('change',()=>$('file-menu').hidePopover());
+$('prediction').addEventListener('change',()=>{if($('prediction-inline'))$('prediction-inline').checked=$('prediction').checked;$('file-menu').hidePopover();});
 
 $('event-count').onclick=()=>openInspector('timeline');
 

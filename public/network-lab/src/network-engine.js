@@ -45,7 +45,7 @@ class NetworkEngine {
     layers.push({type:'ip',name:'IPv4 首部',fields:{版本:4,首部长度:p.ihl,DSCP:0,ECN:0,总长度:p.length,标识:encoded.getUint16(4),DF:p.df?'1':'0',MF:0,片偏移:0,TTL:p.ttl,协议:p.protocol,首部校验和:hex(encoded.getUint16(10)),源地址:p.src,目的地址:p.dst,选项:'无'}});
     if(p.protocol==='TCP')layers.push({type:'tcp',name:'TCP 首部',fields:{源端口:p.sport,目的端口:p.dport,标志:p.flags,序号:p.seq,确认号:p.ack,首部长度:20,接收窗口:p.window,校验和:hex(encoded.getUint16(36)),紧急指针:0,选项:'无；不协商窗口扩大或 SACK',载荷字节:p.payloadLength}});
     if(p.protocol==='UDP')layers.push({type:'udp',name:'UDP 首部',fields:{源端口:p.sport,目的端口:p.dport,长度:p.payloadLength+8,校验和:hex(encoded.getUint16(26))}});
-    if(p.protocol==='ICMP')layers.push({type:'icmp',name:'ICMP',fields:{类型:p.icmpType??8,代码:p.icmpCode??0,标识符:p.icmpId??0,序号:p.icmpSeq??1,校验和:hex(encoded.getUint16(22))}});
+    if(p.protocol==='ICMP')layers.push({type:'icmp',name:'ICMP',fields:{类型:p.icmpType??8,代码:p.icmpCode??0,标识符:p.icmpId??0,序号:p.icmpSeq??1,校验和:hex(encoded.getUint16(22)),...(p.innerError?{内嵌触发原包:`${p.innerError.id} (${p.innerError.src}:${p.innerError.sport} → ${p.innerError.dst}:${p.innerError.dport} / ${p.innerError.protocol})`}:{})}});
     if(p.meta.outerTls)layers.push({type:'tls',name:'代理 TLS（逻辑）',fields:{会话:p.meta.outerTls,明文访问者:'本机代理与远端代理',链路观察者:'不可读取内部目标与载荷'}});
     if(p.meta.kind==='wireguard')layers.push({type:'wireguard',name:'WireGuard 加密载荷（逻辑）',fields:{内层包:p.inner?.id||'握手',加密范围:'完整内层 IP 数据报',真实密码运算:'未执行'}});
     else if(p.meta.kind&&p.payloadLength)layers.push({type:p.meta.kind,name:p.meta.label||p.meta.kind,fields:{流标识:p.meta.streamId||'—',目标:p.meta.target||'—',内容:p.meta.encrypted?'密文结构示意':p.meta.text||'应用字节',说明:p.meta.note||'逻辑载荷，非真实协议密文'}});
@@ -72,10 +72,14 @@ class NetworkEngine {
     if(this.done)return;
     const h=this.hosts[host];
     // Restore NAPT before local-address delivery at the public gateway.
-    const mapping=this.state.nat.find(n=>n.host===host&&n.protocol===p.protocol&&n.publicIP===p.dst&&n.publicPort===(p.protocol==='ICMP'?p.icmpId:p.dport)&&n.remoteIP===p.src&&(p.protocol==='ICMP'||n.remotePort===p.sport));
+    const mapping=p.innerError
+      ?this.state.nat.find(n=>n.host===host&&n.protocol===p.innerError.protocol&&n.publicIP===p.dst&&n.publicPort===(p.innerError.protocol==='ICMP'?p.innerError.icmpId:p.innerError.sport)&&n.remoteIP===p.innerError.dst&&(p.innerError.protocol==='ICMP'||n.remotePort===p.innerError.dport))
+      :this.state.nat.find(n=>n.host===host&&n.protocol===p.protocol&&n.publicIP===p.dst&&n.publicPort===(p.protocol==='ICMP'?p.icmpId:p.dport)&&n.remoteIP===p.src&&(p.protocol==='ICMP'||n.remotePort===p.sport));
     if(mapping) {
-      const before=clone(p);p.dst=mapping.privateIP;if(p.protocol==='ICMP')p.icmpId=mapping.privatePort;else p.dport=mapping.privatePort;
-      this.emitPacket('nat.restore','NAT 根据返回映射恢复内网地址和端口',p,{host,before,why:'使用协议、公网端口与远端端点匹配原会话。'});
+      const before=clone(p);p.dst=mapping.privateIP;
+      if(p.innerError){p.innerError.src=mapping.privateIP;if(p.innerError.protocol==='ICMP')p.innerError.icmpId=mapping.privatePort;else p.innerError.sport=mapping.privatePort;}
+      else if(p.protocol==='ICMP')p.icmpId=mapping.privatePort;else p.dport=mapping.privatePort;
+      this.emitPacket('nat.restore',p.innerError?'NAT 根据 ICMP 差错内嵌首部恢复内网目的地址':'NAT 根据返回映射恢复内网地址和端口',p,{host,before,why:p.innerError?'RFC 5508：网关读取 ICMP 差错内嵌的原包首部匹配 NAT 会话，将差错转发回内网发起端。':'使用协议、公网端口与远端端点匹配原会话。'});
     }
     if(this.hasIP(host,p.dst)) {
       if(p.inner)return this.unwrap(p,host,receive);
@@ -99,14 +103,14 @@ class NetworkEngine {
       if(this.config.vpn.enabled&&(host===this.source||host===this.config.vpn.peer))return this.wrap(p,host,receive);
       if(host===this.source&&this.config.proxy.tun) {
         if(p.connection&&this.runtime[p.connection]?.role==='original')return this.deliver(p,host,receive);
-        this.fail('TUN_LOOP','代理自身的出站又命中 TUN：请为代理服务器添加更具体的物理出口路由',{host,packet:clone(p),route:clone(rule)});return;
+        this.fail('TUN_LOOP','代理自身的出站又命中 TUN：请为代理服务器添加更具体的物理出口路由（真实系统中 sing-box / Tailscale 也可通过 IP_BOUND_IF 绑定物理网卡、Linux SO_MARK 策略路由或进程排除避免回环）',{host,packet:clone(p),route:clone(rule)});return;
       }
       this.fail('TUN_UNAVAILABLE','路由选择了 TUN，但没有启用对应的代理或 VPN 处理程序',{host,packet:clone(p)});return;
     }
     const next=rule.via||this.config.links.filter(l=>l.enabled&&(l.a===host||l.b===host)).map(l=>l.a===host?l.b:l.a).find(id=>this.hasIP(id,p.dst));
     const link=this.config.links.find(l=>l.enabled&&((l.a===host&&l.b===next)||(l.b===host&&l.a===next)));
     if(!link){this.emitPacket('link.unreachable','所选下一跳没有可用链路',p,{host,route:clone(rule)});this.state.metrics.dropped++;return;}
-    if(h.nat&&rule.iface===h.natInterface&&!mapping) {
+    if(h.nat&&rule.iface===h.natInterface&&!mapping&&p.src!==this.ip(host,h.natInterface)) {
       let n=this.state.nat.find(n=>n.host===host&&n.protocol===p.protocol&&n.privateIP===p.src&&n.privatePort===(p.protocol==='ICMP'?p.icmpId:p.sport)&&n.remoteIP===p.dst&&n.remotePort===p.dport);
       const before=clone(p);
       if(!n){n={id:this.id('nat'),host,protocol:p.protocol,privateIP:p.src,privatePort:p.protocol==='ICMP'?p.icmpId:p.sport,publicIP:this.ip(host,h.natInterface),publicPort:62000+this.state.nat.length,remoteIP:p.dst,remotePort:p.dport};this.state.nat.push(n);}
@@ -131,8 +135,14 @@ class NetworkEngine {
   }
   icmpError(p,host,type,code,error,message,extra={}) {
     this.state.metrics.dropped++;
-    this.emitPacket('icmp.error',message,p,{host,code:error,icmp:{type,code,...extra},why:'ICMP 错误作为本机网络反馈记录；当前模型不实施 IP 分片或 PMTU 自动重分段。'});
+    this.emitPacket('icmp.error',message,p,{host,code:error,icmp:{type,code,...extra},why:'中间设备检测到转发错误并生成 ICMP 差错反馈；当前模型不自动执行 IP 分片或 PMTUD 重分段。'});
     if(!this.lastNetworkError)this.lastNetworkError={code:error,message};
+    if(!this.icmpReturnSent&&host!==this.source&&p.protocol!=='ICMP') {
+      this.icmpReturnSent=true;
+      const label=type===11?'ICMP Time Exceeded (TTL=0)':code===4?`ICMP Fragmentation Needed (MTU=${extra.mtu})`:'ICMP Destination Unreachable';
+      const reply=this.packet({ip:this.ip(host),port:0},{ip:p.src,port:0},'ICMP',{icmpType:type,icmpCode:code,payloadLength:28,length:56,innerError:{id:p.id,src:p.src,dst:p.dst,sport:p.sport,dport:p.dport,protocol:p.protocol,icmpId:p.icmpId}},{kind:'icmp-error',label,target:p.dst,text:`${message}（引用原包 ${p.id}）`,note:'RFC 792 / RFC 1812：路由器将原 IP 首部与前 8 字节传输首部放入 ICMP 差错载荷发回源端；这也是 traceroute 获知沿途路由器 IP 的原理'});
+      this.sendIP(reply,host,(received,at)=>this.emitPacket('icmp.receive',`${this.hosts[at].name} 收到路由器返回的 ${label}`,received,{host:at,unit:'kernel',why:`源地址 ${received.src} 即为报错路由器接口地址；应用或内核据此获知路径故障原因。`}));
+    }
   }
   visibility(p) {
     const encrypted=p.meta.outerTls||p.meta.encrypted||p.meta.kind==='wireguard';
@@ -300,7 +310,7 @@ class NetworkEngine {
     };
     if(this.config.dns.mode==='fake'&&!isIPv4(q.destination)) {
       this.originalName=q.destination;this.state.dnsRecords.push({id:this.id('dns'),host:this.source,name:q.destination,ip:'198.18.0.1',expires:this.clock+60000,fake:true});
-      this.emit('dns.fake','本地 fake-IP 映射：198.18.0.1',{host:this.source,why:'fake-IP 只用于本地连接与域名关联；远端仍需解析真实目标。'});resolved('198.18.0.1');
+      this.emit('dns.fake','本地 fake-IP 映射：198.18.0.1',{host:this.source,why:`fake-IP 仅在本机生效：立即向应用返回占位地址 198.18.0.1，并在本机代理内存中记录 198.18.0.1 ↔ ${q.destination} 映射表；真实解析留待远端执行。`});resolved('198.18.0.1');
     } else if(this.config.dns.mode==='remote'&&!isIPv4(q.destination)&&this.config.proxy.tun) {
       this.ensureOuter(()=>this.resolve(this.proxy,q.destination,ip=>{this.resolvedIP=ip;this.emit('dns.relay','解析结果经已建立的代理通道交回应用',{host:this.source});resolved(ip);}));
     } else this.resolve(this.source,q.destination,resolved);
@@ -335,7 +345,8 @@ class NetworkEngine {
       if(system)this.emit('http.connect','HTTP CONNECT 传达目标域名与端口',{host:this.source,connection:original.id,target:q.destination+':'+q.port});
       const known=Object.hasOwn(this.config.dns.records,q.destination)?this.config.dns.records[q.destination]:'0.0.0.0';
       const action=this.proxyRule(q.destination,this.originalIP||known);
-      this.emit('proxy.rule','代理规则选择：'+action,{host:this.source,action});
+      const fakeMapped=this.config.dns.mode==='fake'&&this.originalIP==='198.18.0.1';
+      this.emit('proxy.rule','代理规则选择：'+action,{host:this.source,action,why:fakeMapped?`原始 TCP 包目的 IP 仅为 198.18.0.1（IP/TCP 首部不含域名）；本机代理通过反查 fake-IP 映射表（198.18.0.1 → ${q.destination}）还原域名并匹配规则。`:'按规则表顺序匹配域名、后缀或 CIDR，决定走代理、直连或拒绝。'});
       if(action==='reject'){this.fail('POLICY_REJECT','代理规则拒绝这个目标');return;}
       const connectTarget=(ip,remote)=>{
         this.resolvedIP=ip;const host=this.config.hosts.find(h=>this.hasIP(h.id,ip));
@@ -348,7 +359,7 @@ class NetworkEngine {
       };
       if(action==='direct') {this.resolve(this.source,q.destination,ip=>connectTarget(ip,false));return;}
       this.ensureOuter(outer=>{
-        const meta={kind:'proxy',label:'VLESS 目标与字节流（逻辑）',target:q.destination+':'+q.port,text:'连接目标 + 鉴权信息 + 待转发字节',encrypted:this.config.proxy.transportTls,note:'不包含原始 IP/TCP 首部'};
+        const meta={kind:'proxy',label:'VLESS 目标与字节流（逻辑）',target:q.destination+':'+q.port,text:fakeMapped?`反查 fake-IP (198.18.0.1 → ${q.destination}:${q.port}) + 鉴权信息 + 待转发字节`:'连接目标 + 鉴权信息 + 待转发字节',encrypted:this.config.proxy.transportTls,note:'不包含原始 IP/TCP 首部'};
         this.data(outer,'a',64,meta,()=>{
           if(this.config.faults.proxyAuth||this.config.proxy.clientAuth!==this.config.proxy.serverAuth){this.fail('PROXY_AUTH','远端代理拒绝认证，无法创建目标连接',{host:this.proxy});return;}
           this.emit('proxy.target','远端代理读取目标并创建新的 TCP 连接',{host:this.proxy,target:q.destination+':'+q.port,why:'外层 IP 只指向代理；网站目标在代理协议中传达。'});

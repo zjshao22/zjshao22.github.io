@@ -134,11 +134,17 @@ with tempfile.TemporaryDirectory(prefix="network-lab-audit-") as temporary:
         page.locator("#play").click()
         assert page.evaluate("NetworkLab.index") > position
         assert page.evaluate("JSON.stringify(NetworkLab.view)") == view
+        expect(page.locator("#step-spotlight")).to_contain_text("当前四元组")
+        assert page.locator("#phase-bar .phase-pill").count() >= 3
+        page.locator("#phase-bar .phase-pill").nth(2).click()
+        assert page.evaluate("JSON.stringify(NetworkLab.view)") == view
+        expect(page.locator("#step-spotlight")).to_contain_text("分流规则命中")
         page.locator("#back").click()
         page.locator("#event-count").click()
         page.locator(".timeline-event").last.click()
+        expect(page.locator("#step-spotlight")).to_contain_text("动手验证")
         assert page.evaluate("JSON.stringify(NetworkLab.view)") == view
-        checks.append("Step, play/pause, rewind and timeline replay preserve manual pan/zoom")
+        checks.append("Step, play/pause, phase jump, inline spotlight diff/tuple/tryIt and timeline replay preserve manual pan/zoom")
 
         page.locator("#packet-atlas-toggle").click()
         assert page.locator(".atlas-packet").count() == page.evaluate("Object.keys(NetworkLab.run.final.packets).length")

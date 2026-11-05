@@ -73,6 +73,9 @@ with tempfile.TemporaryDirectory(prefix="network-lab-audit-") as temporary:
                     "ERR_ABORTED",
                     "ERR_CONNECTION_RESET",
                     "ERR_SOCKET_NOT_CONNECTED",
+                    "ERR_NETWORK_IO_SUSPENDED",
+                    "ERR_PROXY_CONNECTION_FAILED",
+                    "ERR_INTERNET_DISCONNECTED",
                 )
             ):
                 cancelled.append(entry)

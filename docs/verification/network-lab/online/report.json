@@ -1,7 +1,7 @@
 {
   "result": "PASS",
   "url": "https://zjshao22.github.io/network-lab/",
-  "verified_at": "2026-11-05T09:54:10.523731+00:00",
+  "verified_at": "2026-11-05T12:57:55.606842+00:00",
   "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "checks": [
     "Home, shared navigation and network course entries; existing course remains available",
@@ -126,12 +126,12 @@
     }
   ],
   "runtime_resources": [
-    "https://zjshao22.github.io/network-lab/simulator.css?v=20261105-unified-4",
-    "https://zjshao22.github.io/network-lab/app-shell.css?v=20261105-unified-4",
-    "https://zjshao22.github.io/network-lab/mechanism.css?v=20261105-unified-4",
-    "https://zjshao22.github.io/network-lab/floating-windows.css?v=20261105-unified-4",
-    "https://zjshao22.github.io/network-lab/floating-windows.js?v=20261105-unified-4",
-    "https://zjshao22.github.io/network-lab/vendor/simulator.bundle.js?v=20261105-unified-4"
+    "https://zjshao22.github.io/network-lab/simulator.css?v=20261105-unified-5",
+    "https://zjshao22.github.io/network-lab/app-shell.css?v=20261105-unified-5",
+    "https://zjshao22.github.io/network-lab/mechanism.css?v=20261105-unified-5",
+    "https://zjshao22.github.io/network-lab/floating-windows.css?v=20261105-unified-5",
+    "https://zjshao22.github.io/network-lab/floating-windows.js?v=20261105-unified-5",
+    "https://zjshao22.github.io/network-lab/vendor/simulator.bundle.js?v=20261105-unified-5"
   ],
   "page_errors": [],
   "http_errors": [],
@@ -142,11 +142,11 @@
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/c/",
+      "url": "https://zjshao22.github.io/docs/database/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/database/",
+      "url": "https://zjshao22.github.io/docs/c/",
       "error": "net::ERR_ABORTED"
     },
     {
@@ -162,19 +162,15 @@
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/c/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
       "url": "https://zjshao22.github.io/docs/database/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/network/27-application-protocols/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
+      "url": "https://zjshao22.github.io/docs/c/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/network/26-tls-and-pki/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
+      "url": "https://zjshao22.github.io/docs/network/27-application-protocols/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
       "error": "net::ERR_ABORTED"
     },
     {
@@ -183,6 +179,10 @@
     },
     {
       "url": "https://zjshao22.github.io/docs/network/24-dns/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://zjshao22.github.io/docs/network/26-tls-and-pki/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
       "error": "net::ERR_ABORTED"
     }
   ],

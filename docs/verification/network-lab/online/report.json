@@ -1,13 +1,13 @@
 {
   "result": "PASS",
   "url": "https://zjshao22.github.io/network-lab/",
-  "verified_at": "2026-11-05T06:58:29.800386+00:00",
+  "verified_at": "2026-11-05T07:50:42.466774+00:00",
   "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "checks": [
     "Home, shared navigation and network course entries; existing course remains available",
     "Independent subdirectory loads all scripts/styles locally with HTTP 200 and original 18px body text",
     "All 18 presets compute the expected success or fault result",
-    "Step, play/pause, rewind and timeline replay preserve manual pan/zoom",
+    "Step, play/pause, phase jump, inline spotlight diff/tuple/tryIt and timeline replay preserve manual pan/zoom",
     "All-packet and connection/state inspection; draggable, minimizable, resizable modeless windows",
     "Deleting proxy /32 route changes SUCCESS to TUN_LOOP; auto-save survives refresh; restoring fixes it",
     "Device add/edit/delete, link failure editor and packet-loss setting affect computed state",
@@ -104,13 +104,13 @@
       "id": "routing-loop",
       "expected": "TTL_EXCEEDED",
       "code": "TTL_EXCEEDED",
-      "events": 366
+      "events": 351
     },
     {
       "id": "small-mtu",
       "expected": "MTU_EXCEEDED",
       "code": "MTU_EXCEEDED",
-      "events": 252
+      "events": 260
     },
     {
       "id": "remote-dns",
@@ -126,12 +126,12 @@
     }
   ],
   "runtime_resources": [
-    "https://zjshao22.github.io/network-lab/simulator.css?v=20261105-unified-2",
-    "https://zjshao22.github.io/network-lab/app-shell.css?v=20261105-unified-2",
-    "https://zjshao22.github.io/network-lab/mechanism.css?v=20261105-unified-2",
-    "https://zjshao22.github.io/network-lab/floating-windows.css?v=20261105-unified-2",
-    "https://zjshao22.github.io/network-lab/floating-windows.js?v=20261105-unified-2",
-    "https://zjshao22.github.io/network-lab/vendor/simulator.bundle.js?v=20261105-unified-2"
+    "https://zjshao22.github.io/network-lab/simulator.css?v=20261105-unified-3",
+    "https://zjshao22.github.io/network-lab/app-shell.css?v=20261105-unified-3",
+    "https://zjshao22.github.io/network-lab/mechanism.css?v=20261105-unified-3",
+    "https://zjshao22.github.io/network-lab/floating-windows.css?v=20261105-unified-3",
+    "https://zjshao22.github.io/network-lab/floating-windows.js?v=20261105-unified-3",
+    "https://zjshao22.github.io/network-lab/vendor/simulator.bundle.js?v=20261105-unified-3"
   ],
   "page_errors": [],
   "http_errors": [],
@@ -142,10 +142,6 @@
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/network/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
       "url": "https://zjshao22.github.io/docs/database/",
       "error": "net::ERR_ABORTED"
     },
@@ -154,7 +150,7 @@
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/ai/",
+      "url": "https://zjshao22.github.io/docs/network/",
       "error": "net::ERR_ABORTED"
     },
     {
@@ -166,23 +162,15 @@
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "https://zjshao22.github.io/docs/database/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
       "url": "https://zjshao22.github.io/docs/c/",
       "error": "net::ERR_ABORTED"
     },
     {
+      "url": "https://zjshao22.github.io/docs/database/",
+      "error": "net::ERR_ABORTED"
+    },
+    {
       "url": "https://zjshao22.github.io/docs/ai/",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "https://zjshao22.github.io/docs/network/25-http-cache-and-cdn/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
-      "error": "net::ERR_ABORTED"
-    },
-    {
-      "url": "https://zjshao22.github.io/docs/network/26-tls-and-pki/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
       "error": "net::ERR_ABORTED"
     },
     {
@@ -191,6 +179,14 @@
     },
     {
       "url": "https://zjshao22.github.io/docs/network/27-application-protocols/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://zjshao22.github.io/docs/network/25-http-cache-and-cdn/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "url": "https://zjshao22.github.io/docs/network/26-tls-and-pki/__next.docs.$oc$slug.__PAGE__.txt?_rsc=T_J_1LnBk-cg7M86",
       "error": "net::ERR_ABORTED"
     }
   ],

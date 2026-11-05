@@ -118,6 +118,37 @@ function drawGraph(){
   }
   $('network-count').textContent=`${config.hosts.length} 台设备 · ${config.links.length} 条链路`;
 }
+function ipOwner(ip){
+  if(!ip)return '';
+  if(ip==='127.0.0.1')return '本机回环';
+  if(ip.startsWith('198.18.'))return 'Fake-IP 假地址';
+  for(const h of config.hosts){
+    for(const f of h.interfaces){
+      if(f.address.split('/')[0]===ip)return h.name+(f.id==='utun'?' TUN':'');
+    }
+  }
+  return '';
+}
+function fmtIP(ip,port){
+  if(!ip)return '';
+  const owner=ipOwner(ip);
+  return `${ip}${port?':'+port:''}${owner?` (${owner})`:''}`;
+}
+function tcpFlagMeaning(p){
+  if(!p)return '';
+  if(p.protocol==='TCP'){
+    const f=p.flags||'';
+    if(f==='SYN')return 'TCP [SYN] 第 1 次握手（请求建立连接）';
+    if(f==='SYN,ACK')return 'TCP [SYN,ACK] 第 2 次握手（同意建立连接）';
+    if(f.includes('PSH'))return `TCP [${f}] 推送数据段 · seq=${p.seq} ack=${p.ack}`;
+    if(f.includes('FIN'))return `TCP [${f}] 挥手关闭连接 · seq=${p.seq} ack=${p.ack}`;
+    if(f==='ACK')return `TCP [ACK] 确认收到数据 · seq=${p.seq} ack=${p.ack}`;
+    return `TCP [${f||'段'}] · seq=${p.seq} ack=${p.ack}`;
+  }
+  if(p.protocol==='UDP')return `UDP 数据报 · ${p.meta?.label||'无连接传输'}`;
+  if(p.protocol==='ICMP')return `ICMP 报文 · ${p.meta?.label||p.flags||'控制消息'}`;
+  return `${p.protocol} ${p.flags||''}`;
+}
 function eventPhase(e){
   if(!e)return null;
   if(e.type.startsWith('dns.'))return ['dns','域名解析'];
@@ -129,8 +160,9 @@ function eventPhase(e){
   return ['orig','本机原始发起'];
 }
 function renderPhasesAndSpotlight(e,s){
-  const phaseBar=$('phase-bar'),spotlight=$('step-spotlight');
+  const phaseBar=$('phase-bar'),spotlight=$('step-spotlight'),dock=$('live-dock');
   if(!phaseBar||!spotlight)return;
+  phaseBar.hidden=false;
   if(run&&visible.length){
     const seen=new Map();
     visible.forEach((evIdx,pos)=>{
@@ -138,37 +170,80 @@ function renderPhasesAndSpotlight(e,s){
       if(ph&&!seen.has(ph[0]))seen.set(ph[0],{id:ph[0],label:ph[1],firstIdx:evIdx,pos:pos+1});
     });
     const activePhase=eventPhase(e)?.[0];
-    phaseBar.hidden=false;
-    phaseBar.innerHTML=[...seen.values()].map(p=>`<button type="button" class="phase-pill" data-phase-jump="${p.firstIdx}" ${activePhase===p.id?'aria-current="step"':''}>${esc(p.label)} · #${p.pos}</button>`).join('');
+    phaseBar.innerHTML=`<span class="phase-label">全流程阶段</span>`+[...seen.values()].map((p,idx)=>`${idx?'<span class="phase-arrow">→</span>':''}<button type="button" class="phase-pill" data-phase-jump="${p.firstIdx}" ${activePhase===p.id?'aria-current="step"':''}>${esc(p.label)} · #${p.pos}</button>`).join('');
     phaseBar.querySelectorAll('[data-phase-jump]').forEach(b=>b.onclick=()=>{pause();go(+b.dataset.phaseJump);});
   }else{
-    phaseBar.hidden=true;phaseBar.innerHTML='';
+    phaseBar.innerHTML='<span class="phase-label">全流程阶段</span><span class="phase-pill">① 本机发起</span><span class="phase-arrow">→</span><span class="phase-pill">② 域名解析</span><span class="phase-arrow">→</span><span class="phase-pill">③ 建立连接与传输</span><span class="phase-arrow">→</span><span class="phase-pill">④ 收尾与结果</span>';
+  }
+  const p=e?.packet,b=e?.before;
+  if(dock){
+    let card1='',card2='',card3='';
+    if(!e){
+      card1=`<div class="dock-kv"><b>本节看点</b><span>${esc(config.lesson?.focus||'点击右侧「↗ 发起请求」，一步步观察数据包如何穿过内核、路由器和代理。')}</span></div><div class="dock-change"><b>动手试试：</b>${esc(config.lesson?.tryIt||'切换上方预设或点击「编辑网络」修改路由表，对比流向变化。')}</div>`;
+      const srcHost=config.hosts.find(h=>h.id===config.request.source)?.name||config.request.source;
+      card2=`<div class="dock-kv"><b>谁要访问谁</b><span><code>${esc(srcHost)}</code> 准备访问 <code>${esc(config.request.destination)}:${config.request.port}</code></span></div><div class="dock-kv"><b>应用层协议</b><span><code>${esc(config.request.kind.toUpperCase())}</code> · 发送 ${config.request.bytes} B / 接收 ${config.request.responseBytes} B</span></div><div class="dock-kv"><b>本机接管方式</b><span><code>${config.vpn.enabled?'WireGuard VPN (TUN 封装整包)':config.proxy.tun?'TUN 透明代理 (接管三层 IP 包)':config.proxy.system?'系统代理 (浏览器直连本地代理端口)':'普通直连 (按系统路由表直接发出)'}</code></span></div>`;
+      const modeDesc=config.vpn.enabled?'将保持 1 条端到端连接，外层套上 WireGuard UDP 隧道包':config.proxy.tun?'将拆成 3 段连接：① 应用原始连接 → ② 本机↔远端代理 → ③ 代理↔目标网站':config.proxy.system?'将拆成 3 段连接：① 浏览器↔本地代理 → ② 本机↔远端代理 → ③ 代理↔目标网站':'将建立 1 条端到端直连连接（经过家庭网关 NAT 改写源地址）';
+      card3=`<div class="dock-kv"><b>连接结构预告</b><span>${esc(modeDesc)}</span></div><div class="dock-kv"><b>DNS 解析策略</b><span>模式 <code>${esc(config.dns.mode)}</code> · 解析器 <code>${esc(config.hosts.find(h=>h.id===config.dns.host)?.name||config.dns.host)}</code></span></div>`;
+    }else{
+      let changeHTML='';
+      if(b&&p){
+        if(b.id!==p.id){
+          changeHTML=`<div class="dock-change"><b>套娃封装/拆封：</b>由 <code>${esc(b.id)}</code> (${esc(fmtIP(b.src))} → ${esc(fmtIP(b.dst))}) 变为 <code>${esc(p.id)}</code> (${esc(fmtIP(p.src))} → ${esc(fmtIP(p.dst))})</div>`;
+        }else{
+          const parts=[];
+          if(b.src!==p.src||b.sport!==p.sport)parts.push(`源地址 <code>${esc(b.src)}${b.sport?':'+b.sport:''}</code> ⇒ <code>${esc(p.src)}${p.sport?':'+p.sport:''}</code>`);
+          if(b.dst!==p.dst||b.dport!==p.dport)parts.push(`目的地址 <code>${esc(b.dst)}${b.dport?':'+b.dport:''}</code> ⇒ <code>${esc(p.dst)}${p.dport?':'+p.dport:''}</code>`);
+          if(b.ttl!==p.ttl)parts.push(`寿命 <code>TTL ${b.ttl} ⇒ ${p.ttl}</code>`);
+          changeHTML=`<div class="dock-change"><b>首部现场改写：</b>${parts.join(' · ')||`<code>${esc(p.id)}</code> 状态更新`}</div>`;
+        }
+      }else if(e.type==='route.lookup'&&p){
+        const nextHop=e.route?(e.route.via?(config.hosts.find(h=>h.id===e.route.via)?.name||e.route.via):'本机虚拟网卡 / 直连'):'无';
+        changeHTML=`<div class="dock-change"><b>查路由表选出口：</b>目的 IP <code>${esc(fmtIP(p.dst))}</code> → ${e.route?`命中规则 <code>${esc(e.route.prefix)}</code>，从接口 <code>${esc(e.route.iface)}</code> 发往 <b>${esc(nextHop)}</b>`:'<b style="color:#ff9f9b">没有匹配路由，直接丢包！</b>'}</div>`;
+      }else if(e.type==='dns.fake'&&e.record){
+        changeHTML=`<div class="dock-change"><b>发放假 IP (Fake-IP)：</b>把域名 <code>${esc(e.record.name)}</code> 临时映射为 <code>${esc(e.record.ip)}</code>，让后续流量顺着路由表进 TUN</div>`;
+      }else if(e.type.startsWith('dns.')){
+        changeHTML=`<div class="dock-change"><b>域名解析：</b>${e.record?`拿到结果 <code>${esc(e.record.name)} ⇒ ${esc(fmtIP(e.record.ip))}</code>`:`正在查询 <code>${esc(config.request.destination)}</code>（模式：${esc(config.dns.mode)}）`}</div>`;
+      }else if(e.type==='proxy.rule'){
+        const act={proxy:'走远端代理隧道',direct:'绕过代理直接连目标',reject:'按规则当场拦截拒绝'}[e.action||e.rule?.action||'proxy']||(e.action||'proxy');
+        changeHTML=`<div class="dock-change"><b>代理分流判断：</b>核对目标 <code>${esc(config.request.destination)}</code> → 命中规则 <code>${esc(e.rule?.pattern||'*')}</code>，决定 <b>${esc(act)}</b></div>`;
+      }else if(e.type==='tun.read'||e.type==='tun.inject'){
+        changeHTML=`<div class="dock-change"><b>TUN 跨层交接：</b>${e.type==='tun.read'?'内核把整张 IP 包从虚拟网卡 <code>utun</code> 递给用户态进程':'用户态进程把封装/还原好的 IP 包从 <code>utun</code> 塞回内核协议栈'}</div>`;
+      }else if((e.type==='icmp.error'||e.type==='icmp.receive')&&p){
+        changeHTML=`<div class="dock-change"><b>ICMP 差错退信：</b><code>${esc(fmtIP(p.src))} → ${esc(fmtIP(p.dst))}</code>，附带原包 <code>${esc(p.innerError?.id||'')}</code>（原目的 <code>${esc(p.innerError?.dst||'')}</code>）</div>`;
+      }
+      const hostName=e.host?(config.hosts.find(h=>h.id===e.host)?.name||e.host):(e.from&&e.to?`${config.hosts.find(h=>h.id===e.from)?.name} → ${config.hosts.find(h=>h.id===e.to)?.name}`:'网络');
+      const unitLabel={app:'应用程序',kernel:'内核协议栈',tun:'TUN 虚拟网卡',agent:config.vpn.enabled?'VPN 进程':'代理客户端'}[unit(e)]||'网络节点';
+      card1=`<div class="dock-kv"><b>当前位置</b><span><b>${esc(hostName)}</b> · <code>${esc(unitLabel)}</code></span></div>${changeHTML||`<div class="dock-change"><b>本步动作：</b>${esc(e.why||e.title)}</div>`}`;
+      if(p){
+        const payloadDesc=p.inner?`套娃内层包 <code>[${esc(p.inner.id)}] ${esc(fmtIP(p.inner.src))} → ${esc(fmtIP(p.inner.dst))}</code>（外网看不见内层）`:p.innerError?`退信证据：原包 <code>[${esc(p.innerError.id)}] ${esc(p.innerError.src)} → ${esc(p.innerError.dst)}</code> 前 28 字节`:p.meta?.outerTls?`代理隧道 TLS 密文（内含发往 <code>${esc(config.request.destination)}</code> 的指令与数据）`:p.meta?.encrypted?`端到端加密数据（${esc(p.segment||p.meta?.label||'HTTPS/SSH 密文')}，途经节点无法偷看）`:esc(p.segment||p.meta?.label||'协议控制首部（无应用层数据载荷）');
+        card2=`<div class="dock-kv"><b>外层地址</b><span><code>${esc(fmtIP(p.src,p.sport))} → ${esc(fmtIP(p.dst,p.dport))}</code> · TTL=${p.ttl}</span></div><div class="dock-kv"><b>传输动作</b><span><code>${esc(tcpFlagMeaning(p))}</code></span></div><div class="dock-kv"><b>里层装了啥</b><span>${payloadDesc}</span></div>`;
+      }else if(e.connection){
+        const c=s?.connections?.find(c=>c.id===e.connection);
+        card2=c?`<div class="dock-kv"><b>操作连接</b><span><code>${esc(c.id)}</code> (${esc(fmtIP(c.a.ip,c.a.port))} ⇄ ${esc(fmtIP(c.b.ip,c.b.port))})</span></div><div class="dock-kv"><b>两端状态</b><span>发起端 <code>${esc(c.aState)}</code> ⇄ 接收端 <code>${esc(c.bState)}</code></span></div><div class="dock-kv"><b>字节流进度</b><span>下一序号 <code>seq=${c.aNext}</code> · 已确认收到 <code>${c.bytesAcked} 字节</code></span></div>`:`<div class="dock-kv"><b>连接准备</b><span>协议栈正在初始化连接状态，下一步即发出握手包。</span></div>`;
+      }else{
+        const resolvedIP=s?.dnsRecords?.at(-1)?.ip;
+        card2=`<div class="dock-kv"><b>访问目标</b><span><code>${esc(config.request.destination)}:${config.request.port}</code> (${resolvedIP?`已解析 IP: <code>${esc(resolvedIP)}</code>`:'等待 DNS 解析 IP'})</span></div><div class="dock-kv"><b>应用数据</b><span><code>${esc(config.request.kind.toUpperCase())}</code> · 请求 ${config.request.bytes}B / 响应 ${config.request.responseBytes}B</span></div><div class="dock-kv"><b>接管方式</b><span><code>${config.vpn.enabled?'WireGuard VPN 整包隧道':config.proxy.tun?'TUN 虚拟网卡透明接管':config.proxy.system?'系统 HTTP 代理端口':'按路由表端到端直连'}</code></span></div>`;
+      }
+      const roleLabel={original:config.proxy.system?'① 浏览器↔本机代理':config.proxy.tun?'① 应用↔TUN原始流':'① 本机↔目标直连',proxy:'② 本机↔远端代理隧道',target:'③ 远端代理↔目标网站'};
+      const stateCN={LISTEN:'监听中','SYN-SENT':'已发SYN等待','SYN-RECEIVED':'收到SYN待确认',ESTABLISHED:'已连通传输','FIN-WAIT-1':'等待挥手','CLOSE-WAIT':'等待关闭','TIME-WAIT':'收尾等待',CLOSED:'已关闭'};
+      if(s?.connections?.length){
+        const connList=s.connections.map(c=>`<div class="dock-conn ${c.id===e.connection?'active':''}"><span><b>${c.id===e.connection?'▶ ':''}${esc(roleLabel[c.role]||c.id)}</b> <code>${esc(c.a.ip)}⇄${esc(c.b.ip)}</code></span><small>${esc(stateCN[c.aState]||c.aState)} · 已确认 ${c.bytesAcked}B</small></div>`).join('');
+        const natNote=s.nat?.length?`NAT：<code>${esc(s.nat.at(-1).privateIP)}:${s.nat.at(-1).privatePort}⇒${esc(s.nat.at(-1).publicIP)}:${s.nat.at(-1).publicPort}</code>`:'';
+        const dnsNote=s.dnsRecords?.length?`DNS：<code>${esc(s.dnsRecords.at(-1).name)}⇒${esc(s.dnsRecords.at(-1).ip)}</code>`:'';
+        card3=`<div class="dock-conn-list">${connList}</div>${(natNote||dnsNote)?`<div class="dock-kv"><b>记账本</b><span>${[dnsNote,natNote].filter(Boolean).join(' ｜ ')}</span></div>`:''}`;
+      }else{
+        const dnsNote=s?.dnsRecords?.length?`已拿到域名记录：<code>${esc(s.dnsRecords.at(-1).name)} ⇒ ${esc(s.dnsRecords.at(-1).ip)}${s.dnsRecords.at(-1).fake?' (Fake-IP)':''}</code>`:'尚未建立 TCP 连接（正在发起请求或解析域名）';
+        const modePlan=config.vpn.enabled?'预计建立 1 条端到端连接 + 外层 UDP 隧道':(config.proxy.tun||config.proxy.system)?'预计分段建立：原始连接 → 代理隧道 → 目标连接':'预计建立 1 条端到端直连连接';
+        card3=`<div class="dock-kv"><b>连接状态</b><span>${dnsNote}</span></div><div class="dock-kv"><b>分段规划</b><span>${esc(modePlan)}</span></div>`;
+      }
+    }
+    dock.innerHTML=`<section class="dock-card"><div class="dock-head"><strong>本步关键变化 · 为什么这么走</strong><span class="dock-badge">${esc(e?`${e.time} ms · ${e.type}`:'实验导览')}</span></div>${card1}</section><section class="dock-card"><div class="dock-head"><strong>拆开当前信封 · 谁发给谁</strong><span class="dock-badge">${esc(p?`${p.id} · ${p.length}B`:(e?.connection||'准备阶段'))}</span></div>${card2}</section><section class="dock-card"><div class="dock-head"><strong>全局连接与记账表 · 几段连接在跑</strong><span class="dock-badge">${s?`${s.connections.length} 条连接 · NAT ${s.nat.length}`:'待运行'}</span></div>${card3}</section>`;
   }
   const items=[];
   if(!e){
     if(config.lesson?.focus)items.push(`<div><span class="spotlight-label">观察重点</span>${esc(config.lesson.focus)}</div>`);
     if(config.lesson?.tryIt)items.push(`<div class="spotlight-try"><span class="spotlight-label">动手验证</span>${esc(config.lesson.tryIt)}</div>`);
   }else{
-    const p=e.packet,b=e.before;
-    if(b&&p){
-      if(b.id!==p.id){
-        items.push(`<div class="spotlight-diff"><span class="spotlight-label">封装转换</span><code>${esc(b.id)}</code> (${esc(b.src)} → ${esc(b.dst)}) ⇒ <code>${esc(p.id)}</code> (${esc(p.src)} → ${esc(p.dst)})</div>`);
-      }else{
-        const diffs=['src','sport','dst','dport','ttl','flags','seq','ack','length'].filter(k=>b[k]!==p[k]).map(k=>`${k}: ${b[k]} → ${p[k]}`);
-        if(diffs.length)items.push(`<div class="spotlight-diff"><span class="spotlight-label">首部改写</span><code>${esc(diffs.join(' · '))}</code></div>`);
-      }
-    }else if(e.type==='route.lookup'&&p){
-      const nextHop=e.route?(e.route.via?(config.hosts.find(h=>h.id===e.route.via)?.name||e.route.via):'直达 / 虚拟接口'):'无';
-      items.push(`<div class="spotlight-diff"><span class="spotlight-label">最长前缀匹配</span>目的 <code>${esc(p.dst)}</code> → ${e.route?`命中 <code>${esc(e.route.prefix)}</code> · 出口 <code>${esc(e.route.iface)}</code> (${esc(nextHop)})`:'无匹配路由（丢弃）'}</div>`);
-    }else if(e.type==='dns.fake'&&e.record){
-      items.push(`<div class="spotlight-diff"><span class="spotlight-label">Fake-IP 映射</span><code>${esc(e.record.name)} ⇄ ${esc(e.record.ip)}</code>（代理进程内存保留反查表）</div>`);
-    }else if(e.type.startsWith('dns.')){
-      items.push(`<div class="spotlight-diff"><span class="spotlight-label">DNS 解析</span><code>${esc(e.record?`${e.record.name} → ${e.record.ip}`:`查询 ${config.request.destination} (${config.dns.mode})`)}</code></div>`);
-    }else if(e.type==='proxy.rule'){
-      items.push(`<div class="spotlight-diff"><span class="spotlight-label">分流规则命中</span>目标 <code>${esc(config.request.destination)}</code> → 策略 <code>${esc(e.action||e.rule?.action||'proxy')}</code></div>`);
-    }else if((e.type==='icmp.error'||e.type==='icmp.receive')&&p){
-      items.push(`<div class="spotlight-diff"><span class="spotlight-label">ICMP 差错回传</span><code>${esc(p.src)} → ${esc(p.dst)}</code> · 引用触发差错原包 <code>${esc(p.innerError?.id||'')}</code> (原目的 <code>${esc(p.innerError?.dst||'')}</code>)</div>`);
-    }
     if(p){
       const tuple=`[${p.id}] ${p.src}${p.sport?':'+p.sport:''} → ${p.dst}${p.dport?':'+p.dport:''} · ${p.protocol}${p.flags?' '+p.flags:''}${p.protocol==='TCP'?` · seq=${p.seq} ack=${p.ack}`:''} · TTL=${p.ttl}`;
       const inner=p.inner?` · 内层 [${p.inner.id}: ${p.inner.src}→${p.inner.dst}]`:p.innerError?` · 引用原包 [${p.innerError.id}]`:'';
@@ -176,11 +251,6 @@ function renderPhasesAndSpotlight(e,s){
     }else if(e.connection){
       const c=s?.connections?.find(c=>c.id===e.connection);
       if(c)items.push(`<div class="spotlight-tuple"><span class="spotlight-label">当前四元组</span><code>[${esc(c.id)} / ${esc(c.role)}] ${esc(c.a.ip)}:${c.a.port} ⇄ ${esc(c.b.ip)}:${c.b.port} · ${esc(c.aState)}/${esc(c.bState)} · seq=${c.aNext} acked=${c.bytesAcked}B</code></div>`);
-    }
-    if(s?.connections?.length>1){
-      const roleMap={original:'原始连接',proxy:'代理通道',target:'目标连接'};
-      const connStrip=s.connections.map(c=>`${c.id===e.connection?'▶ ':''}${c.id}(${roleMap[c.role]||c.role}: ${c.a.ip}⇄${c.b.ip} ${c.aState}/${c.bState})`).join(' ｜ ');
-      items.push(`<div class="spotlight-tuple"><span class="spotlight-label">多段连接并存</span><code>${esc(connStrip)}</code></div>`);
     }
     if(index===run.events.length-1&&config.lesson?.tryIt){
       items.push(`<div class="spotlight-try"><span class="spotlight-label">动手验证</span>${esc(config.lesson.tryIt)}</div>`);
@@ -365,20 +435,26 @@ function setDiagramMode(mode){
 $('network-edit-toggle').onclick=()=>setDiagramMode(diagramMode==='network'?'mechanism':'network');
 
 function drawMechanism(){
-  packetTween?.kill();const s=currentScene(),e=current(),flow=mechanismEvent(s,config,e,snapshot()),world=$('network-world');
+  packetTween?.kill();const s=currentScene(),e=current(),snap=snapshot(),flow=mechanismEvent(s,config,e,snap),world=$('network-world');
   const history=[...(e?.packet?.path||[])];
   if(!e?.link&&e?.host&&history.length&&history.at(-1)!==e.host)history.push(e.host);
   const passed=new Set();for(let i=1;i<history.length;i++){const l=config.links.find(l=>[l.a,l.b].includes(history[i-1])&&[l.a,l.b].includes(history[i]));if(l)passed.add(l.id);}
   const groups=s.groups.map(g=>`<g><rect class="mechanism-boundary ${g.source?'source-boundary':''}" x="${g.x}" y="${g.y}" width="${g.w}" height="${g.h}" rx="14"/><text class="mechanism-domain" x="${g.x+20}" y="${g.y+32}">${esc(g.title)}</text>${g.source?'':`<text class="mechanism-domain-sub" x="${g.x+20}" y="${g.y+58}">${esc(g.subtitle)}</text>`}${g.source?`<rect class="mechanism-user-lane" x="${g.x+12}" y="125" width="${g.w-24}" height="120" rx="8"/><text class="mechanism-lane-label" x="${g.x+20}" y="116">用户态程序</text><rect class="mechanism-kernel-lane" x="${g.x+12}" y="355" width="${g.w-24}" height="120" rx="8"/><text class="mechanism-lane-label" x="${g.x+20}" y="346">内核协议栈 / 虚拟接口</text>`:''}</g>`).join('');
   const wires=s.edges.map(edge=>`<path class="mechanism-edge ${edge.link?'physical-edge':''} ${passed.has(edge.link)?'passed':''} ${edge.link&&!config.links.find(l=>l.id===edge.link).enabled?'disabled':''}" data-scene-edge="${esc(edge.id)}" ${edge.link?`data-scene-link="${esc(edge.link)}"`:''} d="${edge.d}"/>${edge.label?`<text class="mechanism-link-caption" x="${edge.lx}" y="${edge.ly}">${esc(edge.label)}</text>`:''}`).join('');
   const nodes=s.nodes.map(n=>{
-    const active=flow.active.includes(n.id),sub=n.id==='kernel'&&e?.host===s.source&&e?.type==='route.lookup'?(e.route?`${e.route.prefix} → ${e.route.iface}`:'没有匹配路由'):n.sub;
+    const active=flow.active.includes(n.id);
+    let sub=n.sub;
+    if(n.id==='kernel'&&e?.host===s.source&&e?.type==='route.lookup')sub=e.route?`${e.route.prefix} → ${e.route.iface}`:'没有匹配路由';
+    else if(n.id==='host:gateway'&&snap?.nat?.length)sub=`NAT 映射 ${snap.nat.length} 条 · 转发`;
+    else if(n.id==='host:dns'&&snap?.dnsRecords?.length)sub=`已解析 ${snap.dnsRecords.at(-1).ip}`;
     return `<foreignObject x="${n.x-n.w/2}" y="${n.y-n.h/2}" width="${n.w}" height="${n.h}"><button class="mechanism-node ${n.tone} ${active?'active':''}" data-flow-node="${esc(n.id)}" aria-label="了解${esc(n.label)}"><svg viewBox="0 0 32 32" aria-hidden="true">${ICONS[n.icon]}</svg><span><strong>${esc(n.label)}</strong><small>${esc(sub)}</small></span><i class="flow-port port-left"></i><i class="flow-port port-right"></i></button></foreignObject>`;
   }).join('');
   const path=flow.parts.map(p=>p.d).join(' ');
+  const p=e?.packet,tag=p?(e.type==='link.drop'?'× 途中丢弃':`${p.protocol}${p.flags?' '+p.flags:''}`):'';
+  const tagW=Math.max(76,Math.min(136,tag.length*9+22));
   world.style.setProperty('--mechanism-color',flow.color);
   $('mechanism-arrow').querySelector('path').setAttribute('stroke',flow.color);
-  world.innerHTML=`<rect x="0" y="0" width="${s.width}" height="${s.height}" fill="url(#grid)" opacity=".45"/>${groups}${wires}<path class="mechanism-halo" d="${path}"/><path id="mechanism-current-path" class="mechanism-active ${e?.type==='link.drop'?'dropped':''}" d="${path}"/>${nodes}<g id="mechanism-packet" ${path&&e?.packet?'':'hidden'} role="button" tabindex="0" aria-label="检查当前报文"><circle r="22" class="packet-aura"/><rect x="-10" y="-8" width="20" height="16" rx="3"/><path d="M-5-3h10M-5 2h7"/></g>`;
+  world.innerHTML=`<rect x="0" y="0" width="${s.width}" height="${s.height}" fill="url(#grid)" opacity=".45"/>${groups}${wires}<path class="mechanism-halo" d="${path}"/><path id="mechanism-current-path" class="mechanism-active ${e?.type==='link.drop'?'dropped':''}" d="${path}"/>${nodes}<g id="mechanism-packet" ${path&&e?.packet?'':'hidden'} role="button" tabindex="0" aria-label="检查当前报文"><circle r="22" class="packet-aura"/><rect x="-10" y="-8" width="20" height="16" rx="3"/><path d="M-5-3h10M-5 2h7"/>${tag?`<rect class="packet-tag-bg" x="${-tagW/2}" y="-34" width="${tagW}" height="20" rx="10"/><text class="packet-tag-text" x="0" y="-20">${esc(tag.slice(0,15))}</text>`:''}</g>`;
   transform();
   if(path&&e?.packet){const line=$('mechanism-current-path'),length=line.getTotalLength(),packet=$('mechanism-packet'),travel={t:0};const update=()=>{const point=line.getPointAtLength(travel.t*length);packet.setAttribute('transform',`translate(${point.x} ${point.y})`);};packetTween=gsap.to(travel,{t:e?.type==='link.drop'?.5:Math.max(.2,1-18/Math.max(1,length)),duration:reduced.matches?0:.85,onUpdate:update,ease:'power1.inOut'});update();packet.onclick=()=>openInspector('packet');packet.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();openInspector('packet');}};}
   $('network-count').textContent=`${config.hosts.length} 台设备 · ${config.links.length} 条链路`;
@@ -386,12 +462,12 @@ function drawMechanism(){
 function openMechanismNode(id){
   const node=currentScene().byId.get(id),host=config.hosts.find(h=>h.id===node.host);pause();inspectTab='mechanism';
   const explanations={
-    app:['应用发起连接','应用通过 Socket API 请求连接目标。连接开始后，协议栈处理 TCP/IP，应用读写的是字节流。'],
-    kernel:['内核决定如何发出','网络栈根据路由表选择接口和下一跳，维护 TCP 状态、序号与确认号。去代理服务器的新 Socket 也需要经过这里。'],
-    tun:['TUN 是虚拟三层接口','路由选中 TUN 后，用户态程序读取完整 IP 数据报；回注时，程序把 IP 包写回内核。TUN 接口自身不完成代理连接或 VPN 加密。'],
-    agent:config.vpn.enabled?['VPN 保留内层 IP 包','WireGuard 把完整内层包封装到独立的 UDP 外层。到达对端后，恢复同一个内层 packet ID，再回注内核。']:['代理建立新的连接','普通 TCP 代理读取原始会话的字节，为代理通道创建独立 Socket。远端代理还会创建到目标的连接，各自拥有 TCP/IP 首部与序号。']
+    app:['应用程序（发起端）','应用只管调 Socket 读写数据流，至于底下怎么拆成 TCP 段、怎么套 IP 首部、走哪张网卡出去，全都交给内核协议栈去办。'],
+    kernel:['内核协议栈（查表与状态机）','内核按路由表最长前缀匹配决定把包从哪张接口（如 en0 或 utun）送出去，同时负责维护每条 TCP 连接的握手状态、序号与重传。就连代理客户端自己发往远端的新连接，也一样要过内核路由表。'],
+    tun:['TUN 虚拟三层网卡','当路由表把流量指给 utun 时，内核不再把包发往物理网线，而是把完整 IP 数据报直接塞给用户态的代理/VPN 进程；反过来，用户态进程处理完也可以把 IP 包写回内核。TUN 自己只负责递包，不管加密或建连。'],
+    agent:config.vpn.enabled?['WireGuard VPN（整包套娃）','VPN 把收到的完整内层 IP 包原封不动加密，塞进一个新的外层 UDP 包发给 VPN 对端。对端拆开外层后，原来的内层 IP 包毫发无损地恢复（保留同一个 packet ID）继续转发。']:['代理客户端（拆流换壳）','普通代理（如 HTTP/SOCKS/VLESS）在用户态终结或接管原始数据流，自己另外开一条新的 Socket 连接到远端代理服务器。远端代理收到后再替你连目标网站——全程共有三段各自独立的 TCP 连接。']
   };
-  const [title,description]=node.id.startsWith('host:')?[host.forwarding?'设备转发实际报文':host.type==='proxy'?'远端代理接收目标信息':'服务与接收端',host.forwarding?'这台设备按自己的路由表选择下一跳。开启 NAT 时还会改写地址和端口，回程根据会话映射恢复。':host.type==='proxy'?'外层连接先到达代理服务。代理读取目标信息，再创建一条独立的目标连接。物理链路和实际经过的路由设备仍由仿真配置计算。':'报文按当前网络配置到达这台设备。监听端口、协议和服务状态决定是否接收请求。']:explanations[node.unit];
+  const [title,description]=node.id.startsWith('host:')?[host.forwarding?'路由器 / 网关（按表转发）':host.type==='proxy'?'远端代理服务器（中转建连）':'目标服务端（终点响应）',host.forwarding?'这台中间设备每收到一个包，就查自己的路由表找下一跳并把 TTL 减 1。如果开了 NAT（如家庭路由器），它还会在出站时把内网源 IP 换成公网 IP，等回包到了再按记账表还原。':host.type==='proxy'?'本机发来的代理隧道先在这里落脚。远端代理拆开隧道拿到你想访问的目标域名或 IP，然后以它自己的名义向目标网站发起第三段连接，把两边的数据流接力起来。':'请求最终到达的服务端。它会核对目的 IP、端口号和监听服务状态，完成握手并把网页响应原路发回。']:explanations[node.unit];
   $('inspector-kicker').textContent='连接中的职责';$('inspector-title').textContent=node.label;$('inspector-tabs').innerHTML='';
   $('inspector-body').innerHTML=`<h3>${esc(title)}</h3><p>${esc(description)}</p><h3>所在设备</h3>${rows({设备:host.name,网络接口:host.interfaces.filter(f=>f.enabled).map(f=>f.id+' · '+f.address).join(' / '),路由条数:host.routes.length,监听服务:host.services.filter(s=>s.enabled).map(s=>s.kind+' :'+s.port).join(' / ')||'无'})}<div class="notice">主图按职责分区，物理线路与当前事件使用同一次仿真的实际结果。进入「编辑网络」可修改设备和链路，再重新运行比较。</div><button id="configure-flow-host">配置这台设备</button>`;
   $('configure-flow-host').onclick=()=>{$('inspector').close();hostEditor(host.id);};openDialog('inspector');

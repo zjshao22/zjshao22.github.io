@@ -18,24 +18,24 @@ const route=(prefix,iface,via='',metric=100)=>({prefix,iface,via,metric,enabled:
 const service=(kind,port,protocol='TCP')=>({kind,port,protocol,enabled:true});
 const iface=(id,address)=>({id,address,enabled:true});
 export const PRESETS = [
-  {id:'tun',name:'TUN + sing-box 代理',base:'tun',focus:'观察原始连接、代理连接和目标连接的独立四元组。',tryIt:'动手验证：点「编辑网络 → 我的电脑」，删除 203.0.113.10/32 例外路由后重跑，观察代理出站如何再次进入 TUN 触发回环。',expected:'SUCCESS'},
-  {id:'system',name:'系统 HTTP 代理',base:'system',focus:'观察本机 CONNECT 入口，以及远端如何获知域名。',tryIt:'动手验证：打开「请求与配置」，取消勾选「此应用遵从系统代理」后重跑，对比应用为何不再连 127.0.0.1:7890 而是直接查询 DNS。',expected:'SUCCESS'},
-  {id:'direct',name:'无代理直连',base:'direct',focus:'观察 DNS、路由、家庭 NAT 和端到端 HTTPS。',tryIt:'动手验证：单步经过「家庭网关」，对比转换前后的源 IP（192.168.1.10 → 198.51.100.25）及回程时 NAT 会话表如何恢复内网地址。',expected:'SUCCESS'},
-  {id:'tail',name:'WireGuard + SSH',base:'tail',focus:'比较 UDP 外层与被完整保留的内层 IP 包。',tryIt:'动手验证：点「全部报文」展开 WireGuard 外层包，对比它保留同一个内层 packet ID 的方式与普通 TCP 代理新建连接的差异。',expected:'SUCCESS'},
-  {id:'home-wifi',name:'家庭 Wi-Fi：浏览网页',base:'direct',focus:'普通家用网络：电脑 → Wi-Fi 路由器 → 互联网 → 网站，查看 NAT 回程。',tryIt:'动手验证：点「编辑网络 → 家用 Wi-Fi 路由器」，若关闭「出口启用 NAT」或「允许转发」，观察外网回包或转发在何处中断。',expected:'SUCCESS'},
-  {id:'office-proxy',name:'公司网络：HTTP 代理上网',base:'system',focus:'办公电脑遵从公司 HTTP 代理设置；浏览器通过 CONNECT 告知目标。',tryIt:'动手验证：打开「请求与配置」，在代理规则首行将 www.google.com 设为 reject 或 direct，观察分流规则如何改变连接路径。',expected:'SUCCESS'},
-  {id:'home-nas',name:'家庭局域网：访问 NAS',base:'direct',focus:'访问同一家庭 LAN 的 NAS。网页 TCP 不应经过公网，也不应被 NAT。DNS 查询仍可能访问外部解析器。',tryIt:'动手验证：跳转到「目标连接」阶段，确认网页 TCP 只在家庭网关内网转发、未产生 TCP NAT 映射。',expected:'SUCCESS'},
-  {id:'remote-office',name:'异地办公：VPN 连接 SSH',base:'tail',focus:'通过 WireGuard 访问异地设备的 Tailnet SSH 地址，检查完整内层包恢复。',tryIt:'动手验证：打开「请求与配置」，取消勾选「VPN 密钥有效」后重跑，观察握手阶段如何因身份校验失败而终止。',expected:'SUCCESS'},
-  {id:'double-nat',name:'光猫 + 路由器：双重 NAT',base:'direct',focus:'经过两级地址端口转换，回程需要依次恢复两张 NAT 会话表。',tryIt:'动手验证：观察去程连续两次 NAT 改写源地址，并在「连接与状态」中核对两台网关各自的 NAT 会话表。',expected:'SUCCESS'},
-  {id:'wifi-loss',name:'无线丢包：SYN 重传恢复',base:'direct',focus:'可重复地丢弃第一个 SYN；等待超时后，以相同序号重传并恢复。',tryIt:'动手验证：点「全部报文」对比首次丢弃的 SYN 与重传的 SYN：二者 packet ID 不同，但 TCP 序号（seq）与 segment ID 完全相同。',expected:'SUCCESS'},
-  {id:'long-distance',name:'跨地域访问：高延迟链路',base:'direct',focus:'单向链路延迟提高到 60 ms；比较握手和整次请求的虚拟耗时。',tryIt:'动手验证：对比右上角步骤毫秒耗时与「无代理直连」（12 ms 链路）的差距，体会每次 RTT 往返对总耗时的放大。',expected:'SUCCESS'},
-  {id:'dns-outage',name:'域名打不开：DNS 停服',base:'direct',focus:'DNS 解析器关闭监听。查询发出但没有回答，连接尚未进入网站 TCP 阶段。',tryIt:'动手验证：点「编辑网络 → DNS 解析器」，勾选启用 53 端口 dns 服务并保存，重新发起即可恢复正常解析。',expected:'DNS_TIMEOUT'},
-  {id:'proxy-offline',name:'代理失效：服务端口关闭',base:'system',focus:'网络可达，远端代理端口未监听。观察 TCP RST 与拒绝连接。',tryIt:'动手验证：观察远端代理收到 SYN 后立即回传 TCP RST,ACK；再去「编辑网络 → 日本代理」开启 443 服务即可修复。',expected:'CONNECTION_REFUSED'},
-  {id:'tun-loop',name:'TUN 故障：漏配例外路由',base:'tun',focus:'缺少代理地址的 /32 例外，代理自己的出站又进入 TUN。补回例外路由可修复。',tryIt:'动手验证：点「编辑网络 → 我的电脑」，新增路由 203.0.113.10/32 → 接口 en0 → 下一跳 家庭网关（metric 10），保存后重跑即可消除回环。',expected:'TUN_LOOP'},
-  {id:'routing-loop',name:'路由故障：两台路由器互指',base:'direct',focus:'目标站路由错误地指回家庭网关，报文循环转发，最终 TTL 耗尽。',tryIt:'动手验证：观察 TTL 逐跳递减至 0 后路由器发回 ICMP Time Exceeded 差错包；将互联网路由的 142.250.72.0/24 下一跳改回「目标网站」即可修复。',expected:'TTL_EXCEEDED'},
-  {id:'small-mtu',name:'能握手但打不开：路径 MTU 小',base:'direct',focus:'链路 MTU 为 300，较大的数据段被 DF/MTU 约束拒绝。降低 MSS 后重试；模型不自动执行 PMTUD。',tryIt:'动手验证：观察 40 字节握手能过、552 字节数据段触发网关发回 ICMP Fragmentation Needed；在「请求与配置」将 TCP MSS 调为 128 重跑即可通过。',expected:'MTU_EXCEEDED'},
-  {id:'remote-dns',name:'代理解析：域名交给远端',base:'tun',focus:'先建立代理通道，DNS 在代理侧执行，再把解析结果交给应用。比较查询的来源位置。',tryIt:'动手验证：观察第 1 阶段先建立本机到日本代理的加密通道，DNS 查询从「日本代理」发出而非本机发出，避免本地 DNS 泄漏。',expected:'SUCCESS'},
-  {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'应用先获得本地占位地址 198.18.0.1；代理仍按原域名在远端解析真实 IP。',tryIt:'动手验证：观察原始 TCP 连接目的 IP 为 198.18.0.1，本机代理反查 fake-IP 映射表还原出 www.google.com 后再由远端解析真实 IP。',expected:'SUCCESS'}
+  {id:'tun',name:'TUN + sing-box 代理',base:'tun',focus:'看清“虚拟网卡透明代理”怎么把一段请求拆成 3 段独立的 TCP 连接：浏览器以为自己在直连网站，其实包被虚拟网卡 utun 拦下，由本机代理换乘加密隧道发给日本代理，再由日本代理去连真网站。',tryIt:'动手试试：点「编辑网络 → 我的电脑」，删掉 203.0.113.10/32 这条直连例外路由后重跑，看看代理自己发出的包为什么又掉回 TUN 里死循环。',expected:'SUCCESS'},
+  {id:'system',name:'系统 HTTP 代理',base:'system',focus:'看清“系统代理”和 TUN 的区别：浏览器明知道有代理，主动连本机的 127.0.0.1:7890 并喊一句 HTTP CONNECT 告诉代理“帮我连 www.google.com:443”，根本不需要查本地 DNS 也不用虚拟网卡。',tryIt:'动手试试：打开右下角「请求与配置」，取消勾选「此应用遵从系统代理」后重跑，看看不听系统代理话的软件是怎么直接查 DNS 走物理网卡出去的。',expected:'SUCCESS'},
+  {id:'direct',name:'无代理直连',base:'direct',focus:'最基础的上网全过程：先问 DNS 拿到网站 IP，再按路由表发给家庭网关；网关用 NAT 把你的内网 IP 换成公网 IP 发上互联网，回包时再按登记表换回你的内网 IP。',tryIt:'动手试试：单步走到「家庭网关」，看下方看板里发件人怎么从 192.168.1.10 变成 198.51.100.25，以及网站回信时网关怎么认出这是给你的包。',expected:'SUCCESS'},
+  {id:'tail',name:'WireGuard + SSH',base:'tail',focus:'对比 VPN 和代理的最大不同：WireGuard VPN 不会拆开你的 TCP 连接重发，而是把你原来的整个 IP 包像“套娃”一样塞进外层 UDP 包里加密寄出，到了对端拆开外壳还是原来那个包。',tryIt:'动手试试：点上方「全部报文」找到带内层信封的包，看看外层 UDP 包里面怎么原封不动包着同一个内层 packet ID。',expected:'SUCCESS'},
+  {id:'home-wifi',name:'家庭 Wi-Fi：浏览网页',base:'direct',focus:'还原你在家里连 Wi-Fi 打开网页的真实路径：家用电脑（内网 IP）→ 家用 Wi-Fi 路由器（做 NAT 地址转换）→ 运营商路由 → 目标网站。',tryIt:'动手试试：点「编辑网络 → 家用 Wi-Fi 路由器」，把「出口启用 NAT」关掉再重跑，体验一下如果路由器不帮你换公网地址会发生什么。',expected:'SUCCESS'},
+  {id:'office-proxy',name:'公司网络：HTTP 代理上网',base:'system',focus:'还原公司内网上网：办公电脑不直接连外网，而是先连公司代理服务器，由公司代理审核规则后再代你访问外部网站。',tryIt:'动手试试：打开「请求与配置」，把代理规则里的动作从「代理」改成「拒绝 (reject)」重跑，看看公司代理是怎么拦截特定网站的。',expected:'SUCCESS'},
+  {id:'home-nas',name:'家庭局域网：访问 NAS',base:'direct',focus:'访问家里的局域网设备（家中 NAS，192.168.1.50）：虽然查域名可能还会问外部 DNS，但真正传网页数据时只在家里路由器内网口之间转发，绝不跑去公网，也不会触发 NAT。',tryIt:'动手试试：点阶段栏跳到「应用层传输」，看下方看板确认 TCP 收发全程都是 192.168.1.10 ⇄ 192.168.1.50，没有经过公网 NAT。',expected:'SUCCESS'},
+  {id:'remote-office',name:'异地办公：VPN 连接 SSH',base:'tail',focus:'异地办公连回公司内网电脑（100.64.0.2）：两台电脑靠虚拟组网 IP 直接 SSH 通信，底层全部靠公网 UDP 加密隧道搬运完整内层包。',tryIt:'动手试试：打开「请求与配置」，取消勾选「VPN 密钥有效」后重跑，看看密钥对不上时 WireGuard 握手在哪一步被对方直接拒之门外。',expected:'SUCCESS'},
+  {id:'double-nat',name:'光猫 + 路由器：双重 NAT',base:'direct',focus:'家里光猫拨号、自己又接了一台路由器时常见的“双重 NAT”：包出去时被连换两次发件人地址，回包时必须像剥洋葱一样连查两张 NAT 表才能回到你的电脑。',tryIt:'动手试试：单步观察发包经过「家庭网关」和「光猫 / 上级 NAT」时源 IP 的两次变化，再点「连接与状态」查看两台设备各自的 NAT 登记表。',expected:'SUCCESS'},
+  {id:'wifi-loss',name:'无线丢包：SYN 重传恢复',base:'direct',focus:'Wi-Fi 信号不好丢包了怎么办？第一个握手包（SYN）在半路丢了，电脑等不到回音，超时后用一模一样的 TCP 序号重新发一份 SYN，最终顺利连上。',tryIt:'动手试试：点「全部报文」对比第一个丢掉的 SYN 和后来重传的 SYN：虽然是两个不同的网络包（packet ID 不同），但 TCP 序号 seq 完全一样。',expected:'SUCCESS'},
+  {id:'long-distance',name:'跨地域访问：高延迟链路',base:'direct',focus:'跨国访问网站为什么慢？每段网线单程延迟从 12 ms 涨到 60 ms 后，每一次来回握手（RTT）的时间都被成倍拉长。',tryIt:'动手试试：跑完后看总耗时毫秒数，跟「无代理直连」对比一下：同样的数据量，光是因为网线距离远、来回确认慢，总时间就翻了好几倍。',expected:'SUCCESS'},
+  {id:'dns-outage',name:'域名打不开：DNS 停服',base:'direct',focus:'明明网线是通的，为什么网页就是打不开？因为负责把域名翻译成 IP 的 DNS 服务器停机了，电脑连网站住哪儿都查不到，根本发不出后面的网页连接。',tryIt:'动手试试：点「编辑网络 → DNS 解析器」，把 53 端口的 dns 服务勾上启用，保存后再点「重新发起」，网页立刻就能打开了。',expected:'DNS_TIMEOUT'},
+  {id:'proxy-offline',name:'代理失效：服务端口关闭',base:'system',focus:'代理节点挂了是什么现象？网线能通到代理服务器，但上面的代理程序没开（端口没监听），对方内核直接回一个冷酷的 RST（重置拒绝包）。',tryIt:'动手试试：单步看日本代理收到 SYN 后立刻打回 RST,ACK；再去「编辑网络 → 日本代理」把 443 端口服务勾上启用，就能修好代理。',expected:'CONNECTION_REFUSED'},
+  {id:'tun-loop',name:'TUN 故障：漏配例外路由',base:'tun',focus:'配置透明代理最经典的踩坑：所有流量都走虚拟网卡 TUN，结果代理程序自己发往远端代理服务器的包也被 TUN 抓了回来，自己抓自己陷入死循环。',tryIt:'动手试试：点「编辑网络 → 我的电脑」，新增一条路由：目的前缀填 203.0.113.10/32、接口填 en0、下一跳选「家庭网关」、metric 填 10，保存后重跑就能给代理留出物理出口。',expected:'TUN_LOOP'},
+  {id:'routing-loop',name:'路由故障：两台路由器互指',base:'direct',focus:'两台路由器互相甩锅（家庭网关指给互联网路由，互联网路由又指回家庭网关）：网络包在它俩之间来回踢皮球，直到包头里的寿命（TTL）扣光归零，路由器发回一封 ICMP 超时退信。',tryIt:'动手试试：看下方看板里 TTL 一跳跳减到 0 并收到路由器退信；再去「编辑网络 → 互联网路由」，把 142.250.72.0/24 的下一跳改回「目标网站」即可修好。',expected:'TTL_EXCEEDED'},
+  {id:'small-mtu',name:'能握手但打不开：路径 MTU 小',base:'direct',focus:'网络排查中最诡异的现象：能 ping 通、TCP 握手也能成功，但一发网页数据就卡死！因为中间某段网线限高（MTU 只有 300 字节），40 字节的小握手包能过，552 字节的大数据包被卡住并打回 ICMP 报错。',tryIt:'动手试试：先看网关打回的 ICMP 报错包，然后打开右下角「请求与配置」，把「TCP MSS」（单次最大数据段）从 512 调小到 128 后重跑，数据包变瘦后就能顺利通过了！',expected:'MTU_EXCEEDED'},
+  {id:'remote-dns',name:'代理解析：域名交给远端',base:'tun',focus:'为什么要开启“远端 DNS 解析”？如果在本机直接查 www.google.com，本地网络就能看到你想去哪且可能返回假地址；改成远端解析后，本机先把域名塞进加密隧道，由日本代理在海外查出真 IP。',tryIt:'动手试试：看阶段栏，第一步不是查 DNS，而是先建好「本机 ↔ 代理」隧道，接着由「日本代理」发出 DNS 查询。',expected:'SUCCESS'},
+  {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'代理软件常用的 Fake-IP 黑科技：浏览器查域名时，本机代理秒回一个假内网地址 198.18.0.1 哄着浏览器先发包，同时在代理内存里记下“198.18.0.1 就是 www.google.com”，等收到包再换回真域名发给远端代理。',tryIt:'动手试试：看下方连接看板，浏览器的第 1 段连接连的居然是假地址 198.18.0.1，到了第 2 段代理隧道里又变回了 www.google.com！',expected:'SUCCESS'}
 ];
 export function preset(name='tun') {
   const item=PRESETS.find(p=>p.id===name)||PRESETS[0];

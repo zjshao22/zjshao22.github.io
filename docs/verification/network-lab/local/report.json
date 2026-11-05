@@ -1,7 +1,7 @@
 {
   "result": "PASS",
-  "url": "http://127.0.0.1:8767/network-lab/",
-  "verified_at": "2026-11-05T07:45:01.415283+00:00",
+  "url": "http://127.0.0.1:8768/network-lab/",
+  "verified_at": "2026-11-05T09:50:46.216376+00:00",
   "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "checks": [
     "Home, shared navigation and network course entries; existing course remains available",
@@ -126,57 +126,59 @@
     }
   ],
   "runtime_resources": [
-    "http://127.0.0.1:8767/network-lab/simulator.css?v=20261105-unified-3",
-    "http://127.0.0.1:8767/network-lab/app-shell.css?v=20261105-unified-3",
-    "http://127.0.0.1:8767/network-lab/mechanism.css?v=20261105-unified-3",
-    "http://127.0.0.1:8767/network-lab/floating-windows.css?v=20261105-unified-3",
-    "http://127.0.0.1:8767/network-lab/floating-windows.js?v=20261105-unified-3",
-    "http://127.0.0.1:8767/network-lab/vendor/simulator.bundle.js?v=20261105-unified-3"
+    "http://127.0.0.1:8768/network-lab/simulator.css?v=20261105-unified-4",
+    "http://127.0.0.1:8768/network-lab/app-shell.css?v=20261105-unified-4",
+    "http://127.0.0.1:8768/network-lab/mechanism.css?v=20261105-unified-4",
+    "http://127.0.0.1:8768/network-lab/floating-windows.css?v=20261105-unified-4",
+    "http://127.0.0.1:8768/network-lab/floating-windows.js?v=20261105-unified-4",
+    "http://127.0.0.1:8768/network-lab/vendor/simulator.bundle.js?v=20261105-unified-4"
   ],
   "page_errors": [],
   "http_errors": [],
   "failed_requests": [],
   "cancelled_course_prefetches": [
     {
-      "url": "http://127.0.0.1:8767/",
+      "url": "http://127.0.0.1:8768/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/c/",
+      "url": "http://127.0.0.1:8768/docs/c/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/database/",
+      "url": "http://127.0.0.1:8768/docs/database/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/network/",
+      "url": "http://127.0.0.1:8768/docs/network/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/ai/",
+      "url": "http://127.0.0.1:8768/docs/ai/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/",
+      "url": "http://127.0.0.1:8768/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/network/",
+      "url": "http://127.0.0.1:8768/docs/network/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/database/",
+      "url": "http://127.0.0.1:8768/docs/c/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/c/",
+      "url": "http://127.0.0.1:8768/docs/database/",
       "error": "net::ERR_ABORTED"
     },
     {
-      "url": "http://127.0.0.1:8767/docs/ai/",
+      "url": "http://127.0.0.1:8768/docs/ai/",
       "error": "net::ERR_ABORTED"
     }
   ],
-  "runtime_request_methods": ["GET"]
+  "runtime_request_methods": [
+    "GET"
+  ]
 }

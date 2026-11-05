@@ -135,10 +135,11 @@ with tempfile.TemporaryDirectory(prefix="network-lab-audit-") as temporary:
         assert page.evaluate("NetworkLab.index") > position
         assert page.evaluate("JSON.stringify(NetworkLab.view)") == view
         expect(page.locator("#step-spotlight")).to_contain_text("当前四元组")
+        expect(page.locator("#live-dock")).to_contain_text("拆开当前信封")
         assert page.locator("#phase-bar .phase-pill").count() >= 3
         page.locator("#phase-bar .phase-pill").nth(2).click()
         assert page.evaluate("JSON.stringify(NetworkLab.view)") == view
-        expect(page.locator("#step-spotlight")).to_contain_text("分流规则命中")
+        expect(page.locator("#live-dock")).to_contain_text("代理分流判断")
         page.locator("#back").click()
         page.locator("#event-count").click()
         page.locator(".timeline-event").last.click()
@@ -264,7 +265,8 @@ with tempfile.TemporaryDirectory(prefix="network-lab-audit-") as temporary:
         assert "/network-lab/index.html#capture" in page.url
         page.goto(lab, wait_until="networkidle")
         page.locator("#run").click()
-        page.locator("#next").click()
+        for _ in range(4):
+            page.locator("#next").click()
         page.screenshot(path=str(args.output / "network-lab.png"), full_page=True)
         for width, height in [(1280, 720), (747, 748), (390, 844)]:
             page.set_viewport_size({"width": width, "height": height})

@@ -1,0 +1,12 @@
+dialog.floating-window, #editor.floating-window{position:fixed;inset:auto;margin:0;width:800px;height:min(780px,84dvh);max-height:calc(100dvh - 30px);max-width:calc(100vw - 24px);min-width:310px;min-height:240px;border:1px solid #608270;border-radius:11px;background:#10212c;box-shadow:0 18px 70px #0007;resize:both;overflow:hidden;animation:none}
+#editor.floating-window{width:940px;height:min(850px,86dvh)}
+.floating-window .dialog-heading,.floating-window .drawer-header{cursor:grab;user-select:none;background:#193039;padding:12px 22px 13px;touch-action:none;flex-shrink:0}
+.floating-window .dialog-heading:active,.floating-window .drawer-header:active{cursor:grabbing}
+.floating-window .dialog-heading h2,.floating-window .drawer-header h2{font-size:23px;line-height:1.4;margin-top:4px}
+.window-buttons{display:flex;gap:5px;flex-shrink:0}.window-buttons button{font:25px/1.3 sans-serif;width:36px;height:38px;padding:0 6px;border:0;background:transparent;color:#c5e3df;border-radius:4px;cursor:pointer}.window-buttons button:hover{background:#2d4e50}
+.floating-window .window-buttons .icon-button{margin:0;font-size:24px}
+dialog.floating-window.window-minimized{height:80px!important;min-height:80px!important;max-height:80px!important;resize:none}
+.floating-window.window-minimized>.dialog-body,.floating-window.window-minimized>.tabs,.floating-window.window-minimized form>.dialog-body,.floating-window.window-minimized .editor-footer,.floating-window.window-minimized>.drawer-content,.floating-window.window-minimized>.drawer-tabs,.floating-window.window-minimized>.drawer-footer{display:none}
+@media(max-width:700px){dialog.floating-window,#editor.floating-window{width:calc(100vw - 24px);height:65dvh;min-width:280px;min-height:220px}.floating-window .dialog-heading,.floating-window .drawer-header{padding:12px 17px}.floating-window .dialog-heading h2,.floating-window .drawer-header h2{font-size:22px}}
+
+.floating-window .dialog-heading .eyebrow,.floating-window .drawer-header .eyebrow{font-size:14px;line-height:1.4;margin-bottom:0}

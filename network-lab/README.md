@@ -1,0 +1,124 @@
+# 网络实验台 · 统一流转与实验
+
+可离线运行的二维网络实验台。编辑设备、接口、路由、服务与链路，发起请求后观察模型计算出的路径、连接、报文、封装与失败原因。当前完成于 2026-11-05。
+
+## 打开
+
+保留整个文件夹，直接用浏览器打开 `index.html`，或继续使用本机预览 `http://127.0.0.1:8765/`。无需安装运行依赖、启动后端、访问 CDN 或使用 WebGL。
+
+一个学习入口，两种工作状态：
+
+- **网络实验**：`index.html`。默认按本机程序、内核接口、实体网络和服务端分区观察流转；点击「编辑网络」可布置设备和修改链路。两种状态使用同一套配置、同一次计算、同一个步骤位置。
+- **本地抓包**：`index.html#capture`。读取用户选择的 pcap / pcapng 文件，单独展示真实捕获字段。
+
+原「机制导览」的分区表达已经合入主图。旧地址 `guide.html` 自动进入主页面，原先 54 个手工教学动作保存在历史备份中，不再作为另一套运行结果。
+
+## 主要交互
+
+主界面整页左右分栏：**左侧完整网络与数据流转，右侧步骤说明、计数和播放操作**。默认完整显示所有设备；播放、单步、事件跳转和报文检视不会自动聚焦设备、平移或缩放。使用者可滚轮/双指/＋−自行放大，拖动空白平移，点击「全图」恢复完整视野，「定位」按名称查找设备。观察与编辑视角分别记住使用者的缩放、平移；流转时保持全图或使用者设置的视野。
+
+主界面正文固定 18px、字段 17px、计数 24px；机制节点基础字号 23px、说明 16px，随使用者的地图缩放一起变化。小窗口优先保留全图，不强制裁切到某一台设备。预设布局拉开本机、网关、互联网和远端分支。应用、内核、TUN、代理程序单独画线，代理出站 Socket 回到内核后才经实体网络发送；TUN 回注不画成跨设备跳转。物理链路采用避让设备的折线路径；金色保留同一报文已经走过的路径，当前一跳按连接角色着色：本机/原始连接为青色、代理传输为金色、目标连接为蓝色，丢包单独标记。图下方同时显示当前连接的角色与报文实际经过的设备，区分应用原始连接、本机到代理、代理到目标。主图点击节点查看职责与所在设备；「编辑网络」中点击设备修改接口、路由和服务，点击链路调整延迟、丢包率和 MTU。
+
+检视和配置均使用**非模态浮动窗口**：拖动标题栏移动，拖动右下角调整大小，点击减号最小化；底下的网络保持可见、可操作。节点职责、报文字段和配置均按需打开。
+
+发起请求后，可单步、播放、退回历史状态。主界面移除进度条，突出显示 `2 / 总步数` 这样的步骤计数；点击数字或「全部步骤」打开事件列表并跳转。`←` / `→` 单步，空格播放，`Esc` 关闭最上层浮窗。开启“路由前先预测”后，可以先选择出口，再看实际命中的规则。
+
+**全部报文**按连接展开本次运行的所有 packet ID，包括 SYN、SYN-ACK、ACK、数据段、重传、FIN 和回程。每个包画出协议层；物理链路显示二层首部，WireGuard 外层可展开完整内层包。这里显示的是整次已计算运行，包含当前播放位置之后的包。点击任一包可跳到对应状态，检查字段、前后变化、流/连接关联、经过的边界及可见性。
+
+## 18 个开箱即用的预设
+
+所有地址、端口、请求字节数、初始路由和故障条件均已给定；可直接运行，也可修改后重新运行。
+
+| 预设 | 主要观察 | 初始结果 |
+| --- | --- | --- |
+| TUN + sing-box 代理 | 原始 TCP、代理 TCP、目标 TCP 分别建立 | 成功 |
+| 系统 HTTP 代理 | 本机 CONNECT、远端目标解析与转发 | 成功 |
+| 无代理直连 | 路由、NAT 与端到端 HTTPS | 成功 |
+| WireGuard + SSH | 外层 UDP 与完整内层 IP 包 | 成功 |
+| 家庭 Wi-Fi 浏览网页 | 家用路由器的地址端口转换与回程 | 成功 |
+| 公司 HTTP 代理 | 办公应用遵从系统代理设置 | 成功 |
+| 家庭 NAS | LAN 内访问，网页 TCP 不出公网、不做 NAT | 成功 |
+| 异地办公 SSH | VPN 连接对端虚拟地址 | 成功 |
+| 光猫与路由器双重 NAT | 两级映射和逐级恢复 | 成功 |
+| 无线丢包 | 首个 SYN 丢弃后以相同序号重传 | 成功恢复 |
+| 跨地域高延迟 | 延迟增加后的虚拟耗时 | 成功 |
+| DNS 停服 | DNS 查询到达但没有回答 | DNS 超时 |
+| 代理端口关闭 | 可达设备返回 TCP RST | 连接被拒绝 |
+| TUN 漏配例外 | 代理自己的出站再次进入 TUN | 回环被指出 |
+| 两台路由器互指 | 重复转发直到 TTL 耗尽 | TTL 耗尽 |
+| 路径 MTU 过小 | 握手可过，较大数据段受 DF/MTU 限制 | MTU 错误 |
+| 代理远端 DNS | 比较 DNS 查询的来源位置 | 成功 |
+| fake-IP 透明代理 | 占位地址、域名映射与远端真实地址 | 成功 |
+
+例如：在 MTU 案例中把 MSS 调到 128 后重跑；在 TUN 漏配案例中为代理地址补回 `/32 → en0 → 家庭网关`。结果由新的配置计算，不是替换预写解释。
+
+## 计算模型
+
+- **统一状态与可回放事件**：设备、接口、路由、Socket、连接、DNS、NAT、TLS/VPN 会话、流和包均可随事件检查。历史快照不被后续转换修改。
+- **IPv4 转发**：最长前缀匹配、metric、下一跳链路、接口开关、转发开关、TTL、MTU/DF 失败反馈。链路可延迟、丢包、断开；固定随机种子保证同配置可重放。
+- **TCP 子集**：三次握手、独立连接四元组和序号、分段、固定接收窗口、累计 ACK、重复段识别、乱序缓存、指数退避的超时重传、RST、四次挥手和 TIME-WAIT 状态。每次重传有新 packet ID、相同 segment ID 与序号。
+- **DNS**：模拟 UDP 查询和回答、固定记录、NXDOMAIN、超时、运行内缓存与 TTL；支持本地、代理侧与 fake-IP 模式。
+- **NAT**：TCP/UDP 端口转换与返回恢复、ICMP Echo 标识符转换；支持多级 NAT。
+- **普通代理**：本地 HTTP CONNECT 或 TUN TCP 入站，按域名/后缀/CIDR 规则决定代理、直连或拒绝；验证实验认证值，建立独立远端与目标连接，关联跨连接字节流。
+- **VPN**：WireGuard 握手阶段、UDP 外层、完整内层 IP 包封装与恢复；保留内层 packet ID，区分公网端点与虚拟地址。
+- **应用**：HTTPS、HTTP、SSH，以及直连或 VPN 下的 ICMP Ping / UDP Echo。
+- **字段**：链路示意 MAC、IPv4、TCP、UDP、ICMP 首部；从模型字段编码并计算 IP/传输层校验和。可检查字段来源、设置时机、移除边界及可见性。
+
+## 模拟范围与真实数据边界
+
+这是**有明确范围的离散事件网络模型**，并非完整操作系统或所有网络协议的实现。它不修改本机路由、不发出真实代理连接，也不抓取本机流量。
+
+TLS、SSH 和 WireGuard 只建模会话阶段、身份校验结果和封装关系，不进行真实密码运算。VLESS 以目标元数据和字节流逻辑表示。模拟 pcap 中 IP/TCP/UDP/ICMP 首部有实际编码和校验和，应用载荷用零字节占位，不能作为真实 TLS/VLESS/WireGuard 通信数据使用。
+
+没有实现 TCP 拥塞控制、动态接收窗口、窗口扩大/SACK、真实 2MSL 定时、IP 分片/重组与 PMTUD 自动重分段、ARP、动态路由协议、IPv6 仿真、QUIC、DERP 中继、真实证书链验证或完整 sing-box 配置兼容。以太网仅展示点对点链路的示例 MAC 与 EtherType，不模拟交换机学习或 FCS。
+
+普通 TUN 代理当前处理 TCP；UDP/ICMP 可用直连或 WireGuard 实验。本地 DNS 预设保留了解析器的物理出口路由。每次“发起请求”从配置创建独立运行，缓存与 NAT 会话限定在本次运行。DNS 失败在固定超时后终止，不模拟递归解析器或 DNS 多服务器重试。
+
+IP 未分配给实验设备时会明确报错；接口与下一跳链路不一致时会产生不可达。TCP 失败会保留停止时可检查的状态。ICMP TTL/不可达/MTU 错误作为网络反馈事件记录，当前不另造完整的 ICMP 错误回程分组。
+
+## 本地抓包与保存
+
+- pcap：大小端、微秒/纳秒时间戳。
+- pcapng：多 Section、Interface Description、Enhanced/旧 Packet/Simple Packet Block，接口时间戳分辨率和偏移；未识别块按长度跳过。
+- 链路：Ethernet（含 VLAN）、RAW IP、Loopback、Linux SLL/SLL2。
+- 解码：IPv4、IPv6 和常见扩展首部、TCP、UDP、ICMP、UDP DNS 问题名和 TLS 记录首部。
+- 不对真实抓包执行 TCP 重组或 TLS/SSH/WireGuard 解密；不把模拟状态补进真实抓包数据。
+- 文件只在浏览器本地读取，32 MB / 10000 个捕获分组上限；未知和截断格式会提示。
+
+配置可自动保存在浏览器；「更多」中可导出/导入 JSON、运行记录和模拟 pcap，并开启路由预测。运行记录导出事件、处理前后字段与协议状态；导入运行记录按其配置和随机种子重新计算完整回放。模拟 pcap 文件名带 `SIMULATED` 前缀。
+
+## 开发与验证
+
+```sh
+npm ci
+npm run build
+npm test
+python verification/verify_simulator.py
+python verification/verify_navigation.py
+python verification/verify_readability.py
+python verification/verify_unified.py
+python verification/verify_routes.py
+python verification/verify_stable_view.py
+```
+
+运行页面本身不需要以上安装。浏览器脚本使用 Python Playwright；自由仿真脚本当前选择本机 Chrome。统一主图验证实际计算事件、查看/编辑共享状态，以及旧导览链接兼容。
+
+主要文件：
+
+- `src/network-config.js`：配置边界、18 个预设、CIDR 与最长前缀匹配。
+- `src/network-engine.js`：事件队列、协议与转发状态转换。
+- `src/capture.js`：本地抓包解析、模型首部编码及 pcap 导出。
+- `src/simulator-app.js`、`simulator.css`：统一界面、全部报文和编辑。
+- `src/mechanism-diagram.js`、`mechanism.css`：按职责分区的计算事件投影；不生成额外物理链路。
+- `src/diagram-icons.js`：延续原导览的设备与程序图标。
+- `app-shell.css`：统一页头和跨页面导航。
+- `floating-windows.js/css`：非模态浮动窗口。
+- `guide.html`：旧链接兼容跳转。`app.js`、`scenarios.js`、`src/stage.js` 为历史导览源码，不由主页面加载。
+- `vendor/*.bundle.js`：离线入口；改源文件后重新构建。
+- `verification/`：模型/格式检查、浏览器检查、报告和截图。
+
+v0.3、v0.4 源码与离线包及本次阅读改版前的界面备份保存在上级目录 `archives/`。
+
+## 协议参考
+
+模型依据并明确简化：[TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html)、[IPv4 路由 RFC 1812](https://www.rfc-editor.org/rfc/rfc1812.html)、[DNS RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html)、[NAT RFC 3022](https://www.rfc-editor.org/rfc/rfc3022.html)、[TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html)、[WireGuard 协议](https://www.wireguard.com/protocol/)、[pcapng 格式工作文档](https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/)。

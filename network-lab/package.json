@@ -1,0 +1,15 @@
+{
+  "name": "network-connection-explorer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline editable discrete-event IPv4 network simulator",
+  "scripts": {
+    "build": "esbuild src/simulator-app.js --bundle --format=iife --minify --tsconfig-raw={} --outfile=vendor/simulator.bundle.js",
+    "test": "node --test verification/engine.test.mjs verification/capture.test.mjs verification/mechanism.test.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "gsap": "3.15.1"
+  },
+  "type": "module"
+}

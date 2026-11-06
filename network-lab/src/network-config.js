@@ -1,4 +1,18 @@
 export const clone = value => structuredClone(value);
+// Link-layer identities are derived from (device, interface), never from a destination IP.
+export const BROADCAST_MAC = 'FF:FF:FF:FF:FF:FF';
+export const ETHERTYPE = {IPv4:'0x0800',ARP:'0x0806'};
+export const LINK_LAYER_DEFAULTS = {enabled:false,arpTtl:20000,arpTimeout:240,arpRetries:2,silentHosts:[],seedCache:[]};
+export const isEthernet = f => !!f && f.id !== 'utun';
+const macHash = (text,seed) => {let h=seed>>>0;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;};
+export function interfaceMac(hostId,ifaceId) {
+  const key=String(hostId)+'/'+String(ifaceId),a=macHash(key,0x811c9dc5),b=macHash(key,0x9e3779b9);
+  return '02:'+[a>>>16&255,a>>>8&255,a&255,b>>>8&255,b&255].map(n=>n.toString(16).padStart(2,'0').toUpperCase()).join(':');
+}
+export function sameNetwork(a,b) {
+  const x=parseCIDR(a?.address||a),y=parseCIDR(b?.address||b);
+  return !!x&&!!y&&x.prefix===y.prefix&&x.network===y.network;
+}
 export const TYPES = {client:'电脑',router:'路由器',server:'服务器',proxy:'代理服务器',dns:'DNS 服务器',vpn:'VPN 对端'};
 export const isIPv4 = value => typeof value==='string' && /^(\d{1,3}\.){3}\d{1,3}$/.test(value) && value.split('.').every(n=>+n<=255);
 export const ipNumber = ip => ip.split('.').reduce((n,p)=>(n*256+Number(p))>>>0,0);
@@ -35,10 +49,12 @@ export const PRESETS = [
   {id:'routing-loop',name:'路由故障：两台路由器互指',base:'direct',focus:'两台路由器互相甩锅（家庭网关指给互联网路由，互联网路由又指回家庭网关）：网络包在它俩之间来回踢皮球，直到包头里的寿命（TTL）扣光归零，路由器发回一封 ICMP 超时退信。',tryIt:'动手试试：看下方看板里 TTL 一跳跳减到 0 并收到路由器退信；再去「编辑网络 → 互联网路由」，把 142.250.72.0/24 的下一跳改回「目标网站」即可修好。',expected:'TTL_EXCEEDED'},
   {id:'small-mtu',name:'能握手但打不开：路径 MTU 小',base:'direct',focus:'网络排查中最诡异的现象：能 ping 通、TCP 握手也能成功，但一发网页数据就卡死！因为中间某段网线限高（MTU 只有 300 字节），40 字节的小握手包能过，552 字节的大数据包被卡住并打回 ICMP 报错。',tryIt:'动手试试：先看网关打回的 ICMP 报错包，然后打开右下角「请求与配置」，把「TCP MSS」（单次最大数据段）从 512 调小到 128 后重跑，数据包变瘦后就能顺利通过了！',expected:'MTU_EXCEEDED'},
   {id:'remote-dns',name:'代理解析：域名交给远端',base:'tun',focus:'为什么要开启“远端 DNS 解析”？如果在本机直接查 www.google.com，本地网络就能看到你想去哪且可能返回假地址；改成远端解析后，本机先把域名塞进加密隧道，由日本代理在海外查出真 IP。',tryIt:'动手试试：看阶段栏，第一步不是查 DNS，而是先建好「本机 ↔ 代理」隧道，接着由「日本代理」发出 DNS 查询。',expected:'SUCCESS'},
-  {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'代理软件常用的 Fake-IP 黑科技：浏览器查域名时，本机代理秒回一个假内网地址 198.18.0.1 哄着浏览器先发包，同时在代理内存里记下“198.18.0.1 就是 www.google.com”，等收到包再换回真域名发给远端代理。',tryIt:'动手试试：看下方连接看板，浏览器的第 1 段连接连的居然是假地址 198.18.0.1，到了第 2 段代理隧道里又变回了 www.google.com！',expected:'SUCCESS'}
+  {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'代理软件常用的 Fake-IP 黑科技：浏览器查域名时，本机代理秒回一个假内网地址 198.18.0.1 哄着浏览器先发包，同时在代理内存里记下“198.18.0.1 就是 www.google.com”，等收到包再换回真域名发给远端代理。',tryIt:'动手试试：看下方连接看板，浏览器的第 1 段连接连的居然是假地址 198.18.0.1，到了第 2 段代理隧道里又变回了 www.google.com！',expected:'SUCCESS'},
+  {id:'arp-gateway',name:'ARP 与链路层：跨网关访问',base:'direct',focus:'主机 A（192.168.1.100/24）经路由器 R 访问另一网段的主机 B（10.20.30.40/24），全程不做 NAT。逐步观察：A 先查路由表选中网关 192.168.1.1，ARP 缓存未命中就广播询问网关的 MAC，收到单播 Reply 后写缓存；IP 包被装进指向 R 的帧。R 拆帧后独立查自己的路由表，在另一个接口上解析 B 的 MAC 并重新封装。IP 目的地址始终是 10.20.30.40、TTL 在 R 上减 1，但每一跳的源/目的 MAC 都换成了本链路两端接口的地址。',tryIt:'动手试试：① 再发起一次请求，看 ARP 缓存命中、不再重复广播；② 点「清空 ARP 缓存」后重跑，重新看到完整的解析过程；③ 编辑路由器 R，把与 A 相连的接口 IP 改掉，观察下一跳 IP 与 ARP 查询目标一起改变；④ 关闭「链路层详细模式」，回到原来的简洁展示。',expected:'SUCCESS'}
 ];
 export function preset(name='tun') {
   const item=PRESETS.find(p=>p.id===name)||PRESETS[0];
+  if(name==='arp-gateway')return arpGatewayPreset(item);
   if(!['tun','system','direct','tail'].includes(name)) {
     const c=preset(item.base),host=id=>c.hosts.find(h=>h.id===id);
     c.name=item.name;c.presetId=item.id;c.lesson={focus:item.focus,tryIt:item.tryIt,expected:item.expected};
@@ -94,6 +110,33 @@ export function preset(name='tun') {
   return config;
 }
 
+// Acceptance topology: A (192.168.1.100/24) -> R (.1 / 10.20.30.1) -> B (10.20.30.40/24), no NAT.
+function arpGatewayPreset(item) {
+  const hosts=[
+    {id:'hostA',name:'主机 A',type:'client',x:180,y:300,forwarding:false,nat:false,natInterface:'eth0',
+      interfaces:[iface('eth0','192.168.1.100/24')],
+      routes:[route('192.168.1.0/24','eth0'),route('0.0.0.0/0','eth0','routerR',100)],services:[]},
+    {id:'routerR',name:'路由器 R',type:'router',x:600,y:300,forwarding:true,nat:false,natInterface:'eth0',
+      interfaces:[iface('eth0','192.168.1.1/24'),iface('eth1','10.20.30.1/24')],
+      routes:[route('192.168.1.0/24','eth0','hostA'),route('10.20.30.0/24','eth1','hostB')],services:[]},
+    {id:'hostB',name:'目标主机 B',type:'server',x:1020,y:300,forwarding:false,nat:false,natInterface:'eth0',
+      interfaces:[iface('eth0','10.20.30.40/24')],
+      routes:[route('10.20.30.0/24','eth0'),route('0.0.0.0/0','eth0','routerR',100)],
+      services:[service('https',443),service('http',80),service('echo',5000,'UDP')]}
+  ];
+  return {version:1,name:'ARP 与链路层：A → R → B',presetId:'arp-gateway',hosts,
+    links:[{id:'lan-a-r',a:'hostA',b:'routerR',latency:12,loss:0,mtu:1500,enabled:true},
+      {id:'lan-r-b',a:'routerR',b:'hostB',latency:12,loss:0,mtu:1500,enabled:true}],
+    request:{source:'hostA',destination:'10.20.30.40',kind:'ping',port:1,bytes:32,responseBytes:32,usesSystemProxy:false},
+    dns:{host:'hostB',mode:'local',ttl:60,records:{}},
+    proxy:{tun:false,system:false,host:'routerR',port:443,localPort:7890,transportTls:false,clientAuth:'lab-key',serverAuth:'lab-key',rules:[{pattern:'*',action:'direct'}]},
+    vpn:{enabled:false,peer:'hostB',port:41641,keyValid:true},
+    transport:{ttl:16,mss:512,window:2048,rto:500,retries:3,seed:7},
+    faults:{dns:false,proxyAuth:false,certificate:false,targetBlocked:false,dropFirst:false},
+    linkLayer:{...LINK_LAYER_DEFAULTS,enabled:true},
+    lesson:{focus:item.focus,tryIt:item.tryIt,expected:item.expected}};
+}
+
 // Validate once where edited/imported configuration enters the engine.
 export function validateConfig(input) {
   const errors=[];
@@ -117,6 +160,7 @@ export function validateConfig(input) {
       const parsed=f&&parseCIDR(f.address);
       if(!f||typeof f.id!=='string'||!/^[\w-]{1,20}$/.test(f.id)||interfaces.has(f.id)||!parsed||typeof f.enabled!=='boolean'){errors.push(`${h.name}: 接口名称、地址或开关无效`);continue;}
       interfaces.add(f.id);
+      if(f.mac!==undefined&&(typeof f.mac!=='string'||!/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(f.mac)))errors.push(`${h.name}: 接口 MAC 格式无效`);
       if(addresses.has(parsed.ip))errors.push(`IP 地址重复：${parsed.ip}`);
       addresses.add(parsed.ip);
     }
@@ -137,6 +181,15 @@ export function validateConfig(input) {
   if(!v||typeof v.peer!=='string'||(v.enabled&&!ids.has(v.peer))||typeof v.enabled!=='boolean'||typeof v.keyValid!=='boolean'||!integer(v.port,1,65535))errors.push('VPN 配置无效');
   if(!t||!integer(t.ttl,1,64)||!integer(t.mss,64,1400)||!integer(t.window,64,16384)||!integer(t.rto,100,10000)||!integer(t.retries,0,5)||!integer(t.seed,1,2147483647))errors.push('传输参数无效');
   if(!c.faults||['dns','proxyAuth','certificate','targetBlocked','dropFirst'].some(k=>typeof c.faults[k]!=='boolean'))errors.push('故障开关无效');
+  const l=c.linkLayer;
+  if(l!==undefined){
+    if(!l||typeof l!=='object'||Array.isArray(l))errors.push('链路层配置无效');
+    else {
+      if(typeof l.enabled!=='boolean'||!integer(l.arpTtl,1,600000)||!integer(l.arpTimeout,1,60000)||!integer(l.arpRetries,0,8))errors.push('链路层 ARP 参数无效');
+      if(l.silentHosts!==undefined&&(!Array.isArray(l.silentHosts)||l.silentHosts.some(x=>typeof x!=='string')))errors.push('ARP 静默设备列表无效');
+      if(l.seedCache!==undefined&&(!Array.isArray(l.seedCache)||l.seedCache.length>256))errors.push('ARP 缓存回填数据无效');
+    }
+  }
   return [...new Set(errors)];
 }
 export function newHost(type,index) {

@@ -1,4 +1,4 @@
-import {clone,isIPv4,parseCIDR,longestMatch,validateConfig} from './network-config.js';
+import {clone,isIPv4,parseCIDR,longestMatch,validateConfig,BROADCAST_MAC,ETHERTYPE,LINK_LAYER_DEFAULTS,interfaceMac,isEthernet,sameNetwork} from './network-config.js';
 import {encodePacket} from './capture.js';
 
 export function simulate(input) {
@@ -12,7 +12,14 @@ class NetworkEngine {
     this.config=clone(input);this.hosts=Object.fromEntries(this.config.hosts.map(h=>[h.id,h]));
     for(const h of this.config.hosts)for(const r of h.routes)r.parsed=parseCIDR(r.prefix);
     this.clock=0;this.queue=[];this.order=0;this.counter={};this.events=[];this.runtime={};this.randomState=input.transport.seed;
-    this.state={time:0,status:'ready',result:null,hosts:clone(input.hosts),interfaces:input.hosts.flatMap(h=>h.interfaces.map(f=>({...f,host:h.id}))),routes:input.hosts.flatMap(h=>h.routes.map(r=>({...r,host:h.id}))),sockets:[],connections:[],packets:{},dnsRecords:[],nat:[],tls:[],tunnels:[],streams:[],metrics:{sent:0,delivered:0,dropped:0,retransmissions:0,bytes:0}};
+    this.l2={...LINK_LAYER_DEFAULTS,...(input.linkLayer||{})};
+    if(!Array.isArray(this.l2.silentHosts))this.l2.silentHosts=[];
+    this.runtime.arpWaiters=new Map();this.runtime.arpFlights=new Map();
+    this.seedArp=[];
+    if(this.l2.enabled&&Array.isArray(this.l2.seedCache))for(const e of this.l2.seedCache)
+      if(e&&typeof e.host==='string'&&typeof e.iface==='string'&&isIPv4(e.ip)&&typeof e.mac==='string')
+        this.seedArp.push({id:this.id('arp'),host:e.host,iface:e.iface,ip:e.ip,mac:e.mac,owner:e.owner||'',ownerIface:e.ownerIface||'',learnedAt:0,expires:this.l2.arpTtl,source:'上次运行保留'});
+    this.state={time:0,status:'ready',result:null,hosts:clone(input.hosts),interfaces:input.hosts.flatMap(h=>h.interfaces.map(f=>({...f,host:h.id}))),routes:input.hosts.flatMap(h=>h.routes.map(r=>({...r,host:h.id}))),sockets:[],connections:[],packets:{},dnsRecords:[],nat:[],tls:[],tunnels:[],streams:[],arp:clone(this.seedArp),arpPending:[],arpInFlight:[],metrics:{sent:0,delivered:0,dropped:0,retransmissions:0,bytes:0}};
     this.initial=clone(this.state);this.source=input.request.source;this.proxy=input.proxy.host;this.dnsHost=input.dns.host;this.done=false;
   }
   id(kind){this.counter[kind]=(this.counter[kind]||0)+1;return kind+'-'+this.counter[kind];}
@@ -41,7 +48,7 @@ class NetworkEngine {
   packetLayers(p) {
     const encoded=new DataView(encodePacket(p).buffer),hex=n=>'0x'+n.toString(16).padStart(4,'0');
     const layers=[];
-    if(p.linkFrame)layers.push({type:'ethernet',name:'以太网帧首部（链路示意）',fields:{源MAC:p.linkFrame.srcMac,目的MAC:p.linkFrame.dstMac,EtherType:'0x0800',说明:'按点对点链路端点生成示例 MAC；不执行 ARP，FCS 未模拟'}});
+    if(p.linkFrame)layers.push({type:'ethernet',name:'以太网帧首部',fields:{源MAC:p.linkFrame.srcMac,目的MAC:p.linkFrame.dstMac,源接口:p.linkFrame.srcIface||'—',目的接口:p.linkFrame.dstIface||'—',EtherType:p.linkFrame.etherType||ETHERTYPE.IPv4,载荷类型:p.linkFrame.etherType===ETHERTYPE.ARP?'ARP 报文':'IPv4 数据报',说明:this.l2.enabled?'MAC 由「设备＋接口」稳定生成；目的 MAC 来自 ARP 对下一跳 IP 的解析；每经过一跳都重新封装；FCS、交换机学习与冲突域未模拟。':'按点对点链路端点生成示例 MAC；未启用 ARP，FCS 未模拟'}});
     layers.push({type:'ip',name:'IPv4 首部',fields:{版本:4,首部长度:p.ihl,DSCP:0,ECN:0,总长度:p.length,标识:encoded.getUint16(4),DF:p.df?'1':'0',MF:0,片偏移:0,TTL:p.ttl,协议:p.protocol,首部校验和:hex(encoded.getUint16(10)),源地址:p.src,目的地址:p.dst,选项:'无'}});
     if(p.protocol==='TCP')layers.push({type:'tcp',name:'TCP 首部',fields:{源端口:p.sport,目的端口:p.dport,标志:p.flags,序号:p.seq,确认号:p.ack,首部长度:20,接收窗口:p.window,校验和:hex(encoded.getUint16(36)),紧急指针:0,选项:'无；不协商窗口扩大或 SACK',载荷字节:p.payloadLength}});
     if(p.protocol==='UDP')layers.push({type:'udp',name:'UDP 首部',fields:{源端口:p.sport,目的端口:p.dport,长度:p.payloadLength+8,校验和:hex(encoded.getUint16(26))}});
@@ -96,7 +103,8 @@ class NetworkEngine {
     }
     const rule=this.route(host,p.dst);
     const nextName=rule?(rule.via?`发给下一跳「${this.hosts[rule.via]?.name||rule.via}」`:rule.iface==='utun'?'送进虚拟网卡 TUN':'同网段直达'):'无路可走';
-    this.emitPacket('route.lookup',rule?`${h.name} 查路由表：命中 ${rule.prefix} → ${nextName}`:`${h.name} 查路由表：找不到去 ${p.dst} 的路`,p,{host,unit:'kernel',route:rule?{prefix:rule.prefix,iface:rule.iface,via:rule.via,metric:rule.metric}:null,why:rule?`要去的目的地址是 ${p.dst}。路由表按“谁匹配得最精确（最长前缀优先，同前缀看较小 metric）”选中 ${rule.prefix}，决定从 ${rule.iface} 接口${nextName}。`:`路由表里没有任何一条规则能匹配目的地址 ${p.dst}，这个包不知道该往哪发。`});
+    this.emitPacket('route.lookup',rule?`${h.name} 查路由表：命中 ${rule.prefix} → ${nextName}`:`${h.name} 查路由表：找不到去 ${p.dst} 的路`,p,{host,unit:'kernel',route:rule?{prefix:rule.prefix,iface:rule.iface,via:rule.via,metric:rule.metric}:null,
+        ...(this.l2.enabled?{originalDst:p.dst,finalDst:p.dst,iface:rule?.iface||'',nextHopIP:rule?this.nextHopAddress(p,rule,rule.via,this.hosts[host].interfaces.find(f=>f.id===rule.iface)):null}:{}),why:rule?`要去的目的地址是 ${p.dst}。路由表按“谁匹配得最精确（最长前缀优先，同前缀看较小 metric）”选中 ${rule.prefix}，决定从 ${rule.iface} 接口${nextName}。`:`路由表里没有任何一条规则能匹配目的地址 ${p.dst}，这个包不知道该往哪发。`});
     if(!rule){this.icmpError(p,host,3,0,'NO_ROUTE','找不到到 '+p.dst+' 的路由');return;}
     const device=h.interfaces.find(f=>f.id===rule.iface);
     if(!device.enabled){this.emitPacket('ip.drop','选中的出口网卡已关闭，报文丢弃',p,{host});this.state.metrics.dropped++;return;}
@@ -121,19 +129,201 @@ class NetworkEngine {
     }
     if(p.length>link.mtu){this.icmpError(p,host,3,4,'MTU_EXCEEDED',`数据包太胖（${p.length} 字节），超过前方网线限高 MTU ${link.mtu} 字节且禁止分片 (DF=1)`,{mtu:link.mtu});return;}
     const before=clone(p);p.path.push(host);
+    if(this.l2.enabled) {
+      const endpoints=this.linkEndpoints(link,host,next);
+      const nextHop=this.nextHopAddress(p,rule,next,endpoints.out);
+      const cached=this.arpLookup(host,endpoints.out.id,nextHop);
+      const detail={host,iface:endpoints.out.id,from:host,to:next,link:link.id,
+        originalDst:p.dst,finalDst:p.dst,nextHopIP:nextHop,
+        outIface:endpoints.out.id,inIface:endpoints.in.id,
+        srcMac:this.macOf(host,endpoints.out),etherType:ETHERTYPE.IPv4,unit:'kernel'};
+      if(!cached){this.arpMiss(detail,p,before,link,endpoints,next,receive);return;}
+      detail.dstMac=cached.mac;detail.waiting=false;
+      this.emit('arp.cache-hit',`${h.name} ARP 缓存命中：${nextHop} → ${cached.mac}`,{...detail,arpEntry:clone(cached),
+        why:`${h.name} 的 ${endpoints.out.id} 接口缓存里已有「${nextHop} → ${cached.mac}」，无需再发 ARP 广播。注意缓存是按接口分开保存的：同一个 IP 在另一个接口上仍需要重新解析。`});
+      this.emitFrame(p,host,next,link,endpoints,cached.mac,before,receive,detail);
+      return;
+    }
     const mac=id=>'02:00:00:00:'+String(this.config.hosts.findIndex(h=>h.id===id)+1).padStart(2,'0')+':01';
     p.linkFrame={srcMac:mac(host),dstMac:mac(next)};
     this.emitPacket('link.send',`网线传输：${h.name} → ${this.hosts[next].name}`,p,{host,from:host,to:next,link:link.id,latency:link.latency,before,visibility:this.visibility(p),why:`报文正在相邻两台设备的网线上传输（单程耗时 ${link.latency} ms）。注意：单跳传输只换二层网卡 MAC，IP 包头里的收件人（${p.dst}）始终写着这一段连接的最终终点。`});
+    this.propagate(p,host,next,link,receive);
+  }
+  propagate(p,host,next,link,receive) {
     const forced=this.config.faults.dropFirst&&!this.forcedDrop&&p.protocol==='TCP'&&p.flags==='SYN';
     if(forced)this.forcedDrop=true;
     if(forced||this.random()*100<link.loss) {
-      this.schedule(link.latency,()=>{this.state.metrics.dropped++;this.emitPacket('link.drop',`半路丢包：${h.name} 发往 ${this.hosts[next].name} 的报文在网线上丢失`,p,{host:next,from:host,to:next,link:link.id,why:forced?'本次实验开启了「丢弃第一个 TCP SYN」，故意让第 1 次握手包在半路丢失，用来观察发送端怎么靠超时重传救回来。':'按当前网线设置的丢包率与固定随机种子计算，这个包在半路丢失了。'});});return;
+      this.schedule(link.latency,()=>{this.state.metrics.dropped++;this.emitPacket('link.drop',`半路丢包：${this.hosts[host].name} 发往 ${this.hosts[next].name} 的报文在网线上丢失`,p,{host:next,from:host,to:next,link:link.id,why:forced?'本次实验开启了「丢弃第一个 TCP SYN」，故意让第 1 次握手包在半路丢失，用来观察发送端怎么靠超时重传救回来。':'按当前网线设置的丢包率与固定随机种子计算，这个包在半路丢失了。'});});return;
     }
     this.schedule(link.latency,()=>{
       this.emitPacket('link.receive',`${this.hosts[next].name} 收到网线传来的报文`,p,{host:next,from:host,to:next,link:link.id,visibility:this.visibility(p)});
-      const framed=clone(p);delete p.linkFrame;this.emitPacket('l2.decapsulate','拆掉上一跳网线的二层外壳，准备看 IP 地址',p,{host:next,before:framed,unit:'kernel'});
+      const framed=clone(p);delete p.linkFrame;this.emitPacket('l2.decapsulate','拆掉上一跳网线的二层外壳，准备看 IP 地址',p,{host:next,before:framed,unit:'kernel',...(this.l2.enabled&&framed.linkFrame?{srcMac:framed.linkFrame.srcMac,dstMac:framed.linkFrame.dstMac,etherType:framed.linkFrame.etherType,nextHopIP:framed.linkFrame.dstNextHopIP,originalDst:p.dst,finalDst:p.dst,iface:framed.linkFrame.dstIface}:{})});
       this.forward(p,next,receive,true);
     });
+  }
+  macOf(hostId,f){return f?.mac||interfaceMac(hostId,f.id);}
+  ethernetIfaces(hostId){return (this.hosts[hostId]?.interfaces||[]).filter(f=>f.enabled&&isEthernet(f));}
+  linkEndpoints(link,from,to) {
+    const a=this.ethernetIfaces(from),b=this.ethernetIfaces(to);
+    for(const x of a)for(const y of b)if(sameNetwork(x,y))return {out:x,in:y};
+    return {out:a[0]||this.hosts[from].interfaces[0],in:b[0]||this.hosts[to].interfaces[0]};
+  }
+  // A directly attached destination is resolved with its own IP; otherwise the gateway's IP is resolved.
+  nextHopAddress(p,rule,nextId,outIface) {
+    if(!rule?.via)return p.dst;
+    const candidates=this.ethernetIfaces(nextId);
+    const chosen=candidates.find(f=>sameNetwork(f,outIface))||candidates[0];
+    return chosen?parseCIDR(chosen.address).ip:p.dst;
+  }
+  arpLookup(host,iface,ip) {
+    const i=this.state.arp.findIndex(a=>a.host===host&&a.iface===iface&&a.ip===ip);
+    if(i<0)return null;
+    const entry=this.state.arp[i];
+    if(entry.expires<=this.clock){
+      this.state.arp.splice(i,1);
+      this.emit('arp.expire',`${this.hosts[host].name} 的 ARP 缓存 ${ip} → ${entry.mac} 已过期`,{host,iface,nextHopIP:ip,arpEntry:clone(entry),unit:'kernel',
+        why:`这条缓存已超过生存时间 ${this.l2.arpTtl} ms 并被删除。下次再往 ${ip} 发包必须重新广播 ARP Request，这就是缓存老化后的重新解析。`});
+      return null;
+    }
+    return entry;
+  }
+  arpFrame(op,info) {
+    const request=op==='request',dstMac=request?BROADCAST_MAC:info.targetMac;
+    const fields={操作码:request?'1 (Request 请求)':'2 (Reply 应答)',硬件类型:'1 (以太网)',协议类型:'0x0800 (IPv4)',硬件地址长度:6,协议地址长度:4,
+      发送端MAC:info.senderMac,发送端IP:info.senderIP,目的端MAC:request?'00:00:00:00:00:00 (未知，待应答填入)':info.targetMac,目的端IP:info.targetIP};
+    const frame={id:this.id('frame'),protocol:'ARP',length:42,ttl:0,version:4,ihl:0,df:false,
+      src:info.senderIP,dst:info.targetIP,sport:0,dport:0,seq:0,ack:0,flags:'',window:0,payloadLength:28,created:this.clock,
+      linkFrame:{srcMac:info.senderMac,dstMac,etherType:ETHERTYPE.ARP,srcIface:info.iface,dstIface:info.inIface||'',srcIP:info.senderIP,dstNextHopIP:info.targetIP},
+      arp:{op:request?1:2,senderMac:info.senderMac,senderIP:info.senderIP,targetMac:request?'00:00:00:00:00:00':info.targetMac,targetIP:info.targetIP},
+      meta:{kind:'arp',label:request?'ARP Request 广播':'ARP Reply 单播'},
+      finalDst:info.finalDst||info.targetIP,nextHopIP:info.targetIP,path:[],
+      layers:[{type:'ethernet',name:'以太网帧首部',fields:{源MAC:info.senderMac,目的MAC:dstMac,源接口:info.iface,目的接口:info.inIface||'广播',EtherType:`${ETHERTYPE.ARP} (ARP)`,说明:request?`目的 MAC 为广播地址 ${BROADCAST_MAC}，同一链路上的设备都会收到。`:'应答按请求帧里的发送端 MAC 单播回传，不再广播。'}},
+        {type:'arp',name:'ARP 报文',fields}]};
+    frame.arpFields=fields;
+    return frame;
+  }
+  arpMiss(d,p,before,link,endpoints,next,receive) {
+    const key=d.host+'|'+d.iface+'|'+d.nextHopIP;
+    this.state.arpPending.push({id:this.id('arp-wait'),host:d.host,iface:d.iface,nextHopIP:d.nextHopIP,packetId:p.id,finalDst:p.dst,waiting:true,since:this.clock});
+    this.emit('arp.miss',`${this.hosts[d.host].name} ARP 缓存未命中：还不知道 ${d.nextHopIP} 的 MAC`,
+      {...d,dstMac:BROADCAST_MAC,waiting:true,unit:'kernel',packetId:p.id,arpCache:clone(this.state.arp),
+        why:`路由已经决定从 ${d.iface} 接口把包交给下一跳 ${d.nextHopIP}（最终目标仍是 ${p.dst}），但 ${d.iface} 的 ARP 缓存里没有该 IP 对应的 MAC，链路层暂时无法封装帧，IP 包 ${p.id} 进入等待队列。`});
+    if(!this.runtime.arpWaiters.has(key))this.runtime.arpWaiters.set(key,[]);
+    this.runtime.arpWaiters.get(key).push({packet:p,before,link,endpoints,next,receive,detail:d});
+    if(this.runtime.arpFlights.has(key))return;
+    const flight={key,host:d.host,iface:d.iface,targetIP:d.nextHopIP,next,link,endpoints,tries:0,satisfied:false,
+      senderIP:parseCIDR(endpoints.out.address).ip,finalDst:p.dst,originalDst:p.dst};
+    this.runtime.arpFlights.set(key,flight);
+    this.state.arpInFlight.push({key,host:d.host,iface:d.iface,targetIP:d.nextHopIP,tries:0});
+    this.arpRequest(flight);
+  }
+  arpRequest(flight) {
+    if(this.done||flight.satisfied)return;
+    flight.tries++;
+    const record=this.state.arpInFlight.find(x=>x.key===flight.key);
+    if(record)record.tries=flight.tries;
+    const senderMac=this.macOf(flight.host,flight.endpoints.out);
+    const frame=this.arpFrame('request',{host:flight.host,iface:flight.iface,inIface:flight.endpoints.in.id,
+      senderMac,senderIP:flight.senderIP,targetIP:flight.targetIP,finalDst:flight.finalDst});
+    this.emit('arp.request',`${this.hosts[flight.host].name} 广播 ARP Request：谁是 ${flight.targetIP}？`,
+      {packet:frame,host:flight.host,from:flight.host,to:flight.next,link:flight.link.id,iface:flight.iface,
+        originalDst:flight.originalDst,finalDst:flight.finalDst,nextHopIP:flight.targetIP,
+        srcMac:senderMac,dstMac:BROADCAST_MAC,etherType:ETHERTYPE.ARP,arpFields:frame.arpFields,
+        attempt:flight.tries,waiting:true,unit:'kernel',
+        why:`${this.hosts[flight.host].name} 在 ${flight.iface} 上发出广播帧（目的 MAC ${BROADCAST_MAC}，EtherType ${ETHERTYPE.ARP}）：「谁配置了 ${flight.targetIP}？请回复 ${flight.senderIP}」。询问的是路由选出的下一跳，而不是最终目标 ${flight.finalDst}。等待解析期间，原 IP 包留在本机队列中，既没被丢弃，也没被提前发出。`});
+    this.schedule(flight.link.latency,()=>this.arpDeliverRequest(flight,frame,senderMac));
+    this.schedule(this.l2.arpTimeout,()=>this.arpTimeout(flight));
+  }
+  arpDeliverRequest(flight,frame,senderMac) {
+    if(this.done||flight.satisfied)return;
+    const owner=this.config.hosts.find(h=>h.id!==flight.host&&h.interfaces.some(f=>f.enabled&&isEthernet(f)&&parseCIDR(f.address).ip===flight.targetIP));
+    const ownerIface=owner?.interfaces.find(f=>f.enabled&&isEthernet(f)&&parseCIDR(f.address).ip===flight.targetIP);
+    const silent=this.l2.silentHosts.includes(flight.next)||(owner&&this.l2.silentHosts.includes(owner.id));
+    const answered=!!owner&&!!ownerIface&&!silent;
+    this.emit('arp.request-receive',`${this.hosts[flight.next].name} 收到 ARP Request（询问 ${flight.targetIP}）`,
+      {host:flight.next,from:flight.host,to:flight.next,link:flight.link.id,iface:flight.endpoints.in.id,
+        originalDst:flight.originalDst,finalDst:flight.finalDst,nextHopIP:flight.targetIP,
+        srcMac:frame.linkFrame.srcMac,dstMac:BROADCAST_MAC,etherType:ETHERTYPE.ARP,
+        arpFields:frame.arpFields,waiting:true,unit:'kernel',
+        why:answered?`这台设备的 ${ownerIface.id} 接口配置的正是 ${flight.targetIP}，于是准备单播 ARP Reply，把自己的 MAC 告诉请求方。`:`本设备没有配置 ${flight.targetIP}${silent?'（当前被设置为不回应 ARP）':''}，因此不会应答；请求方只能等超时后重试。`});
+    if(!answered)return;
+    const replyMac=this.macOf(owner.id,ownerIface);
+    const reply=this.arpFrame('reply',{host:owner.id,iface:ownerIface.id,inIface:flight.endpoints.out.id,
+      senderMac:replyMac,senderIP:flight.targetIP,targetMac:senderMac,targetIP:flight.senderIP,finalDst:flight.finalDst});
+    this.emit('arp.reply',`${owner.name} 单播 ARP Reply：${flight.targetIP} 的 MAC 是 ${replyMac}`,
+      {packet:reply,host:owner.id,from:owner.id,to:flight.host,link:flight.link.id,iface:ownerIface.id,
+        originalDst:flight.originalDst,finalDst:flight.finalDst,nextHopIP:flight.targetIP,
+        srcMac:replyMac,dstMac:senderMac,etherType:ETHERTYPE.ARP,arpFields:reply.arpFields,
+        waiting:true,unit:'kernel',
+        why:`应答帧的目的 MAC 直接填请求方的 ${senderMac}（单播，不再广播）；ARP 报文里写明「发送端 IP ${flight.targetIP} ↔ 发送端 MAC ${replyMac}」，请求方据此建立映射。`});
+    this.schedule(flight.link.latency,()=>this.arpLearn(flight,reply,replyMac,owner.id,ownerIface.id));
+  }
+  arpLearn(flight,reply,replyMac,ownerId,ownerIface) {
+    if(this.done||flight.satisfied)return;
+    flight.satisfied=true;
+    const entry={id:this.id('arp'),host:flight.host,iface:flight.iface,ip:flight.targetIP,mac:replyMac,
+      owner:ownerId,ownerIface,learnedAt:this.clock,expires:this.clock+this.l2.arpTtl,source:'ARP Reply'};
+    this.state.arp=this.state.arp.filter(a=>!(a.host===flight.host&&a.iface===flight.iface&&a.ip===flight.targetIP));
+    this.state.arp.push(entry);
+    this.state.arpInFlight=this.state.arpInFlight.filter(x=>x.key!==flight.key);
+    this.runtime.arpFlights.delete(flight.key);
+    this.emit('arp.cache-update',`${this.hosts[flight.host].name} 写入 ARP 缓存：${flight.targetIP} → ${replyMac}`,
+      {host:flight.host,iface:flight.iface,from:ownerId,to:flight.host,link:flight.link.id,
+        originalDst:flight.originalDst,finalDst:flight.finalDst,nextHopIP:flight.targetIP,
+        srcMac:replyMac,dstMac:reply.linkFrame.dstMac,etherType:ETHERTYPE.ARP,
+        arpEntry:clone(entry),arpFields:reply.arpFields,waiting:false,unit:'kernel',
+        why:`缓存按「设备 ${flight.host} ＋ 接口 ${flight.iface} ＋ 下一跳 IP ${flight.targetIP}」保存，生存期 ${this.l2.arpTtl} ms。排队的 IP 包可以取出并用 ${replyMac} 作目的 MAC 封装。写入的是下一跳 MAC，IP 包头目的地址仍是 ${flight.finalDst}。`});
+    this.arpFlush(flight.key);
+  }
+  arpFlush(key) {
+    const waiters=this.runtime.arpWaiters.get(key)||[];
+    this.runtime.arpWaiters.delete(key);
+    for(const w of waiters){
+      this.state.arpPending=this.state.arpPending.filter(x=>!(x.packetId===w.packet.id&&x.host===w.detail.host));
+      if(this.done)continue;
+      const entry=this.state.arp.find(a=>a.host===w.detail.host&&a.iface===w.detail.iface&&a.ip===w.detail.nextHopIP);
+      if(!entry)continue;
+      this.emit('arp.dequeue',`${this.hosts[w.detail.host].name} 取出等待的 IP 包 ${w.packet.id}，继续发送`,
+        {host:w.detail.host,iface:w.detail.iface,from:w.detail.host,to:w.next,link:w.link.id,
+          originalDst:w.packet.dst,finalDst:w.packet.dst,nextHopIP:w.detail.nextHopIP,packetId:w.packet.id,
+          srcMac:this.macOf(w.detail.host,w.endpoints.out),dstMac:entry.mac,etherType:ETHERTYPE.IPv4,
+          waiting:false,unit:'kernel',
+          why:`地址解析完成，原先因 ARP 未命中而暂停的 IP 包 ${w.packet.id} 重新进入发送流程。包本身没被改写：源 IP、目的 IP ${w.packet.dst} 与 TTL 都保持原样，只是现在有了可用的目的 MAC。`});
+      this.emitFrame(w.packet,w.detail.host,w.next,w.link,w.endpoints,entry.mac,w.before,w.receive,w.detail);
+    }
+  }
+  arpTimeout(flight) {
+    if(this.done||flight.satisfied)return;
+    if(flight.tries<=this.l2.arpRetries){
+      this.emit('arp.retry',`ARP 请求第 ${flight.tries} 次超时，${this.hosts[flight.host].name} 重新广播`,
+        {host:flight.host,iface:flight.iface,from:flight.host,to:flight.next,link:flight.link.id,
+          nextHopIP:flight.targetIP,finalDst:flight.finalDst,originalDst:flight.originalDst,
+          attempt:flight.tries,waiting:true,unit:'kernel',
+          why:`等待 ${this.l2.arpTimeout} ms 仍没收到 ${flight.targetIP} 的 ARP Reply，按有限次数策略重发广播请求。原 IP 包继续留在队列里。`});
+      this.arpRequest(flight);
+      return;
+    }
+    const waiters=this.runtime.arpWaiters.get(flight.key)||[];
+    this.state.metrics.dropped+=waiters.length;
+    this.state.arpPending=this.state.arpPending.filter(x=>!(x.host===flight.host&&x.iface===flight.iface&&x.nextHopIP===flight.targetIP));
+    this.state.arpInFlight=this.state.arpInFlight.filter(x=>x.key!==flight.key);
+    this.runtime.arpFlights.delete(flight.key);
+    this.runtime.arpWaiters.delete(flight.key);
+    this.emit('arp.failed',`ARP 解析失败：${flight.targetIP} 一直不应答，等待中的 IP 包被丢弃`,
+      {host:flight.host,iface:flight.iface,nextHopIP:flight.targetIP,finalDst:flight.finalDst,originalDst:flight.originalDst,
+        dropped:waiters.length,waiting:false,unit:'kernel',
+        why:`共广播 ${flight.tries} 次都无应答，队列中的 ${waiters.length} 个 IP 包无法封装成帧，只能丢弃。这是「下一跳链路层地址解析失败」，与「路由表找不到去 ${flight.finalDst} 的规则（NO_ROUTE）」是两种不同原因。`});
+    this.fail('ARP_FAILURE',`ARP 解析失败：${this.hosts[flight.host].name} 的 ${flight.iface} 接口广播询问下一跳 ${flight.targetIP} 的 MAC，重试 ${flight.tries-1} 次仍无应答。这是链路层地址解析未成功，不代表路由表里没有到 ${flight.finalDst} 的路由。`,{host:flight.host,nextHopIP:flight.targetIP,finalDst:flight.finalDst});
+  }
+  emitFrame(p,host,next,link,endpoints,dstMac,before,receive,detail) {
+    const h=this.hosts[host],srcMac=this.macOf(host,endpoints.out),inMac=this.macOf(next,endpoints.in);
+    p.linkFrame={srcMac,dstMac,etherType:ETHERTYPE.IPv4,srcIface:endpoints.out.id,dstIface:endpoints.in.id,
+      srcIP:parseCIDR(endpoints.out.address).ip,dstNextHopIP:detail.nextHopIP,dstInterfaceMac:inMac};
+    this.emitPacket('link.send',`网线传输：${h.name} → ${this.hosts[next].name}`,p,
+      {host,from:host,to:next,link:link.id,latency:link.latency,before,visibility:this.visibility(p),
+        ...detail,srcMac,dstMac,etherType:ETHERTYPE.IPv4,waiting:false,
+        why:`每一跳都重新封装：本帧源 MAC 是 ${h.name} 的 ${endpoints.out.id}（${srcMac}），目的 MAC 是下一跳 ${this.hosts[next].name} 的 ${endpoints.in.id}（${dstMac}）。帧内 IP 载荷的目的地址仍是最终目标 ${p.dst}，跨路由器转发不会被改写成网关地址；只有二层 MAC 随每一跳改变。`});
+    this.propagate(p,host,next,link,receive);
   }
   icmpError(p,host,type,code,error,message,extra={}) {
     this.state.metrics.dropped++;

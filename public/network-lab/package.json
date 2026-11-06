@@ -5,7 +5,7 @@
   "description": "Offline editable discrete-event IPv4 network simulator",
   "scripts": {
     "build": "esbuild src/simulator-app.js --bundle --format=iife --minify --tsconfig-raw={} --outfile=vendor/simulator.bundle.js",
-    "test": "node --test verification/engine.test.mjs verification/capture.test.mjs verification/mechanism.test.mjs"
+    "test": "node --test verification/engine.test.mjs verification/capture.test.mjs verification/mechanism.test.mjs verification/arp.test.mjs"
   },
   "devDependencies": {
     "esbuild": "0.25.12",

@@ -1,6 +1,6 @@
 # 网络实验台 · 统一流转与实验
 
-可离线运行的二维网络实验台。编辑设备、接口、路由、服务与链路，发起请求后观察模型计算出的路径、连接、报文、封装与失败原因。当前完成于 2026-11-05。
+可离线运行的二维网络实验台。编辑设备、接口、路由、服务与链路，发起请求后观察模型计算出的路径、连接、报文、封装与失败原因。当前完成于 2026-11-05；2026-11-06 补充了 IPv4 ARP 与链路层逐步仿真，由「链路层详细模式」开关控制，默认关闭。
 
 ## 打开
 
@@ -23,9 +23,13 @@
 
 发起请求后，可单步、播放、退回历史状态。主界面移除进度条，突出显示 `2 / 总步数` 这样的步骤计数；点击数字或「全部步骤」打开事件列表并跳转。`←` / `→` 单步，空格播放，`Esc` 关闭最上层浮窗。开启“路由前先预测”后，可以先选择出口，再看实际命中的规则。
 
+**链路层详细模式**：页面顶部的开关默认关闭，此时保持原有简洁展示，生成的事件序列与 2026-11-05 版本完全一致。开启后，仿真引擎按「设备＋接口」生成稳定 MAC，真实执行 ARP Request 广播 / Reply 单播、每接口独立邻居缓存、未命中时 IP 包排队、有限次数重试、超时失败与缓存老化，并在每一跳重新封装以太网帧（EtherType `0x0800` / `0x0806`，广播地址 `FF:FF:FF:FF:FF:FF`）。右侧看板与逐步现场显示当前设备与接口、事件类型、原始目标 IP、下一跳 IP、最终目标 IP、源/目的 MAC、ARP 报文字段、缓存变化以及 IP 包是否等待地址解析；「连接与状态」可检查完整邻居缓存表与等待队列。ARP 解析的是路由选出的**下一跳 IP**：直连网段解析最终目标，跨网段解析网关，不是无条件解析最终目标 IP。
+
+跨「重新发起」的 ARP 缓存保存在本机浏览器，用于观察第二次请求的缓存命中；「清空 ARP 缓存」可强制重新解析，切换预设或导入配置时也会清空。在「编辑网络」里修改网关接口 IP、关闭接口或改动路由表后重新发起，可以观察到不同的下一跳 IP、不同的 ARP 查询目标，以及路由不可达与解析失败这两种不同的结果。
+
 **全部报文**按连接展开本次运行的所有 packet ID，包括 SYN、SYN-ACK、ACK、数据段、重传、FIN 和回程。每个包画出协议层；物理链路显示二层首部，WireGuard 外层可展开完整内层包。这里显示的是整次已计算运行，包含当前播放位置之后的包。点击任一包可跳到对应状态，检查字段、前后变化、流/连接关联、经过的边界及可见性。
 
-## 18 个开箱即用的预设
+## 19 个开箱即用的预设
 
 所有地址、端口、请求字节数、初始路由和故障条件均已给定；可直接运行，也可修改后重新运行。
 
@@ -49,20 +53,22 @@
 | 路径 MTU 过小 | 握手可过，较大数据段受 DF/MTU 限制 | MTU 错误 |
 | 代理远端 DNS | 比较 DNS 查询的来源位置 | 成功 |
 | fake-IP 透明代理 | 占位地址、域名映射与远端真实地址 | 成功 |
+| ARP 与链路层：跨网关访问 | A（192.168.1.100/24）→ R（192.168.1.1、10.20.30.1）→ B（10.20.30.40/24），无 NAT；逐跳观察 ARP、MAC 重封装、TTL 与缓存命中 | 成功 |
 
 例如：在 MTU 案例中把 MSS 调到 128 后重跑；在 TUN 漏配案例中为代理地址补回 `/32 → en0 → 家庭网关`。结果由新的配置计算，不是替换预写解释。
 
 ## 计算模型
 
-- **统一状态与可回放事件**：设备、接口、路由、Socket、连接、DNS、NAT、TLS/VPN 会话、流和包均可随事件检查。历史快照不被后续转换修改。
+- **统一状态与可回放事件**：设备、接口、路由、Socket、连接、DNS、NAT、ARP 邻居缓存与等待队列、TLS/VPN 会话、流和包均可随事件检查。历史快照不被后续转换修改。
 - **IPv4 转发**：最长前缀匹配、metric、下一跳链路、接口开关、转发开关、TTL、MTU/DF 失败反馈。链路可延迟、丢包、断开；固定随机种子保证同配置可重放。
+- **ARP 与链路层（详细模式）**：按「设备＋接口」稳定生成 MAC；以太网帧的源/目的 MAC、EtherType（IPv4 `0x0800`、ARP `0x0806`）、广播地址与逐跳独立封装；每个接口独立维护邻居缓存，支持命中/未命中、等待解析期间 IP 包排队与恢复发送、有限次数重试、超时失败和按模型虚拟时间的缓存老化。ARP 状态由事件队列真实更新，不是解释文字；路由决定出口接口与下一跳 IP 之后才进行地址解析。
 - **TCP 子集**：三次握手、独立连接四元组和序号、分段、固定接收窗口、累计 ACK、重复段识别、乱序缓存、指数退避的超时重传、RST、四次挥手和 TIME-WAIT 状态。每次重传有新 packet ID、相同 segment ID 与序号。
 - **DNS**：模拟 UDP 查询和回答、固定记录、NXDOMAIN、超时、运行内缓存与 TTL；支持本地、代理侧与 fake-IP 模式。
 - **NAT**：TCP/UDP 端口转换与返回恢复、ICMP Echo 标识符转换；支持多级 NAT。
 - **普通代理**：本地 HTTP CONNECT 或 TUN TCP 入站，按域名/后缀/CIDR 规则决定代理、直连或拒绝；验证实验认证值，建立独立远端与目标连接，关联跨连接字节流。
 - **VPN**：WireGuard 握手阶段、UDP 外层、完整内层 IP 包封装与恢复；保留内层 packet ID，区分公网端点与虚拟地址。
 - **应用**：HTTPS、HTTP、SSH，以及直连或 VPN 下的 ICMP Ping / UDP Echo。
-- **字段**：链路示意 MAC、IPv4、TCP、UDP、ICMP 首部；从模型字段编码并计算 IP/传输层校验和。可检查字段来源、设置时机、移除边界及可见性。
+- **字段**：以太网帧（详细模式下为接口级稳定 MAC、EtherType 与广播地址；关闭时为链路示意 MAC）、ARP、IPv4、TCP、UDP、ICMP 首部；从模型字段编码并计算 IP/传输层校验和。可检查字段来源、设置时机、移除边界及可见性。ARP 帧不作为 IPv4 分组写入模拟 pcap。
 
 ## 模拟范围与真实数据边界
 
@@ -70,7 +76,7 @@
 
 TLS、SSH 和 WireGuard 只建模会话阶段、身份校验结果和封装关系，不进行真实密码运算。VLESS 以目标元数据和字节流逻辑表示。模拟 pcap 中 IP/TCP/UDP/ICMP 首部有实际编码和校验和，应用载荷用零字节占位，不能作为真实 TLS/VLESS/WireGuard 通信数据使用。
 
-没有实现 TCP 拥塞控制、动态接收窗口、窗口扩大/SACK、真实 2MSL 定时、IP 分片/重组与 PMTUD 自动重分段、ARP、动态路由协议、IPv6 仿真、QUIC、DERP 中继、真实证书链验证或完整 sing-box 配置兼容。以太网仅展示点对点链路的示例 MAC 与 EtherType，不模拟交换机学习或 FCS。
+ARP 采用简化点对点以太网模型：广播帧只投递到该链路的对端设备，不模拟交换机 MAC 学习、VLAN、FCS、免费 ARP / 代理 ARP、ARP 防护、真实内核邻居状态机或 Wi-Fi 802.11；缓存老化按模型虚拟时间计算，不是真实定时器。详细模式关闭时仍只展示点对点链路的示例 MAC。其余未实现的协议细节：TCP 拥塞控制、动态接收窗口、窗口扩大/SACK、真实 2MSL 定时、IP 分片/重组与 PMTUD 自动重分段、动态路由协议、IPv6 仿真、QUIC、DERP 中继、真实证书链验证或完整 sing-box 配置兼容。
 
 普通 TUN 代理当前处理 TCP；UDP/ICMP 可用直连或 WireGuard 实验。本地 DNS 预设保留了解析器的物理出口路由。每次“发起请求”从配置创建独立运行，缓存与 NAT 会话限定在本次运行。DNS 失败在固定超时后终止，不模拟递归解析器或 DNS 多服务器重试。
 
@@ -101,12 +107,12 @@ python verification/verify_routes.py
 python verification/verify_stable_view.py
 ```
 
-运行页面本身不需要以上安装。浏览器脚本使用 Python Playwright；自由仿真脚本当前选择本机 Chrome。统一主图验证实际计算事件、查看/编辑共享状态，以及旧导览链接兼容。
+运行页面本身不需要以上安装。浏览器脚本使用 Python Playwright；自由仿真脚本当前选择本机 Chrome。统一主图验证实际计算事件、查看/编辑共享状态，以及旧导览链接兼容。`npm test` 现包含 `verification/arp.test.mjs`：覆盖 A → R → B 验收拓扑、直连与跨网段的下一跳解析、缓存命中与过期、无应答超时、多接口隔离、`NO_ROUTE` 与 `ARP_FAILURE` 的区分、逐步快照回放一致性，以及关闭详细模式后原有事件序列不回归。
 
 主要文件：
 
-- `src/network-config.js`：配置边界、18 个预设、CIDR 与最长前缀匹配。
-- `src/network-engine.js`：事件队列、协议与转发状态转换。
+- `src/network-config.js`：配置边界、19 个预设、CIDR 与最长前缀匹配、接口级稳定 MAC 与链路层参数。
+- `src/network-engine.js`：事件队列、协议与转发状态转换；详细模式下的 ARP 状态机与逐跳帧封装。
 - `src/capture.js`：本地抓包解析、模型首部编码及 pcap 导出。
 - `src/simulator-app.js`、`simulator.css`：统一界面、全部报文和编辑。
 - `src/mechanism-diagram.js`、`mechanism.css`：按职责分区的计算事件投影；不生成额外物理链路。
@@ -115,10 +121,10 @@ python verification/verify_stable_view.py
 - `floating-windows.js/css`：非模态浮动窗口。
 - `guide.html`：旧链接兼容跳转。`app.js`、`scenarios.js`、`src/stage.js` 为历史导览源码，不由主页面加载。
 - `vendor/*.bundle.js`：离线入口；改源文件后重新构建。
-- `verification/`：模型/格式检查、浏览器检查、报告和截图。
+- `verification/`：模型/格式检查、浏览器检查、报告和截图；`arp.test.mjs` 为 ARP 与链路层状态机回归测试。
 
 v0.3、v0.4 源码与离线包及本次阅读改版前的界面备份保存在上级目录 `archives/`。
 
 ## 协议参考
 
-模型依据并明确简化：[TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html)、[IPv4 路由 RFC 1812](https://www.rfc-editor.org/rfc/rfc1812.html)、[DNS RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html)、[NAT RFC 3022](https://www.rfc-editor.org/rfc/rfc3022.html)、[TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html)、[WireGuard 协议](https://www.wireguard.com/protocol/)、[pcapng 格式工作文档](https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/)。
+模型依据并明确简化：[TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html)、[IPv4 路由 RFC 1812](https://www.rfc-editor.org/rfc/rfc1812.html)、[ARP RFC 826](https://www.rfc-editor.org/rfc/rfc826.html)、[以太网 IPv4 封装 RFC 894](https://www.rfc-editor.org/rfc/rfc894.html)、[DNS RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html)、[NAT RFC 3022](https://www.rfc-editor.org/rfc/rfc3022.html)、[TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html)、[WireGuard 协议](https://www.wireguard.com/protocol/)、[pcapng 格式工作文档](https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/)。

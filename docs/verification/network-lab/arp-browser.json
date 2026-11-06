@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-06",
+  "scope": "ARP 与链路层逐步仿真 · 浏览器交互验收",
+  "environment": {
+    "browser": "Chrome/155.0.8059.86 (headless=new, CDP Runtime.evaluate)",
+    "server": "python -m http.server 8766 --bind 127.0.0.1 --directory public",
+    "url": "http://127.0.0.1:8766/network-lab/",
+    "bundle_bytes": 295061,
+    "bundle_http_status": 200,
+    "note": "直接读取 public/network-lab/ 的页面源码与重建后的离线 bundle，未经过 out/ 构建，未访问线上页面，仅绑定本机回环。"
+  },
+  "checks": [
+    {"name": "预设数量", "actual": 19},
+    {"name": "切换到 arp-gateway", "actual": {"presetId": "arp-gateway", "detailed": true, "toggle": true}},
+    {"name": "首次发起请求", "actual": {"code": "SUCCESS", "events": 48, "arpTypes": ["arp.miss", "arp.request", "arp.request-receive", "arp.reply", "arp.cache-update", "arp.dequeue"], "firstMiss": "192.168.1.1"}},
+    {"name": "去程两跳帧与 TTL", "actual": {
+      "hops": [
+        {"from": "hostA", "to": "routerR", "srcMac": "02:0E:E8:86:44:62", "dstMac": "02:9D:57:AE:F2:0A", "etherType": "0x0800", "ipDst": "10.20.30.40", "ttl": 16},
+        {"from": "routerR", "to": "hostB", "srcMac": "02:9D:59:41:F3:9D", "dstMac": "02:86:70:49:30:85", "etherType": "0x0800", "ipDst": "10.20.30.40", "ttl": 15}
+      ],
+      "cache": [
+        "hostA/eth0 192.168.1.1→02:9D:57:AE:F2:0A",
+        "routerR/eth1 10.20.30.40→02:86:70:49:30:85",
+        "hostB/eth0 10.20.30.1→02:9D:59:41:F3:9D",
+        "routerR/eth0 192.168.1.100→02:0E:E8:86:44:62"
+      ]
+    }},
+    {"name": "前进→后退→前进", "actual": {"first": "7 / 36", "back": "3 / 36", "again": "7 / 36", "consistent": true}},
+    {"name": "看板显示 ARP 现场", "actual": {"hasL2": true, "hasNextHop": true, "hasQueue": true}},
+    {"name": "二次请求命中缓存", "actual": {"code": "SUCCESS", "requests": 0, "hits": 4}},
+    {"name": "清空缓存后重新解析", "actual": {"requests": 4, "code": "SUCCESS"}},
+    {"name": "关闭详细模式不回归", "actual": {"arpEvents": 0, "code": "SUCCESS", "macNote": "按点对点链路端点生成示例 MAC；未启用 ARP，FCS 未模拟"}}
+  ],
+  "js_errors": [],
+  "result": "PASS",
+  "limits": "这是浏览器内的工程功能验收，不代表已经授课或学生已掌握；未部署到 GitHub Pages，未合并到主分支；未覆盖既有 local/report.json 与 online/report.json。"
+}

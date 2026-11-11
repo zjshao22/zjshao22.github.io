@@ -14,6 +14,10 @@
 
 继续使用网站既有发布方式：运行仓库检查与静态构建，将 `out/` 同步到 `gh-pages` 分支根目录，保留 `.nojekyll`，推送后由 GitHub Pages 发布。首页及现有课程随同保留。
 
+## 2026-11-11 本地扩展
+
+在原项目基础上新增 UDP 连发（丢包、乱序、无重传）与 TCP 拥塞控制（慢启动、拥塞避免、快速重传）模型，以及 4 个预设（共 23 个）。改动文件：`src/network-config.js`、`src/network-engine.js`、`src/simulator-app.js`、`vendor/simulator.bundle.js`、`verification/engine.test.mjs`、`README.md`；这些文件不再与上游 SHA-256 一致，`source-manifest.json` 保留的是 2026-11-05 迁入时的上游快照。新增字段可选，原有预设行为由原测试继续验证。模型仅在浏览器内计算，未创建真实套接字。
+
 ## 更新与复验
 
 更新实验台时，同步所需源码、样式与离线 bundle；保留许可证注释和 `vendor/NOTICE.md`。若修改源码，在 `public/network-lab/` 中执行 `npm ci`、`npm run build`、`npm test`。日常网站构建无需安装实验台的开发依赖；浏览器不需要后端、CDN 或本机服务。

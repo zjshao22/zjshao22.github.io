@@ -103,7 +103,7 @@ with tempfile.TemporaryDirectory(prefix="network-lab-audit-") as temporary:
 
         page.goto(lab, wait_until="networkidle")
         page.wait_for_function("!!window.NetworkLab")
-        expect(page.locator("#preset option")).to_have_count(18)
+        expect(page.locator("#preset option")).to_have_count(23)
         expect(page.locator("[data-flow-node=kernel]")).to_be_visible()
         assert page.locator(".playback-panel").evaluate("e => getComputedStyle(e).fontSize") == "18px"
         resource_urls = page.locator("script[src],link[rel=stylesheet]").evaluate_all(
@@ -122,7 +122,7 @@ with tempfile.TemporaryDirectory(prefix="network-lab-audit-") as temporary:
             result = page.evaluate("({id:NetworkLab.config.presetId, expected:NetworkLab.config.lesson.expected, code:NetworkLab.run.result.code, events:NetworkLab.run.events.length})")
             assert result["code"] == result["expected"], result
             presets.append(result)
-        checks.append("All 18 presets compute the expected success or fault result")
+        checks.append("All 23 presets compute the expected success or fault result")
 
         page.select_option("#preset", "tun")
         page.locator("#run").click()

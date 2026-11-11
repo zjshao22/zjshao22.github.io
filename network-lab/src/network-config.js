@@ -28,6 +28,7 @@ export function longestMatch(routes,ip) {
   return routes.filter(r=>r.enabled!==false && ((n&r.parsed.mask)>>>0)===r.parsed.network)
     .sort((a,b)=>b.parsed.prefix-a.parsed.prefix || a.metric-b.metric)[0]||null;
 }
+const SEED_FAST=7;
 const route=(prefix,iface,via='',metric=100)=>({prefix,iface,via,metric,enabled:true});
 const service=(kind,port,protocol='TCP')=>({kind,port,protocol,enabled:true});
 const iface=(id,address)=>({id,address,enabled:true});
@@ -50,7 +51,11 @@ export const PRESETS = [
   {id:'small-mtu',name:'能握手但打不开：路径 MTU 小',base:'direct',focus:'网络排查中最诡异的现象：能 ping 通、TCP 握手也能成功，但一发网页数据就卡死！因为中间某段网线限高（MTU 只有 300 字节），40 字节的小握手包能过，552 字节的大数据包被卡住并打回 ICMP 报错。',tryIt:'动手试试：先看网关打回的 ICMP 报错包，然后打开右下角「请求与配置」，把「TCP MSS」（单次最大数据段）从 512 调小到 128 后重跑，数据包变瘦后就能顺利通过了！',expected:'MTU_EXCEEDED'},
   {id:'remote-dns',name:'代理解析：域名交给远端',base:'tun',focus:'为什么要开启“远端 DNS 解析”？如果在本机直接查 www.google.com，本地网络就能看到你想去哪且可能返回假地址；改成远端解析后，本机先把域名塞进加密隧道，由日本代理在海外查出真 IP。',tryIt:'动手试试：看阶段栏，第一步不是查 DNS，而是先建好「本机 ↔ 代理」隧道，接着由「日本代理」发出 DNS 查询。',expected:'SUCCESS'},
   {id:'fake-ip',name:'透明代理：fake-IP 映射',base:'tun',focus:'代理软件常用的 Fake-IP 黑科技：浏览器查域名时，本机代理秒回一个假内网地址 198.18.0.1 哄着浏览器先发包，同时在代理内存里记下“198.18.0.1 就是 www.google.com”，等收到包再换回真域名发给远端代理。',tryIt:'动手试试：看下方连接看板，浏览器的第 1 段连接连的居然是假地址 198.18.0.1，到了第 2 段代理隧道里又变回了 www.google.com！',expected:'SUCCESS'},
-  {id:'arp-gateway',name:'ARP 与链路层：跨网关访问',base:'direct',focus:'主机 A（192.168.1.100/24）经路由器 R 访问另一网段的主机 B（10.20.30.40/24），全程不做 NAT。逐步观察：A 先查路由表选中网关 192.168.1.1，ARP 缓存未命中就广播询问网关的 MAC，收到单播 Reply 后写缓存；IP 包被装进指向 R 的帧。R 拆帧后独立查自己的路由表，在另一个接口上解析 B 的 MAC 并重新封装。IP 目的地址始终是 10.20.30.40、TTL 在 R 上减 1，但每一跳的源/目的 MAC 都换成了本链路两端接口的地址。',tryIt:'动手试试：① 再发起一次请求，看 ARP 缓存命中、不再重复广播；② 点「清空 ARP 缓存」后重跑，重新看到完整的解析过程；③ 编辑路由器 R，把与 A 相连的接口 IP 改掉，观察下一跳 IP 与 ARP 查询目标一起改变；④ 关闭「链路层详细模式」，回到原来的简洁展示。',expected:'SUCCESS'}
+  {id:'arp-gateway',name:'ARP 与链路层：跨网关访问',base:'direct',focus:'主机 A（192.168.1.100/24）经路由器 R 访问另一网段的主机 B（10.20.30.40/24），全程不做 NAT。逐步观察：A 先查路由表选中网关 192.168.1.1，ARP 缓存未命中就广播询问网关的 MAC，收到单播 Reply 后写缓存；IP 包被装进指向 R 的帧。R 拆帧后独立查自己的路由表，在另一个接口上解析 B 的 MAC 并重新封装。IP 目的地址始终是 10.20.30.40、TTL 在 R 上减 1，但每一跳的源/目的 MAC 都换成了本链路两端接口的地址。',tryIt:'动手试试：① 再发起一次请求，看 ARP 缓存命中、不再重复广播；② 点「清空 ARP 缓存」后重跑，重新看到完整的解析过程；③ 编辑路由器 R，把与 A 相连的接口 IP 改掉，观察下一跳 IP 与 ARP 查询目标一起改变；④ 关闭「链路层详细模式」，回到原来的简洁展示。',expected:'SUCCESS'},
+  {id:'udp-loss',name:'UDP：无连接、丢包不补发',base:'direct',focus:'UDP 没有握手、没有确认、也没有重传：客户端连续发出 12 个数据报，网线上按丢包率随机丢掉几个，丢了就是丢了，接收方只能数出“收到几个、缺哪几个”。对比 TCP 的 SYN 重传，就能看清“不可靠”到底指什么。',tryIt:'动手试试：看事件里的「UDP 汇总」，记下收到与丢失的编号；再把「目标网站—互联网路由」线路的丢包率改成 0 重跑，确认丢包全部消失；把「数据报个数」改大再比较丢失比例。',expected:'SUCCESS'},
+  {id:'udp-reorder',name:'UDP：时延抖动造成乱序',base:'direct',focus:'同一批 UDP 数据报走同一条链路，也可能因为每个包的传输时延略有抖动而先发后到。UDP 保留报文边界但不保证顺序，也不会替应用排序；交给应用的顺序就是到达的顺序。',tryIt:'动手试试：在「请求与配置 → 传输参数」把「链路时延抖动」改成 0 后重跑，乱序消失；再放大到 80 ms，数一数「乱序到达」次数怎样变化。',expected:'SUCCESS'},
+  {id:'tcp-slow-start',name:'TCP：慢启动与拥塞窗口',base:'direct',focus:'为什么 TCP 刚连上不一口气把数据全发出去？拥塞窗口 cwnd 从 1 个 MSS 起步，每收到一个 ACK 就增大，一轮往返大约翻倍（慢启动），直到碰到接收窗口或慢启动门限。开启拥塞控制后，发送速率由 min(cwnd, 接收窗口) 决定。',tryIt:'动手试试：看「拥塞窗口」事件里 cwnd 从 512 一路增大；然后在传输参数里取消「启用拥塞控制」重跑，对比一开始就能同时发出多少个数据段。',expected:'SUCCESS'},
+  {id:'tcp-fast-retransmit',name:'TCP：丢包、快速重传与退避',base:'direct',focus:'一个数据段丢了，后面的段照样到达，接收方只能反复回复同一个确认号（重复 ACK）。发送方收到 3 个重复 ACK 就不等超时，立刻重发缺失的段，并把 ssthresh 与 cwnd 减半。看完整过程：丢包 → 乱序暂存 → 重复 ACK → 快速重传 → 累计 ACK 一次跳过缺口。',tryIt:'动手试试：对照「快速重传」事件前后的 cwnd 和 ssthresh；再把「最多重传次数」和链路丢包率调大，看看超时重传（cwnd 塌缩回 1 个 MSS）与快速重传的退避幅度有何不同。',expected:'SUCCESS'}
 ];
 export function preset(name='tun') {
   const item=PRESETS.find(p=>p.id===name)||PRESETS[0];
@@ -78,6 +83,11 @@ export function preset(name='tun') {
     if(name==='small-mtu'){c.request.destination='142.250.72.14';c.links.find(l=>l.a==='gateway'&&l.b==='isp').mtu=300;}
     if(name==='remote-dns')c.dns.mode='remote';
     if(name==='fake-ip')c.dns.mode='fake';
+    const serverLink=()=>c.links.find(l=>l.a==='isp'&&l.b==='server');
+    if(name==='udp-loss'){Object.assign(c.request,{destination:'142.250.72.14',kind:'udp',port:5000,bytes:200,responseBytes:200,count:12});serverLink().loss=25;}
+    if(name==='udp-reorder'){Object.assign(c.request,{destination:'142.250.72.14',kind:'udp',port:5000,bytes:200,responseBytes:200,count:10});c.transport.jitter=40;}
+    if(name==='tcp-slow-start'){Object.assign(c.request,{destination:'142.250.72.14',kind:'http',port:80,bytes:256,responseBytes:6144});Object.assign(c.transport,{congestion:true,window:4096});}
+    if(name==='tcp-fast-retransmit'){Object.assign(c.request,{destination:'142.250.72.14',kind:'http',port:80,bytes:256,responseBytes:6144});Object.assign(c.transport,{congestion:true,window:4096,seed:SEED_FAST});serverLink().loss=8;}
     const used=new Set(['client','gateway','isp']);
     if(item.base==='tail')used.add('peer');
     else {used.add('server');used.add('dns');if(item.base!=='direct')used.add('proxy');}
@@ -97,11 +107,11 @@ export function preset(name='tun') {
   ];
   const links=[['client','gateway'],['gateway','isp'],['isp','proxy'],['isp','server'],['isp','dns'],['isp','peer']].map(([a,b],i)=>({id:'link'+(i+1),a,b,latency:12,loss:0,mtu:1500,enabled:true}));
   const config={version:1,name:{tun:'TUN + TCP 代理',system:'系统 HTTP 代理',direct:'无代理直连',tail:'WireGuard + SSH'}[name]||'自由实验',hosts,links,
-    request:{source:'client',destination:name==='tail'?'100.64.0.2':'www.google.com',kind:name==='tail'?'ssh':'https',port:name==='tail'?22:443,bytes:1024,responseBytes:1536,usesSystemProxy:true},
+    request:{count:1,source:'client',destination:name==='tail'?'100.64.0.2':'www.google.com',kind:name==='tail'?'ssh':'https',port:name==='tail'?22:443,bytes:1024,responseBytes:1536,usesSystemProxy:true},
     dns:{host:'dns',mode:'local',ttl:60,records:{'www.google.com':'142.250.72.14','tailnet.example':'100.64.0.2'}},
     proxy:{tun:name==='tun',system:name==='system',host:'proxy',port:443,localPort:7890,transportTls:true,clientAuth:'lab-key',serverAuth:'lab-key',rules:[{pattern:'*',action:'proxy'}]},
     vpn:{enabled:name==='tail',peer:'peer',port:41641,keyValid:true},
-    transport:{ttl:16,mss:512,window:2048,rto:500,retries:3,seed:7},
+    transport:{ttl:16,mss:512,window:2048,rto:500,retries:3,seed:7,jitter:0,congestion:false},
     faults:{dns:false,proxyAuth:false,certificate:false,targetBlocked:false,dropFirst:false}
   };
   if(name==='tun')hosts[0].routes.unshift(route('192.0.2.53/32','en0','gateway',10),route('0.0.0.0/1','utun'),route('128.0.0.0/1','utun'));
@@ -175,11 +185,11 @@ export function validateConfig(input) {
   }
   for(const h of c.hosts)for(const r of Array.isArray(h?.routes)?h.routes:[])if(r?.via&&!ids.has(r.via))errors.push(`${h.name}: 路由下一跳不存在`);
   const q=c.request,d=c.dns,p=c.proxy,v=c.vpn,t=c.transport;
-  if(!q||!ids.has(q.source)||typeof q.destination!=='string'||!q.destination.length||q.destination.length>253||!['https','http','ssh','ping','udp'].includes(q.kind)||!integer(q.port,1,65535)||!integer(q.bytes,1,8192)||!integer(q.responseBytes,1,8192)||typeof q.usesSystemProxy!=='boolean')errors.push('请求的来源、目标、协议、端口或数据量无效');
+  if(!q||!ids.has(q.source)||typeof q.destination!=='string'||!q.destination.length||q.destination.length>253||!['https','http','ssh','ping','udp'].includes(q.kind)||!integer(q.port,1,65535)||!integer(q.bytes,1,8192)||!integer(q.responseBytes,1,8192)||typeof q.usesSystemProxy!=='boolean'||(q.count!==undefined&&!integer(q.count,1,50)))errors.push('请求的来源、目标、协议、端口或数据量无效');
   if(!d||typeof d.host!=='string'||(!isIPv4(q?.destination)&&!ids.has(d.host))||!['local','remote','fake'].includes(d.mode)||!integer(d.ttl,0,86400)||!d.records||typeof d.records!=='object'||Array.isArray(d.records)||Object.keys(d.records).length>100||Object.entries(d.records).some(([k,v])=>!k.length||k.length>253||!isIPv4(v)))errors.push('DNS 配置无效');
   if(!p||typeof p.host!=='string'||((p.tun||p.system)&&!ids.has(p.host))||typeof p.tun!=='boolean'||typeof p.system!=='boolean'||typeof p.transportTls!=='boolean'||!integer(p.port,1,65535)||!integer(p.localPort,1,65535)||typeof p.clientAuth!=='string'||typeof p.serverAuth!=='string'||p.clientAuth.length>128||p.serverAuth.length>128||!Array.isArray(p.rules)||!p.rules.length||p.rules.length>30||p.rules.some(r=>!r||typeof r.pattern!=='string'||!r.pattern.length||r.pattern.length>253||!['proxy','direct','reject'].includes(r.action)))errors.push('代理与规则配置无效');
   if(!v||typeof v.peer!=='string'||(v.enabled&&!ids.has(v.peer))||typeof v.enabled!=='boolean'||typeof v.keyValid!=='boolean'||!integer(v.port,1,65535))errors.push('VPN 配置无效');
-  if(!t||!integer(t.ttl,1,64)||!integer(t.mss,64,1400)||!integer(t.window,64,16384)||!integer(t.rto,100,10000)||!integer(t.retries,0,5)||!integer(t.seed,1,2147483647))errors.push('传输参数无效');
+  if(!t||!integer(t.ttl,1,64)||!integer(t.mss,64,1400)||!integer(t.window,64,16384)||!integer(t.rto,100,10000)||!integer(t.retries,0,5)||!integer(t.seed,1,2147483647)||(t.jitter!==undefined&&!integer(t.jitter,0,200))||(t.congestion!==undefined&&typeof t.congestion!=='boolean'))errors.push('传输参数无效');
   if(!c.faults||['dns','proxyAuth','certificate','targetBlocked','dropFirst'].some(k=>typeof c.faults[k]!=='boolean'))errors.push('故障开关无效');
   const l=c.linkLayer;
   if(l!==undefined){

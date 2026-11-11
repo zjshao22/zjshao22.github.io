@@ -155,7 +155,8 @@ class NetworkEngine {
     if(forced||this.random()*100<link.loss) {
       this.schedule(link.latency,()=>{this.state.metrics.dropped++;this.emitPacket('link.drop',`半路丢包：${this.hosts[host].name} 发往 ${this.hosts[next].name} 的报文在网线上丢失`,p,{host:next,from:host,to:next,link:link.id,why:forced?'本次实验开启了「丢弃第一个 TCP SYN」，故意让第 1 次握手包在半路丢失，用来观察发送端怎么靠超时重传救回来。':'按当前网线设置的丢包率与固定随机种子计算，这个包在半路丢失了。'});});return;
     }
-    this.schedule(link.latency,()=>{
+    const jitter=this.config.transport.jitter||0,delay=link.latency+(jitter?Math.floor(this.random()*(jitter+1)):0);
+    this.schedule(delay,()=>{
       this.emitPacket('link.receive',`${this.hosts[next].name} 收到网线传来的报文`,p,{host:next,from:host,to:next,link:link.id,visibility:this.visibility(p)});
       const framed=clone(p);delete p.linkFrame;this.emitPacket('l2.decapsulate','拆掉上一跳网线的二层外壳，准备看 IP 地址',p,{host:next,before:framed,unit:'kernel',...(this.l2.enabled&&framed.linkFrame?{srcMac:framed.linkFrame.srcMac,dstMac:framed.linkFrame.dstMac,etherType:framed.linkFrame.etherType,nextHopIP:framed.linkFrame.dstNextHopIP,originalDst:p.dst,finalDst:p.dst,iface:framed.linkFrame.dstIface}:{})});
       this.forward(p,next,receive,true);
@@ -386,6 +387,7 @@ class NetworkEngine {
       if(this.done||!rt.pending.includes(pending))return;
       if(pending.tries>this.config.transport.retries){const e=this.lastNetworkError;this.fail(e?.code||'TCP_TIMEOUT',e?.message||`迟迟等不到对方确认（已超时重传 ${this.config.transport.retries} 次），连接被迫放弃`,{connection:rt.id,host:rt[side].host});return;}
       if(pending.tries){this.state.metrics.retransmissions++;this.emit('tcp.retransmit',`迟迟没收到回音，触发第 ${pending.tries} 次超时重传（保持原序号 seq=${start}）`,{host:rt[side].host,connection:rt.id,segment:pending.id,seq:start,attempt:pending.tries,why:`发包方等了 ${this.config.transport.rto*2**(pending.tries-1)} ms 还没收到对方的 ACK 确认，怀疑刚才那个包在半路丢了，于是用一模一样的 TCP 序号（seq=${start}）重新发一份。`});}
+      if(pending.tries&&size&&this.config.transport.congestion)this.backoff(rt,side,'timeout');
       this.segment(rt,side,flags,size,meta,start,pending.id);
       const wait=this.config.transport.rto*2**pending.tries;pending.tries++;this.schedule(wait,attempt);
     };
@@ -432,6 +434,7 @@ class NetworkEngine {
       const roleLabel={original:'第 1 段连接（浏览器 ↔ 本机代理）',proxy:'第 2 段连接（本机 ↔ 远端代理隧道）',target:'第 3 段连接（远端代理 ↔ 目标网站）',direct:'直连通道（本机 ↔ 目标服务器）'}[rt.role]||rt.role;
       if(!rt.opened){rt.opened=true;this.emit('tcp.established','三次握手完成：'+roleLabel+' 已连通',{host:rt.b.host,connection:rt.id,why:'三次握手（SYN → SYN,ACK → ACK）全部确认完毕，双方核对好起始序号，这条连接现在可以正式传数据了。'});rt.ready(rt);}
     } else if(p.flags.includes('ACK'))this.acknowledge(rt,side,p.ack);
+    if(this.config.transport.congestion&&p.flags==='ACK'&&!p.payloadLength)this.dupAck(rt,side,p.ack);
     if(p.payloadLength) {
       const expected=rt.receive[side];
       if(p.seq===expected) {
@@ -453,16 +456,48 @@ class NetworkEngine {
     }
   }
   data(rt,side,length,meta,complete) {
-    const chunk=Math.min(this.config.transport.mss,this.config.transport.window),window=this.config.transport.window;
+    const chunk=Math.min(this.config.transport.mss,this.config.transport.window),window=this.config.transport.window,congestion=this.config.transport.congestion;
     let cursor=0,acked=0,inFlight=0,finished=false;
     const pump=()=>{
       if(finished||this.done)return;
-      while(cursor<length&&inFlight<window) {
-        const size=Math.min(chunk,length-cursor,window-inFlight);cursor+=size;inFlight+=size;
-        this.reliable(rt,side,'PSH,ACK',size,meta,()=>{inFlight-=size;acked+=size;if(acked===length){finished=true;complete();}else pump();});
+      const limit=()=>congestion?Math.min(window,this.ccState(rt,side).cwnd):window;
+      while(cursor<length&&inFlight<limit()) {
+        const size=Math.min(chunk,length-cursor,limit()-inFlight);
+        if(congestion&&size<Math.min(chunk,length-cursor))break;
+        cursor+=size;inFlight+=size;
+        this.reliable(rt,side,'PSH,ACK',size,meta,()=>{inFlight-=size;acked+=size;if(congestion)this.grow(rt,side,size);if(acked===length){finished=true;complete();}else pump();});
       }
     };
     pump();
+  }
+  ccState(rt,side) {
+    rt.cc=rt.cc||{};
+    const chunk=Math.min(this.config.transport.mss,this.config.transport.window);
+    if(!rt.cc[side]){rt.cc[side]={cwnd:chunk,ssthresh:this.config.transport.window,dup:0,lastAck:null,chunk};this.publishCwnd(rt,side);}
+    return rt.cc[side];
+  }
+  publishCwnd(rt,side) {const c=rt.cc[side];rt.record[side+'Cwnd']=c.cwnd;rt.record[side+'Ssthresh']=c.ssthresh;}
+  grow(rt,side,size) {
+    const c=this.ccState(rt,side),window=this.config.transport.window,before=c.cwnd,slow=c.cwnd<c.ssthresh;
+    c.cwnd=Math.min(window,slow?c.cwnd+Math.min(size,c.chunk):c.cwnd+Math.max(1,Math.floor(c.chunk*c.chunk/c.cwnd)));
+    if(c.cwnd===before)return;
+    this.emit('tcp.cwnd',`拥塞窗口 cwnd：${before} → ${c.cwnd} 字节（${slow?'慢启动：每个 ACK 增加一个确认量':'拥塞避免：每轮往返只增加约 1 个 MSS'}）`,{host:rt[side].host,connection:rt.id,cwnd:c.cwnd,ssthresh:c.ssthresh,why:slow?`cwnd（${before}）小于慢启动门限 ssthresh（${c.ssthresh}），处于慢启动：每确认一段数据，cwnd 就加上被确认的字节数，一轮往返后窗口大约翻倍。同时发送量还受接收窗口 ${window} 限制。`:`cwnd 已到达门限 ${c.ssthresh}，进入拥塞避免：每个 ACK 只加 MSS²/cwnd，一轮往返总共约增加 1 个 MSS，增长转为线性。`},()=>this.publishCwnd(rt,side));
+  }
+  backoff(rt,side,reason) {
+    const c=this.ccState(rt,side),beforeWindow=c.cwnd,beforeThreshold=c.ssthresh;
+    c.ssthresh=Math.max(Math.floor(c.cwnd/2),2*c.chunk);c.cwnd=reason==='timeout'?c.chunk:c.ssthresh;c.dup=0;
+    this.emit('tcp.cwnd',reason==='timeout'?`超时重传：ssthresh ${beforeThreshold} → ${c.ssthresh}，cwnd ${beforeWindow} → ${c.cwnd}（塌缩回 1 个 MSS，重新慢启动）`:`快速恢复：ssthresh ${beforeThreshold} → ${c.ssthresh}，cwnd ${beforeWindow} → ${c.cwnd}（减半后直接进入拥塞避免）`,{host:rt[side].host,connection:rt.id,cwnd:c.cwnd,ssthresh:c.ssthresh,why:reason==='timeout'?'超时说明网络可能严重拥塞：门限减为原 cwnd 的一半，cwnd 回到 1 个 MSS，从头慢启动。':'三个重复 ACK 说明后面的段还在到达、网络没有完全堵死：只把窗口减半，不必回到 1 个 MSS。'},()=>this.publishCwnd(rt,side));
+  }
+  dupAck(rt,side,ack) {
+    const c=this.ccState(rt,side),outstanding=rt.pending.filter(x=>x.side===side&&x.size>0);
+    if(ack!==c.lastAck){c.lastAck=ack;c.dup=0;return;}
+    if(!outstanding.length)return;
+    if(++c.dup!==3)return;
+    const lost=outstanding[0];
+    this.state.metrics.retransmissions++;
+    this.emit('tcp.fast-retransmit',`收到 3 个重复 ACK（ack=${ack}）：不等超时，立刻快速重传 seq=${lost.start}`,{host:rt[side].host,connection:rt.id,segment:lost.id,seq:lost.start,ack,why:`接收方一直在索要 seq=${ack}，说明这一段丢了而后面的段已经到达。发送方收到连续 3 个相同确认号就判断该段丢失，立即用原序号重发，而不是等 RTO 超时。`});
+    this.backoff(rt,side,'fast');
+    this.segment(rt,side,lost.flags,lost.size,lost.meta,lost.start,lost.id);
   }
   close(rt,complete) {
     const roleLabel={original:'浏览器 ↔ 本机代理',proxy:'本机 ↔ 远端代理隧道',target:'远端代理 ↔ 目标网站',direct:'本机 ↔ 目标服务器'}[rt.role]||rt.role;
@@ -514,6 +549,7 @@ class NetworkEngine {
   sourceIP(host,target) {if(target.startsWith('127.'))return '127.0.0.1';const r=this.route(host,target);return this.ip(host,r?.iface);}
   buildDirect(ip) {
     const q=this.config.request;
+    if(q.kind==='udp'&&(q.count||1)>1){this.udpStream(ip);return;}
     if(q.kind==='ping'||q.kind==='udp'){this.datagram(ip);return;}
     const dest=ip.startsWith('127.')?this.hosts[this.source]:this.config.hosts.find(h=>this.hasIP(h.id,ip));
     const destination=dest?.id||this.id('unknown');
@@ -595,9 +631,9 @@ class NetworkEngine {
     else if(q.kind==='ssh'){this.emit('ssh.handshake','SSH 加密会话握手完成，准备传输命令数据',{host:this.source,why:'底层 TCP 已经连上，双方完成 SSH 版本与密钥协商。'});exchange();}
     else exchange();
   }
-  succeed() {
-    this.done=true;this.state.status='success';this.state.result={ok:true,code:'SUCCESS',message:'请求与响应全部圆满完成，所有 TCP 连接已正常挥手关闭'};
-    this.emit('request.complete','✅ 全流程圆满完成：请求已送达、响应已收回、连接已优雅关闭',{host:this.source});
+  succeed(message='请求与响应全部圆满完成，所有 TCP 连接已正常挥手关闭',title='✅ 全流程圆满完成：请求已送达、响应已收回、连接已优雅关闭') {
+    this.done=true;this.state.status='success';this.state.result={ok:true,code:'SUCCESS',message};
+    this.emit('request.complete',title,{host:this.source});
   }
   datagram(ip) {
     const q=this.config.request,protocol=q.kind==='ping'?'ICMP':'UDP';let finished=false;
@@ -608,6 +644,33 @@ class NetworkEngine {
       this.sendIP(reply,at,()=>{finished=true;this.succeed();});
     });
     this.schedule(this.config.transport.rto*4,()=>{if(!finished&&!this.done)this.fail(this.lastNetworkError?.code||'DATAGRAM_TIMEOUT',this.lastNetworkError?.message||'迟迟没有收到对方的回应（超时）');});
+  }
+  udpStream(ip) {
+    const q=this.config.request,count=q.count,gap=10,stats={sent:0,received:0,echoed:0,outOfOrder:0,arrived:[],replied:[]};
+    this.state.metrics.udp=stats;let highest=-1,finished=false;
+    const finish=()=>{
+      if(finished||this.done)return;finished=true;
+      const lostRequests=[],lostReplies=[];
+      for(let i=1;i<=count;i++){if(!stats.arrived.includes(i))lostRequests.push(i);else if(!stats.replied.includes(i))lostReplies.push(i);}
+      const summary=`UDP 汇总：发出 ${count} 个，服务端收到 ${stats.received} 个，客户端收到回应 ${stats.echoed} 个；请求丢失 ${lostRequests.length?'#'+lostRequests.join(' #'):'无'}，回应丢失 ${lostReplies.length?'#'+lostReplies.join(' #'):'无'}，乱序到达 ${stats.outOfOrder} 次`;
+      this.emit('udp.summary',summary,{host:this.source,unit:'app',why:'UDP 没有确认和重传：协议层不会补发任何丢失的数据报，是否需要补发、怎样排序，全部交给应用自己决定。这里只统计事实，不补发。'});
+      if(!stats.echoed){this.fail(this.lastNetworkError?.code||'DATAGRAM_TIMEOUT',this.lastNetworkError?.message||'所有数据报都没有得到回应（UDP 不会重传）');return;}
+      this.succeed(`${stats.echoed}/${count} 个数据报得到回应；丢失的 UDP 数据报不会被协议补发`,'✅ UDP 实验结束：已统计送达、丢失与乱序（没有重传）');
+    };
+    for(let i=0;i<count;i++)this.schedule(i*gap,()=>{
+      if(this.done)return;
+      const no=i+1,p=this.packet({ip:this.sourceIP(this.source,ip),port:54000},{ip,port:q.port},'UDP',{payloadLength:q.bytes,length:q.bytes+28},{kind:'udp',label:`UDP 数据报 #${no}/${count}`,text:`DGRAM ${no}/${count}`,datagram:no});
+      stats.sent++;
+      this.sendIP(p,this.source,(received,at)=>{
+        if(!this.listener(at,q.port,'UDP')){this.fail('UDP_PORT_UNREACHABLE','目标设备的 UDP 端口没有监听服务',{host:at});return;}
+        stats.received++;stats.arrived.push(no);
+        const late=no<highest;highest=Math.max(highest,no);if(late)stats.outOfOrder++;
+        this.emit('udp.deliver',late?`服务端收下 #${no}：乱序到达（已先收到 #${highest}）`:`服务端收下 #${no}（按到达顺序交给应用）`,{host:at,unit:'app',datagram:no,why:late?'这个数据报比后发出的包更晚到达。UDP 不排序，应用拿到的就是到达顺序；需要顺序的应用要自己加序号并重排。':'UDP 逐个数据报交给应用，每个数据报保持原有边界，不与前后报文合并。'});
+        const reply=this.packet({ip:received.dst,port:received.dport},{ip:received.src,port:received.sport},'UDP',{payloadLength:q.responseBytes,length:q.responseBytes+28},{kind:'udp',label:`UDP 响应 #${no}`,text:`ECHO ${no}/${count}`,datagram:no});
+        this.sendIP(reply,at,()=>{stats.echoed++;stats.replied.push(no);if(stats.echoed===count)finish();});
+      });
+    });
+    this.schedule((count-1)*gap+this.config.transport.rto*2,finish);
   }
   wrap(inner,origin,receive) {
     if(!this.wgReady){this.wgQueue=this.wgQueue||[];this.wgQueue.push(()=>this.wrap(inner,origin,receive));if(!this.wgStarting)this.wgHandshake();return;}

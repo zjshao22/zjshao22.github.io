@@ -190,7 +190,7 @@ pre{padding:17px;background:#0f202b;border:1px solid #496371;border-radius:7px;o
  .preset-controls{gap:8px}.experiment-heading p{font-size:17px}
 }
 @media(min-width:701px) and (max-width:1100px){
- .experiment-heading{display:grid;grid-template-columns:1fr;gap:9px}.experiment-heading>div:first-child{grid-row:2}.preset-controls{grid-row:1;max-width:none;width:100%;flex-wrap:nowrap;justify-content:flex-start}.preset-controls select{width:auto;flex:1;min-width:0}
+ .experiment-heading{display:grid;grid-template-columns:1fr;gap:9px}.experiment-heading>div:first-child{grid-row:2}.preset-controls{grid-row:1;max-width:none;width:100%;flex-wrap:wrap;justify-content:flex-start}.preset-controls select{width:auto;flex:1;min-width:0}
 }
 @media(max-width:700px){.bottom-actions{inset:145px 14px auto auto;width:calc(100vw - 28px);padding:20px}.workspace-status{display:none}}
 

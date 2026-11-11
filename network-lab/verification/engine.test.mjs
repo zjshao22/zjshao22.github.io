@@ -63,7 +63,7 @@ test('repair MTU case by lowering MSS',()=>{const r=run('small-mtu',c=>c.transpo
 test('loopback belongs to the requesting host rather than another computer',()=>{const r=run('direct',c=>{c.request.source='proxy';c.request.destination='127.0.0.1';c.request.kind='http';c.request.port=80;c.hosts.find(h=>h.id==='proxy').services.push({kind:'http',port:80,protocol:'TCP',enabled:true});});assert.equal(r.result.ok,true);assert.equal(r.final.connections[0].b.host,'proxy');assert.equal(r.final.connections[0].a.ip,'127.0.0.1');assert.ok(!r.events.some(e=>e.type==='link.send'));});
 test('common cases only keep participating devices and permit inactive service references',()=>{const home=preset('home-wifi'),vpn=preset('remote-office');assert.equal(home.hosts.length,5);assert.equal(vpn.hosts.length,4);assert.equal(validateConfig(home).length,0);assert.equal(validateConfig(vpn).length,0);assert.equal(simulate(home).result.ok,true);});
 test('unknown single-label DNS names return NXDOMAIN instead of inherited properties',()=>{const c=preset('direct');c.request.destination='constructor';assert.equal(simulate(c).result.code,'DNS_NXDOMAIN');});
-test('all 18 presets provide focus and counterfactual tryIt guidance',()=>{
+test('all 23 presets provide focus and counterfactual tryIt guidance',()=>{
   for(const p of PRESETS){
     const c=preset(p.id);
     assert.ok(c.lesson?.focus&&c.lesson.focus.length>10,`${p.id} focus`);
@@ -81,4 +81,34 @@ test('router ICMP errors route back to client and traverse NAT restoration',()=>
   const loopReceive=loopRun.events.find(e=>e.type==='icmp.receive'&&e.host==='client');
   assert.ok(loopReceive,'routing-loop delivers ICMP Time Exceeded through NAT back to client');
   assert.equal(loopReceive.packet.dst,'192.168.1.10');
+});
+test('UDP burst reports loss without retransmission and leaves no TCP state',()=>{
+ const r=simulate(preset('udp-loss')),u=r.final.metrics.udp;
+ assert.equal(r.result.ok,true);assert.equal(u.sent,12);assert.ok(u.echoed<12&&u.echoed>0);assert.equal(r.final.metrics.retransmissions,0);assert.equal(r.final.connections.length,0);
+ assert.ok(r.events.some(e=>e.type==='link.drop'));
+ const nos=r.events.filter(e=>e.type==='ip.send'&&e.packet.meta.datagram&&e.packet.dst==='142.250.72.14').map(e=>e.packet.meta.datagram);assert.deepEqual(nos,[...new Set(nos)]);
+ assert.equal(simulate(preset('udp-loss',)).final.metrics.udp.echoed,u.echoed);
+ const clean=preset('udp-loss');clean.links.forEach(l=>l.loss=0);const c=simulate(clean);assert.equal(c.final.metrics.udp.echoed,12);assert.equal(c.final.metrics.udp.outOfOrder,0);
+});
+test('UDP jitter reorders datagrams only when jitter is enabled',()=>{
+ assert.ok(simulate(preset('udp-reorder')).final.metrics.udp.outOfOrder>0);
+ const c=preset('udp-reorder');c.transport.jitter=0;assert.equal(simulate(c).final.metrics.udp.outOfOrder,0);
+});
+test('UDP to a closed port fails with port unreachable',()=>{const c=preset('udp-loss');c.links.forEach(l=>l.loss=0);c.request.port=5001;assert.equal(simulate(c).result.code,'UDP_PORT_UNREACHABLE');});
+test('TCP slow start grows cwnd and is capped by receive window',()=>{
+ const r=simulate(preset('tcp-slow-start')),w=r.events.filter(e=>e.type==='tcp.cwnd').map(e=>e.cwnd);
+ assert.equal(r.result.ok,true);assert.ok(w.length>3);assert.ok(w.every(x=>x<=4096));assert.equal(Math.max(...w),4096);
+ const flows=r.events.filter(e=>e.type==='ip.send'&&e.packet.payloadLength&&e.host==='server').slice(0,3).map(e=>e.time);assert.ok(flows[2]>flows[0],'sending is paced by cwnd');
+});
+test('TCP loss triggers fast retransmit after three duplicate ACKs and halves cwnd',()=>{
+ const r=simulate(preset('tcp-fast-retransmit')),fast=r.events.filter(e=>e.type==='tcp.fast-retransmit');
+ assert.equal(r.result.ok,true);assert.equal(fast.length,1);assert.equal(r.final.metrics.retransmissions,1);
+ assert.equal(r.events.filter(e=>e.type==='tcp.out-of-order').length,3);assert.ok(!r.events.some(e=>e.type==='tcp.retransmit'),'no timeout needed');
+ const half=r.events.find(e=>e.type==='tcp.cwnd'&&e.time===fast[0].time);assert.equal(half.cwnd,half.ssthresh);assert.ok(half.ssthresh<4096);
+ const sent=r.events.filter(e=>e.type==='ip.send'&&e.packet.seq===fast[0].seq&&e.packet.payloadLength);assert.equal(sent.length,2);
+});
+test('congestion control is off for original presets and optional fields validate',()=>{
+ assert.ok(!simulate(preset('direct')).events.some(e=>e.type==='tcp.cwnd'));
+ const c=preset('direct');delete c.request.count;delete c.transport.jitter;delete c.transport.congestion;assert.equal(validateConfig(c).length,0);
+ c.request.count=0;assert.ok(validateConfig(c).length>0);
 });

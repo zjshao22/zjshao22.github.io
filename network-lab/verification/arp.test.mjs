@@ -175,7 +175,7 @@ test('detailed mode off: no ARP events, original event sequence unchanged',()=>{
 });
 
 test('all presets still produce their documented result, including the new ARP preset',()=>{
-  assert.equal(PRESETS.length,19);
+  assert.equal(PRESETS.length,23);
   for(const item of PRESETS)assert.equal(simulate(preset(item.id)).result.code,item.expected,item.id);
 });
 

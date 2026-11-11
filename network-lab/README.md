@@ -29,7 +29,7 @@
 
 **全部报文**按连接展开本次运行的所有 packet ID，包括 SYN、SYN-ACK、ACK、数据段、重传、FIN 和回程。每个包画出协议层；物理链路显示二层首部，WireGuard 外层可展开完整内层包。这里显示的是整次已计算运行，包含当前播放位置之后的包。点击任一包可跳到对应状态，检查字段、前后变化、流/连接关联、经过的边界及可见性。
 
-## 19 个开箱即用的预设
+## 23 个开箱即用的预设
 
 所有地址、端口、请求字节数、初始路由和故障条件均已给定；可直接运行，也可修改后重新运行。
 
@@ -54,6 +54,10 @@
 | 代理远端 DNS | 比较 DNS 查询的来源位置 | 成功 |
 | fake-IP 透明代理 | 占位地址、域名映射与远端真实地址 | 成功 |
 | ARP 与链路层：跨网关访问 | A（192.168.1.100/24）→ R（192.168.1.1、10.20.30.1）→ B（10.20.30.40/24），无 NAT；逐跳观察 ARP、MAC 重封装、TTL 与缓存命中 | 成功 |
+| UDP：无连接、丢包不补发 | 连发 12 个数据报，丢失的不重传，统计收到/缺失编号 | 成功（部分丢失） |
+| UDP：时延抖动造成乱序 | 同一链路上先发的包后到，UDP 不排序 | 成功（有乱序） |
+| TCP：慢启动与拥塞窗口 | cwnd 从 1 个 MSS 起步逐 ACK 增长，受接收窗口限制 | 成功 |
+| TCP：丢包、快速重传与退避 | 3 个重复 ACK 触发快速重传，ssthresh 与 cwnd 减半 | 成功 |
 
 例如：在 MTU 案例中把 MSS 调到 128 后重跑；在 TUN 漏配案例中为代理地址补回 `/32 → en0 → 家庭网关`。结果由新的配置计算，不是替换预写解释。
 
@@ -111,7 +115,7 @@ python verification/verify_stable_view.py
 
 主要文件：
 
-- `src/network-config.js`：配置边界、19 个预设、CIDR 与最长前缀匹配、接口级稳定 MAC 与链路层参数。
+- `src/network-config.js`：配置边界、23 个预设、CIDR 与最长前缀匹配、接口级稳定 MAC 与链路层参数。
 - `src/network-engine.js`：事件队列、协议与转发状态转换；详细模式下的 ARP 状态机与逐跳帧封装。
 - `src/capture.js`：本地抓包解析、模型首部编码及 pcap 导出。
 - `src/simulator-app.js`、`simulator.css`：统一界面、全部报文和编辑。
@@ -128,3 +132,11 @@ v0.3、v0.4 源码与离线包及本次阅读改版前的界面备份保存在�
 ## 协议参考
 
 模型依据并明确简化：[TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html)、[IPv4 路由 RFC 1812](https://www.rfc-editor.org/rfc/rfc1812.html)、[ARP RFC 826](https://www.rfc-editor.org/rfc/rfc826.html)、[以太网 IPv4 封装 RFC 894](https://www.rfc-editor.org/rfc/rfc894.html)、[DNS RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html)、[NAT RFC 3022](https://www.rfc-editor.org/rfc/rfc3022.html)、[TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446.html)、[WireGuard 协议](https://www.wireguard.com/protocol/)、[pcapng 格式工作文档](https://datatracker.ietf.org/doc/draft-ietf-opsawg-pcapng/)。
+
+## UDP 与 TCP 传输行为（2026-11-11 扩展）
+
+这些是离散事件模型，不创建真实套接字，也不代表公网真实丢包。新增字段均为可选，旧实验文件仍可导入。
+
+- `request.count`：UDP 数据报个数（1–50）。大于 1 时连发并统计服务端收到、客户端收到回应、丢失编号与乱序次数；不重传，端口无监听时报 `UDP_PORT_UNREACHABLE`。等于 1 时沿用原单包流程。
+- `transport.jitter`：每跳传输时延附加 0–N ms 的确定性抖动（受随机种子控制），可让 UDP 乱序，也会让 TCP 出现乱序段。0 时不消耗随机数，原预设结果不变。
+- `transport.congestion`：开启后 TCP 发送端按 `min(cwnd, 接收窗口)` 发送；慢启动（cwnd 逐 ACK 增加）、拥塞避免（每轮约 +1 MSS）、超时塌缩到 1 MSS、3 个重复 ACK 快速重传并减半。仅为 Reno 风格教学简化：不含 SACK、选项协商、RTT 估计与快速恢复期间的窗口膨胀。默认关闭，原有预设行为不变。

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b141d">
+<title>真实传输实验 · 127.0.0.1 回环套接字</title>
+<link rel="stylesheet" href="simulator.css">
+<link rel="stylesheet" href="app-shell.css">
+<link rel="stylesheet" href="real-transport.css">
+</head>
+<body>
+<header class="app-header"><a class="brand" href="index.html"><span class="brand-symbol">⌘</span><span>网络实验台<small>NETWORK / LAB</small></span><b>REAL</b></a><nav><a href="index.html">网络实验 · 模拟</a><a href="real-lab.html" aria-current="page">真实传输实验</a></nav><a class="quiet" href="../docs/network/lab-real-transport/">课程说明</a></header>
+<main class="real-main">
+
+<section class="real-hero">
+  <span class="eyebrow">REAL LOOPBACK SOCKET EVIDENCE / REPLAY</span>
+  <h1>真实传输实验 · 127.0.0.1 回环套接字</h1>
+  <p>本页回放一次<strong>真实运行</strong>的 Python 3 标准库 UDP / TCP 回环套接字实验，事件、端点、端口、长度、时间戳与自检结果均来自保存的证据文件，可逐步观察。它改写自同一仓库的离散事件模型之外，二者并列但互不替代。</p>
+</section>
+
+<section class="compare" aria-label="真实与模拟对照">
+  <div class="compare-card real-card">
+    <span class="eyebrow">真实 · 127.0.0.1 回环套接字</span>
+    <h2>真实（本页）</h2>
+    <p><code>mode: "real"</code>、<code>host: "127.0.0.1"</code>。Python 真实调用 <code>bind / connect / accept / sendto / recvfrom / sendall / recv / shutdown</code>，保存运行环境与真实输出后在此回放。</p>
+    <p class="honest"><strong>观察的是 socket API 的返回值，不是抓包</strong>；不产生 <code>.pcap</code>，不读取链路分组，不做内核 TCP 状态内省，也不是完整 TCP 实现（无拥塞控制、重传、窗口）。</p>
+  </div>
+  <div class="compare-card model-card">
+    <span class="eyebrow">模拟 · 离散事件模型</span>
+    <h2>模拟（主实验台）</h2>
+    <p><a href="index.html">网络实验台的 18 个预设</a>是 JavaScript 离散事件网络模型，<strong>不创建任何真实 socket</strong>，用虚拟时间推演路由、NAT、TCP 子集等。请始终把它当作<strong>模拟</strong>。</p>
+    <p class="honest">模型结果由配置计算，不是链路上抓到的报文。真实运行成功也不能反过来证明模型参数符合任何真实网络。</p>
+  </div>
+</section>
+
+<p class="scope-warning"><strong>边界提醒：</strong>本机 127.0.0.1 回环收发成功，只说明本机协议栈对这组 API 调用的实际返回，<strong>不能证明公网或校园网的丢包、延迟、乱序、拥塞行为</strong>；本页不验证这些性质。端口、时间戳、<code>recv()</code> 块长每次运行都会变化。</p>
+
+<section class="lab" id="lab" hidden>
+  <div class="mode-switch" role="tablist" aria-label="传输模式">
+    <button type="button" data-mode="udp" role="tab" aria-selected="true">UDP · 数据报边界</button>
+    <button type="button" data-mode="tcp" role="tab" aria-selected="false">TCP · 字节流</button>
+  </div>
+  <div class="controls">
+    <div class="step-actions">
+      <button type="button" id="back" aria-label="上一步">上一步</button>
+      <button type="button" id="play">播放</button>
+      <button type="button" id="next" aria-label="下一步">下一步</button>
+      <button type="button" id="end">到终点</button>
+    </div>
+    <span class="step-position"><span id="event-count" aria-live="polite">0 / 0</span></span>
+    <label class="speed-label" for="speed">速度
+      <select id="speed" aria-label="播放速度">
+        <option value="1100">慢速</option>
+        <option value="550" selected>正常</option>
+        <option value="200">快速</option>
+      </select>
+    </label>
+  </div>
+  <div class="timeline-layout">
+    <ol class="event-list" id="event-list" aria-label="有序事件"></ol>
+    <div class="event-detail" id="event-detail"></div>
+  </div>
+  <div class="mode-summary" id="mode-summary"></div>
+</section>
+
+<section class="no-evidence" id="no-evidence" hidden>
+  <h2>未找到真实运行证据</h2>
+  <p>未能加载 <code>real-evidence.js</code>，或该次运行未通过自检。请先用 <code>real-transport-lab.py</code> 真实运行并生成证据，再打开本页；本页不会用模拟数据冒充真实结果。</p>
+</section>
+
+<section class="evidence-panel" id="evidence-panel">
+  <h2>环境与证据</h2>
+  <dl class="env-fields" id="env-fields"></dl>
+  <div class="evidence-links" id="evidence-links"></div>
+  <div class="repro">
+    <h3>复现命令（本次运行的精确 CLI 见上）</h3>
+    <pre id="repro-commands"></pre>
+  </div>
+  <div class="scope-notes" id="scope-notes"></div>
+</section>
+
+<footer class="real-footer">
+  <a href="index.html">← 返回网络实验台（模拟）</a>
+  <a href="../network-labs/real-transport-lab.py">生成脚本 real-transport-lab.py</a>
+  <a href="../network-labs/evidence/README.md">证据说明 README</a>
+  <a href="../docs/network/lab-real-transport/">课程页</a>
+</footer>
+</main>
+<script src="real-evidence.js"></script>
+<script src="real-transport.js"></script>
+</body>
+</html>

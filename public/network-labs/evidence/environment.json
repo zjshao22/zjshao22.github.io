@@ -1,0 +1,32 @@
+{
+  "cli": [
+    "public/network-labs/real-transport-lab.py",
+    "all",
+    "--chunk",
+    "7",
+    "--output-dir",
+    "public/network-labs/evidence"
+  ],
+  "cli_string": "python3 public/network-labs/real-transport-lab.py all --chunk 7 --output-dir public/network-labs/evidence",
+  "data": "Constructed educational payloads, not actual network captures of people or policies",
+  "host": "127.0.0.1",
+  "machine": "arm64",
+  "mode": "real",
+  "network": "127.0.0.1 loopback only; no external network, no admin rights",
+  "observation": "Observing the socket API, not sniffing packets; not a full TCP implementation",
+  "platform": "macOS-27.2-arm64-arm-64bit",
+  "python_implementation": "CPython",
+  "python_version": "3.10.12",
+  "record": "environment",
+  "result": "PASS",
+  "script": "real-transport-lab.py",
+  "script_version": "1.0.0",
+  "socket_family": "AF_INET",
+  "socket_types": ["SOCK_DGRAM", "SOCK_STREAM"],
+  "stdlib_only": true,
+  "system": "Darwin",
+  "third_party_dependencies": [],
+  "timeout_seconds": 5.0,
+  "utc_finished": "2026-11-11T08:40:40.623741+00:00",
+  "utc_started": "2026-11-11T08:40:40.621449+00:00"
+}

@@ -1,0 +1,1106 @@
+/* Real loopback socket evidence — generated from the SAME single run as
+   public/network-labs/evidence/real-transport.json (do not hand-edit).
+   Plain script so it works over file:// where fetch() of JSON is blocked.
+   mode=real / host=127.0.0.1 — observing the socket API, not packet capture. */
+window.REAL_TRANSPORT_EVIDENCE = {
+  "environment": {
+    "cli": [
+      "public/network-labs/real-transport-lab.py",
+      "all",
+      "--chunk",
+      "7",
+      "--output-dir",
+      "public/network-labs/evidence"
+    ],
+    "cli_string": "python3 public/network-labs/real-transport-lab.py all --chunk 7 --output-dir public/network-labs/evidence",
+    "data": "Constructed educational payloads, not actual network captures of people or policies",
+    "host": "127.0.0.1",
+    "machine": "arm64",
+    "mode": "real",
+    "network": "127.0.0.1 loopback only; no external network, no admin rights",
+    "observation": "Observing the socket API, not sniffing packets; not a full TCP implementation",
+    "platform": "macOS-27.2-arm64-arm-64bit",
+    "python_implementation": "CPython",
+    "python_version": "3.10.12",
+    "record": "environment",
+    "result": "PASS",
+    "script": "real-transport-lab.py",
+    "script_version": "1.0.0",
+    "socket_family": "AF_INET",
+    "socket_types": [
+      "SOCK_DGRAM",
+      "SOCK_STREAM"
+    ],
+    "stdlib_only": true,
+    "system": "Darwin",
+    "third_party_dependencies": [],
+    "timeout_seconds": 5.0,
+    "utc_finished": "2026-11-11T08:40:40.623741+00:00",
+    "utc_started": "2026-11-11T08:40:40.621449+00:00"
+  },
+  "generated_utc": "2026-11-11T08:40:40.621449+00:00",
+  "host": "127.0.0.1",
+  "mode": "real",
+  "result": "PASS",
+  "schema": "real-transport-evidence/v1",
+  "scope": [
+    "本程序观察的是 Python socket API 的返回值（getsockname / getpeername / sendto / recvfrom / sendall / recv / shutdown），不是抓包。",
+    "没有使用 BPF、libpcap、raw socket、.pcap 或内核 TCP 状态查询；不读取链路上的真实分组。",
+    "这不是完整的 TCP/UDP 实现：未实现拥塞控制、重传、窗口、校验和验证或内核内省，连接由操作系统协议栈完成。",
+    "仅绑定并发送到 127.0.0.1 回环地址与系统分配的临时端口；不访问外网，不修改本机路由或防火墙。",
+    "本机回环成功不能证明公网/校园网的丢包、延迟、乱序或拥塞行为，只说明本机协议栈对这组 API 调用的实际返回。",
+    "mode=real 表示真实执行了 socket 调用；网络实验台的 18 个预设是离散事件模型（模拟），二者不是同一类证据。",
+    "连接/接收块/EOF 的时间顺序是本机 socket API 的观察顺序，不是线上 SYN/SYN-ACK/ACK 报文的时序。"
+  ],
+  "tcp": {
+    "events": [
+      {
+        "cli": [
+          "public/network-labs/real-transport-lab.py",
+          "all",
+          "--chunk",
+          "7",
+          "--output-dir",
+          "public/network-labs/evidence"
+        ],
+        "cli_string": "python3 public/network-labs/real-transport-lab.py all --chunk 7 --output-dir public/network-labs/evidence",
+        "data": "Constructed educational payloads, not actual network captures of people or policies",
+        "event": "environment",
+        "host": "127.0.0.1",
+        "machine": "arm64",
+        "mode": "real",
+        "network": "127.0.0.1 loopback only; no external network, no admin rights",
+        "observation": "Observing the socket API, not sniffing packets; not a full TCP implementation",
+        "platform": "macOS-27.2-arm64-arm-64bit",
+        "python_implementation": "CPython",
+        "python_version": "3.10.12",
+        "script": "real-transport-lab.py",
+        "script_version": "1.0.0",
+        "seq": 1,
+        "socket_family": "AF_INET",
+        "socket_types": [
+          "SOCK_DGRAM",
+          "SOCK_STREAM"
+        ],
+        "stdlib_only": true,
+        "system": "Darwin",
+        "t_rel_ms": 1.79,
+        "third_party_dependencies": [],
+        "timeout_seconds": 5.0,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623255+00:00",
+        "utc_started": "2026-11-11T08:40:40.621449+00:00"
+      },
+      {
+        "event": "scope",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "notes": [
+          "本程序观察的是 Python socket API 的返回值（getsockname / getpeername / sendto / recvfrom / sendall / recv / shutdown），不是抓包。",
+          "没有使用 BPF、libpcap、raw socket、.pcap 或内核 TCP 状态查询；不读取链路上的真实分组。",
+          "这不是完整的 TCP/UDP 实现：未实现拥塞控制、重传、窗口、校验和验证或内核内省，连接由操作系统协议栈完成。",
+          "仅绑定并发送到 127.0.0.1 回环地址与系统分配的临时端口；不访问外网，不修改本机路由或防火墙。",
+          "本机回环成功不能证明公网/校园网的丢包、延迟、乱序或拥塞行为，只说明本机协议栈对这组 API 调用的实际返回。",
+          "mode=real 表示真实执行了 socket 调用；网络实验台的 18 个预设是离散事件模型（模拟），二者不是同一类证据。",
+          "连接/接收块/EOF 的时间顺序是本机 socket API 的观察顺序，不是线上 SYN/SYN-ACK/ACK 报文的时序。"
+        ],
+        "seq": 2,
+        "t_rel_ms": 1.797,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623259+00:00"
+      },
+      {
+        "event": "run_start",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "seq": 3,
+        "t_rel_ms": 1.799,
+        "timeout_seconds": 5.0,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623265+00:00",
+        "utc_started": "2026-11-11T08:40:40.621468+00:00"
+      },
+      {
+        "endpoint": [
+          "127.0.0.1",
+          63112
+        ],
+        "event": "tcp_state_transition",
+        "from": "created",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "socket API 观察到的应用状态，非内核 TCP 状态机快照",
+        "seq": 4,
+        "t_rel_ms": 1.847,
+        "to": "listening",
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623312+00:00"
+      },
+      {
+        "event": "tcp_state_transition",
+        "from": "created",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "socket API 观察到的应用状态，非内核 TCP 状态机快照",
+        "seq": 5,
+        "t_rel_ms": 1.856,
+        "to": "connecting",
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623322+00:00"
+      },
+      {
+        "client_local": [
+          "127.0.0.1",
+          63113
+        ],
+        "client_peer": [
+          "127.0.0.1",
+          63112
+        ],
+        "event": "tcp_connect",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "ordering": "connect() 返回（内核已在本机完成握手）；早于 accept() 调用",
+        "seq": 6,
+        "t_rel_ms": 1.979,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623444+00:00"
+      },
+      {
+        "event": "tcp_state_transition",
+        "from": "connecting",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "socket API 观察到的应用状态，非内核 TCP 状态机快照",
+        "seq": 7,
+        "t_rel_ms": 1.982,
+        "to": "connected",
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623448+00:00"
+      },
+      {
+        "accept_returned": [
+          "127.0.0.1",
+          63113
+        ],
+        "client_peer": [
+          "127.0.0.1",
+          63113
+        ],
+        "event": "tcp_accept",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "ordering": "accept() 在 connect() 返回后调用，立即返回排队中的连接",
+        "seq": 8,
+        "server_local": [
+          "127.0.0.1",
+          63112
+        ],
+        "t_rel_ms": 2.067,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623531+00:00"
+      },
+      {
+        "event": "tcp_state_transition",
+        "from": "listening",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "socket API 观察到的应用状态，非内核 TCP 状态机快照",
+        "seq": 9,
+        "t_rel_ms": 2.071,
+        "to": "accepted",
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623537+00:00"
+      },
+      {
+        "check": "connect_target_is_listener",
+        "detail": "client peer=['127.0.0.1', 63112] listener=['127.0.0.1', 63112]",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 10,
+        "t_rel_ms": 2.077,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623543+00:00"
+      },
+      {
+        "check": "accept_peer_is_client",
+        "detail": "accept peer=['127.0.0.1', 63113] client local=['127.0.0.1', 63113]",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 11,
+        "t_rel_ms": 2.08,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623546+00:00"
+      },
+      {
+        "check": "accepted_local_is_listener",
+        "detail": "accepted local=['127.0.0.1', 63112] listener=['127.0.0.1', 63112]",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 12,
+        "t_rel_ms": 2.084,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623550+00:00"
+      },
+      {
+        "cumulative": 3,
+        "event": "tcp_send",
+        "host": "127.0.0.1",
+        "index": 0,
+        "length": 3,
+        "mode": "real",
+        "note": "sendall 调用边界是应用写入边界，不是 TCP 报文或消息边界",
+        "payload_hex": "000000",
+        "seq": 13,
+        "t_rel_ms": 2.105,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623569+00:00"
+      },
+      {
+        "cumulative": 11,
+        "event": "tcp_send",
+        "host": "127.0.0.1",
+        "index": 1,
+        "length": 8,
+        "mode": "real",
+        "note": "sendall 调用边界是应用写入边界，不是 TCP 报文或消息边界",
+        "payload_hex": "0fe7acace4b880e4",
+        "seq": 14,
+        "t_rel_ms": 2.112,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623578+00:00"
+      },
+      {
+        "cumulative": 44,
+        "event": "tcp_send",
+        "host": "127.0.0.1",
+        "index": 2,
+        "length": 33,
+        "mode": "real",
+        "note": "sendall 调用边界是应用写入边界，不是 TCP 报文或消息边界",
+        "payload_hex": "bbbde8afbee4bbb6000000157365636f",
+        "seq": 15,
+        "t_rel_ms": 2.118,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623584+00:00"
+      },
+      {
+        "endpoint": [
+          "127.0.0.1",
+          63113
+        ],
+        "event": "tcp_shutdown_wr",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "关闭本端写入方向；对端最终 recv() 返回空字节",
+        "seq": 16,
+        "t_rel_ms": 2.131,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623597+00:00"
+      },
+      {
+        "event": "tcp_state_transition",
+        "from": "connected",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "socket API 观察到的应用状态，非内核 TCP 状态机快照",
+        "seq": 17,
+        "t_rel_ms": 2.134,
+        "to": "write_shutdown",
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623600+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 7,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 7,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 18,
+        "t_rel_ms": 2.146,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623612+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 14,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 7,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 19,
+        "t_rel_ms": 2.159,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623625+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 21,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 7,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 20,
+        "t_rel_ms": 2.165,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623631+00:00"
+      },
+      {
+        "event": "tcp_decoded_message",
+        "host": "127.0.0.1",
+        "length": 15,
+        "mode": "real",
+        "note": "按长度前缀从字节流重建，与 recv 块无关",
+        "payload": "第一份课件",
+        "seq": 21,
+        "t_rel_ms": 2.173,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623639+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 28,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 7,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 22,
+        "t_rel_ms": 2.193,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623659+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 35,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 7,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 23,
+        "t_rel_ms": 2.199,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623665+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 42,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 7,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 24,
+        "t_rel_ms": 2.208,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623670+00:00"
+      },
+      {
+        "chunk_limit": 7,
+        "cumulative": 44,
+        "event": "tcp_recv",
+        "host": "127.0.0.1",
+        "length": 2,
+        "mode": "real",
+        "note": "recv() 实际返回的块长，由本机协议栈缓冲决定",
+        "seq": 25,
+        "t_rel_ms": 2.214,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623680+00:00"
+      },
+      {
+        "event": "tcp_decoded_message",
+        "host": "127.0.0.1",
+        "length": 21,
+        "mode": "real",
+        "note": "按长度前缀从字节流重建，与 recv 块无关",
+        "payload": "second-stream-message",
+        "seq": 26,
+        "t_rel_ms": 2.218,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623684+00:00"
+      },
+      {
+        "event": "tcp_eof",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "recv() 返回空字节，表示流结束（对端关闭写入方向）",
+        "seq": 27,
+        "t_rel_ms": 2.222,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623688+00:00"
+      },
+      {
+        "event": "tcp_state_transition",
+        "from": "accepted",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "socket API 观察到的应用状态，非内核 TCP 状态机快照",
+        "seq": 28,
+        "t_rel_ms": 2.227,
+        "to": "eof_closed",
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623691+00:00"
+      },
+      {
+        "check": "stream_bytes_complete",
+        "detail": "recv total=44 wire=44",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 29,
+        "t_rel_ms": 2.251,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623714+00:00"
+      },
+      {
+        "check": "both_messages_reconstructed",
+        "detail": "decoded=['第一份课件', 'second-stream-message']",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 30,
+        "t_rel_ms": 2.263,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623729+00:00"
+      },
+      {
+        "actual_recv_chunk_lengths": [
+          7,
+          7,
+          7,
+          7,
+          7,
+          7,
+          2
+        ],
+        "event": "observation",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "reconstructed_messages": [
+          "第一份课件",
+          "second-stream-message"
+        ],
+        "recv_boundaries_differ_from_send_boundaries": true,
+        "sendall_split_lengths": [
+          3,
+          8,
+          33
+        ],
+        "seq": 31,
+        "statement": "TCP 是字节流：recv() 返回的块边界与 sendall 调用边界不一致，应用消息靠长度前缀与缓冲重建，而不是靠发送次数。",
+        "t_rel_ms": 2.267,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623733+00:00"
+      },
+      {
+        "event": "run_end",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 32,
+        "t_rel_ms": 2.269,
+        "transport": "tcp",
+        "ts_utc": "2026-11-11T08:40:40.623736+00:00"
+      }
+    ],
+    "summary": {
+      "accepted_client_endpoint": [
+        "127.0.0.1",
+        63113
+      ],
+      "accepted_server_endpoint": [
+        "127.0.0.1",
+        63112
+      ],
+      "actual_recv_chunk_lengths": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        2
+      ],
+      "chunk_limit": 7,
+      "client_endpoint": [
+        "127.0.0.1",
+        63113
+      ],
+      "expected_messages": [
+        "第一份课件",
+        "second-stream-message"
+      ],
+      "listener_endpoint": [
+        "127.0.0.1",
+        63112
+      ],
+      "reconstructed_messages": [
+        "第一份课件",
+        "second-stream-message"
+      ],
+      "recv_boundaries_differ_from_send_boundaries": true,
+      "sendall_split_lengths": [
+        3,
+        8,
+        33
+      ]
+    }
+  },
+  "udp": {
+    "events": [
+      {
+        "cli": [
+          "public/network-labs/real-transport-lab.py",
+          "all",
+          "--chunk",
+          "7",
+          "--output-dir",
+          "public/network-labs/evidence"
+        ],
+        "cli_string": "python3 public/network-labs/real-transport-lab.py all --chunk 7 --output-dir public/network-labs/evidence",
+        "data": "Constructed educational payloads, not actual network captures of people or policies",
+        "event": "environment",
+        "host": "127.0.0.1",
+        "machine": "arm64",
+        "mode": "real",
+        "network": "127.0.0.1 loopback only; no external network, no admin rights",
+        "observation": "Observing the socket API, not sniffing packets; not a full TCP implementation",
+        "platform": "macOS-27.2-arm64-arm-64bit",
+        "python_implementation": "CPython",
+        "python_version": "3.10.12",
+        "script": "real-transport-lab.py",
+        "script_version": "1.0.0",
+        "seq": 1,
+        "socket_family": "AF_INET",
+        "socket_types": [
+          "SOCK_DGRAM",
+          "SOCK_STREAM"
+        ],
+        "stdlib_only": true,
+        "system": "Darwin",
+        "t_rel_ms": 0.022,
+        "third_party_dependencies": [],
+        "timeout_seconds": 5.0,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621481+00:00",
+        "utc_started": "2026-11-11T08:40:40.621449+00:00"
+      },
+      {
+        "event": "scope",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "notes": [
+          "本程序观察的是 Python socket API 的返回值（getsockname / getpeername / sendto / recvfrom / sendall / recv / shutdown），不是抓包。",
+          "没有使用 BPF、libpcap、raw socket、.pcap 或内核 TCP 状态查询；不读取链路上的真实分组。",
+          "这不是完整的 TCP/UDP 实现：未实现拥塞控制、重传、窗口、校验和验证或内核内省，连接由操作系统协议栈完成。",
+          "仅绑定并发送到 127.0.0.1 回环地址与系统分配的临时端口；不访问外网，不修改本机路由或防火墙。",
+          "本机回环成功不能证明公网/校园网的丢包、延迟、乱序或拥塞行为，只说明本机协议栈对这组 API 调用的实际返回。",
+          "mode=real 表示真实执行了 socket 调用；网络实验台的 18 个预设是离散事件模型（模拟），二者不是同一类证据。",
+          "连接/接收块/EOF 的时间顺序是本机 socket API 的观察顺序，不是线上 SYN/SYN-ACK/ACK 报文的时序。"
+        ],
+        "seq": 2,
+        "t_rel_ms": 0.047,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621502+00:00"
+      },
+      {
+        "event": "run_start",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "seq": 3,
+        "t_rel_ms": 0.051,
+        "timeout_seconds": 5.0,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621511+00:00",
+        "utc_started": "2026-11-11T08:40:40.621462+00:00"
+      },
+      {
+        "endpoint": [
+          "127.0.0.1",
+          62952
+        ],
+        "event": "udp_bind",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "AF_INET/SOCK_DGRAM bind 127.0.0.1:0，端口由系统分配",
+        "role": "server",
+        "seq": 4,
+        "t_rel_ms": 0.146,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621605+00:00"
+      },
+      {
+        "endpoint": [
+          "127.0.0.1",
+          62565
+        ],
+        "event": "udp_bind",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "note": "AF_INET/SOCK_DGRAM bind 127.0.0.1:0，端口由系统分配",
+        "role": "client",
+        "seq": 5,
+        "t_rel_ms": 0.149,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621609+00:00"
+      },
+      {
+        "bytes": 3,
+        "dst": [
+          "127.0.0.1",
+          62952
+        ],
+        "event": "udp_send",
+        "host": "127.0.0.1",
+        "index": 0,
+        "length": 3,
+        "mode": "real",
+        "note": "",
+        "payload": "abc",
+        "seq": 6,
+        "src": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.229,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621688+00:00"
+      },
+      {
+        "event": "udp_recv",
+        "host": "127.0.0.1",
+        "index": 0,
+        "length": 3,
+        "mode": "real",
+        "note": "",
+        "payload": "abc",
+        "seq": 7,
+        "server": [
+          "127.0.0.1",
+          62952
+        ],
+        "source": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.31,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621769+00:00"
+      },
+      {
+        "dst": [
+          "127.0.0.1",
+          62565
+        ],
+        "event": "udp_reply",
+        "host": "127.0.0.1",
+        "index": 0,
+        "length": 1,
+        "mode": "real",
+        "reply": "3",
+        "seq": 8,
+        "src": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.338,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621797+00:00"
+      },
+      {
+        "event": "udp_reply_recv",
+        "host": "127.0.0.1",
+        "index": 0,
+        "length": 1,
+        "mode": "real",
+        "reply": "3",
+        "seq": 9,
+        "source": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.401,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621860+00:00"
+      },
+      {
+        "bytes": 6,
+        "dst": [
+          "127.0.0.1",
+          62952
+        ],
+        "event": "udp_send",
+        "host": "127.0.0.1",
+        "index": 1,
+        "length": 6,
+        "mode": "real",
+        "note": "",
+        "payload": "123456",
+        "seq": 10,
+        "src": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.421,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621880+00:00"
+      },
+      {
+        "event": "udp_recv",
+        "host": "127.0.0.1",
+        "index": 1,
+        "length": 6,
+        "mode": "real",
+        "note": "",
+        "payload": "123456",
+        "seq": 11,
+        "server": [
+          "127.0.0.1",
+          62952
+        ],
+        "source": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.499,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621958+00:00"
+      },
+      {
+        "dst": [
+          "127.0.0.1",
+          62565
+        ],
+        "event": "udp_reply",
+        "host": "127.0.0.1",
+        "index": 1,
+        "length": 1,
+        "mode": "real",
+        "reply": "6",
+        "seq": 12,
+        "src": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.517,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.621976+00:00"
+      },
+      {
+        "event": "udp_reply_recv",
+        "host": "127.0.0.1",
+        "index": 1,
+        "length": 1,
+        "mode": "real",
+        "reply": "6",
+        "seq": 13,
+        "source": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.553,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622012+00:00"
+      },
+      {
+        "bytes": 0,
+        "dst": [
+          "127.0.0.1",
+          62952
+        ],
+        "event": "udp_send",
+        "host": "127.0.0.1",
+        "index": 2,
+        "length": 0,
+        "mode": "real",
+        "note": "一次 sendto 对应一个 UDP 数据报；0 字节也是有效数据报",
+        "payload": "",
+        "seq": 14,
+        "src": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.57,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622029+00:00"
+      },
+      {
+        "event": "udp_recv",
+        "host": "127.0.0.1",
+        "index": 2,
+        "length": 0,
+        "mode": "real",
+        "note": "recvfrom 返回空负载仍是一次有效数据报，不是 TCP 的流结束",
+        "payload": "",
+        "seq": 15,
+        "server": [
+          "127.0.0.1",
+          62952
+        ],
+        "source": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.633,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622093+00:00"
+      },
+      {
+        "dst": [
+          "127.0.0.1",
+          62565
+        ],
+        "event": "udp_reply",
+        "host": "127.0.0.1",
+        "index": 2,
+        "length": 1,
+        "mode": "real",
+        "reply": "0",
+        "seq": 16,
+        "src": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.654,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622113+00:00"
+      },
+      {
+        "event": "udp_reply_recv",
+        "host": "127.0.0.1",
+        "index": 2,
+        "length": 1,
+        "mode": "real",
+        "reply": "0",
+        "seq": 17,
+        "source": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.729,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622185+00:00"
+      },
+      {
+        "bytes": 8,
+        "dst": [
+          "127.0.0.1",
+          62952
+        ],
+        "event": "udp_send",
+        "host": "127.0.0.1",
+        "index": 3,
+        "length": 8,
+        "mode": "real",
+        "note": "",
+        "payload": "datagram",
+        "seq": 18,
+        "src": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.758,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622216+00:00"
+      },
+      {
+        "event": "udp_recv",
+        "host": "127.0.0.1",
+        "index": 3,
+        "length": 8,
+        "mode": "real",
+        "note": "",
+        "payload": "datagram",
+        "seq": 19,
+        "server": [
+          "127.0.0.1",
+          62952
+        ],
+        "source": [
+          "127.0.0.1",
+          62565
+        ],
+        "t_rel_ms": 0.807,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622263+00:00"
+      },
+      {
+        "dst": [
+          "127.0.0.1",
+          62565
+        ],
+        "event": "udp_reply",
+        "host": "127.0.0.1",
+        "index": 3,
+        "length": 1,
+        "mode": "real",
+        "reply": "8",
+        "seq": 20,
+        "src": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.839,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622295+00:00"
+      },
+      {
+        "event": "udp_reply_recv",
+        "host": "127.0.0.1",
+        "index": 3,
+        "length": 1,
+        "mode": "real",
+        "reply": "8",
+        "seq": 21,
+        "source": [
+          "127.0.0.1",
+          62952
+        ],
+        "t_rel_ms": 0.909,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622368+00:00"
+      },
+      {
+        "check": "datagram_boundaries_preserved",
+        "detail": "sent=[3, 6, 0, 8] observed=[3, 6, 0, 8]（含 0 字节数据报）",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 22,
+        "t_rel_ms": 0.945,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622404+00:00"
+      },
+      {
+        "check": "real_source_endpoints",
+        "detail": "每个 recvfrom 来源均为真实客户端端点 ['127.0.0.1', 62565]",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 23,
+        "t_rel_ms": 0.951,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622411+00:00"
+      },
+      {
+        "check": "real_replies",
+        "detail": "replies=['3', '6', '0', '8']",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 24,
+        "t_rel_ms": 1.771,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.622416+00:00"
+      },
+      {
+        "check": "reply_from_listener",
+        "detail": "回送来源均为真实监听端点 ['127.0.0.1', 62952]",
+        "event": "assertion",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 25,
+        "t_rel_ms": 1.781,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.623237+00:00"
+      },
+      {
+        "event": "observation",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "observed_lengths": [
+          3,
+          6,
+          0,
+          8
+        ],
+        "sent_lengths": [
+          3,
+          6,
+          0,
+          8
+        ],
+        "seq": 26,
+        "statement": "UDP 保留数据报边界：接收长度与发送长度逐一对应，0 字节数据报单独到达，未被合并。",
+        "t_rel_ms": 1.784,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.623244+00:00"
+      },
+      {
+        "event": "run_end",
+        "host": "127.0.0.1",
+        "mode": "real",
+        "result": "PASS",
+        "seq": 27,
+        "t_rel_ms": 1.786,
+        "transport": "udp",
+        "ts_utc": "2026-11-11T08:40:40.623246+00:00"
+      }
+    ],
+    "summary": {
+      "client_endpoint": [
+        "127.0.0.1",
+        62565
+      ],
+      "observed_lengths": [
+        3,
+        6,
+        0,
+        8
+      ],
+      "observed_sources": [
+        [
+          "127.0.0.1",
+          62565
+        ],
+        [
+          "127.0.0.1",
+          62565
+        ],
+        [
+          "127.0.0.1",
+          62565
+        ],
+        [
+          "127.0.0.1",
+          62565
+        ]
+      ],
+      "replies": [
+        "3",
+        "6",
+        "0",
+        "8"
+      ],
+      "sent_lengths": [
+        3,
+        6,
+        0,
+        8
+      ],
+      "server_endpoint": [
+        "127.0.0.1",
+        62952
+      ]
+    }
+  },
+  "utc_finished": "2026-11-11T08:40:40.623741+00:00"
+};

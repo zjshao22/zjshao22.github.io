@@ -1,0 +1,118 @@
+---
+title: 实验四：真实 UDP / TCP 回环套接字观察
+description: 回放一次真实运行的 socket 证据，分清真实观察与离散事件模型，练习先预测再解释
+---
+
+# 实验四：真实 UDP / TCP 回环套接字观察
+
+前面的实验里，「模拟」用虚拟时间推演丢包与重传，「真实」用本机套接字观察报文边界。这一课把两者放到同一个工具里对照：先看真实运行留下的证据，再判断哪些结论能成立、哪些不能。
+
+## 一、先认清三类证据
+
+打开 [真实传输实验页](/network-lab/real-lab.html)之前，先写出你对下面每一项的判断：它创建真实套接字吗？它能证明公网行为吗？
+
+| 来源                                                                      | 性质                        | 能检验什么                                                       |
+| ------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------- |
+| [真实传输实验页](/network-lab/real-lab.html) 与 `/network-labs/evidence/` | 真实 · 127.0.0.1 回环套接字 | 一次真实 Python 3 标准库运行的端点、端口、长度、时间戳与自检结果 |
+| [网络实验台](/network-lab/) 的预设                                        | 模拟 · 离散事件模型         | 在给定配置下推演路由、NAT、TCP 子集等，不打开任何 socket         |
+| `transport-lab.py simulate`                                               | 模拟 · 虚拟时间             | 在人为丢失条件下推演停等、ACK、超时与去重                        |
+
+边界要写清：真实页观察的是 **socket API 的返回值**，不是抓包，不产生 `.pcap`，不是完整 TCP 实现（无拥塞控制、重传、窗口、内核内省）。`mode: "real"` 与 `host: "127.0.0.1"` 只说明本机协议栈对这组调用的实际返回；**本机回环成功不能证明公网或校园网的丢包、延迟、乱序、拥塞行为**。模拟结果与真实运行是两类证据，互不替代。
+
+权威依据：[UDP RFC 768](https://www.rfc-editor.org/rfc/rfc768.html) 定义数据报的独立交付，[TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html) 定义字节流与连接状态；它们描述协议，不能由本机一次成功运行代替验证。
+
+## 二、打开真实实验页
+
+页面 [真实传输实验](/network-lab/real-lab.html) 把一次真实运行的证据做成可逐步回放的时间线，含 UDP / TCP 模式切换、上一步 / 下一步 / 播放 / 到终点，以及环境与证据面板。生成脚本是 [real-transport-lab.py](/network-labs/real-transport-lab.py)，原始证据在 [evidence 目录说明](/network-labs/evidence/README.md)：`environment.json`、`udp-real.jsonl`、`tcp-real.jsonl`、`real-transport.json`。网页用普通脚本 `real-evidence.js` 读取同一份 JSON，因此 `file://` 直接打开也能用，不依赖后端或 `fetch()`。
+
+先预测：面板里的端口和时间戳，会和你重新运行一次得到的结果完全相同吗？为什么？
+
+<details>
+<summary>提示：端口与时间由谁决定</summary>
+
+脚本用 `bind(("127.0.0.1", 0))` 让操作系统分配临时端口，时间戳取运行当下的 UTC 墙钟。两者都不由脚本固定。
+
+</details>
+
+## 三、UDP：零长度数据报是不是「连接关闭」
+
+在真实页切到 **UDP** 模式，逐步走到 `udp_recv`，先写出预测：一个 0 字节的 `sendto` 会被合并到前一个数据报里吗？`recvfrom` 返回空负载，和 TCP 读到流结束是同一件事吗？
+
+<details>
+<summary>提示一：把「报文」和「流」分开</summary>
+
+UDP 每次 `sendto` 对应一个独立数据报，接收方用 `recvfrom` 一次取回一个；有效数据报的负载可以为空。TCP 没有报文边界，`recv` 返回空字节表示对端关闭了写入方向。
+
+</details>
+
+<details>
+<summary>提示二：到证据里找字段</summary>
+
+看 `udp-send` / `udp-recv` 事件的 `length`、`payload`、`source`，以及末尾的 `assertion`：`datagram_boundaries_preserved` 是否 PASS、`observed_lengths` 是否与 `sent_lengths` 逐项对应、其中是否有一项 `0`。
+
+</details>
+
+<details>
+<summary>核对预期观察</summary>
+
+在保存的这次真实运行里，0 字节数据报作为一次独立 `recvfrom` 出现（`length=0`），没有与相邻数据报合并，回送的长度说明也对应它。这支持「UDP 保留数据报边界」。但它只发生在本机回环、缓冲足够的条件下：真实网络仍可能丢包、乱序、复制，本实验并未验证这些性质的保证。
+
+具体端口、时间戳和长度以页面与 `udp-real.jsonl` 为准，每次运行都会变化，不要照抄成固定答案。
+
+</details>
+
+## 四、TCP：读取块是不是发送边界
+
+切到 **TCP** 模式，逐步观察 `tcp_connect` → `tcp_accept` → 多次 `tcp_send`（`sendall`）→ `tcp_recv` → `tcp_eof` → `tcp_decoded_message`。先预测：多次 `sendall` 的切分长度，会等于接收方每次 `recv()` 返回的长度吗？
+
+<details>
+<summary>提示一：TCP 交付的是字节，不是消息</summary>
+
+`sendall` 的调用边界是应用写入边界；`recv(n)` 最多取 n 字节，实际返回块长由本机协议栈缓冲决定。两者没有一一对应关系。
+
+</details>
+
+<details>
+<summary>提示二：消息是怎么恢复出来的</summary>
+
+发送方给每条应用消息加了四字节长度前缀；接收方把 `recv` 得到的字节追加到缓冲，凑够「4 字节长度 + 内容」才交付一条。看 `tcp-decoded-message` 的 `payload`，以及 `assertion`：`both_messages_reconstructed` 是否 PASS。
+
+</details>
+
+<details>
+<summary>核对预期观察</summary>
+
+保存的这次运行里，`sendall` 被故意切分（其中一刀落在长度首部中间），而 `tcp_recv` 事件的实际块长与之不一致；两条长度前缀消息仍被重建，`shutdown(SHUT_WR)` 后 `recv()` 返回空字节（EOF）。这说明 TCP 不替应用记住发送边界，应用要靠长度协议与缓冲解析。
+
+`recv()` 块长、端口、时间戳每次运行都不同；`chunk` 是应用读取上限，不是 MSS、网络分段大小或 TCP 窗口。
+
+</details>
+
+## 五、独立解释与陌生迁移
+
+不看答案，独立解释三件事：
+
+1. 为什么 0 字节 UDP 数据报是有效报文，而 0 字节 TCP `recv` 是流结束？
+2. 为什么某次 `recv()` 返回了 7 个字节，不能说明发送方恰好发了一条 7 字节消息？
+3. 为什么本机 127.0.0.1 全部自检 PASS，仍然不能得出「校园网不丢包」？
+
+迁移：把 `tcp` 模式的 `--chunk` 改成别的值，先预测 `tcp_recv` 的块长序列会怎样变化、两条消息是否仍被重建，再真实运行一次对照。若某次真实运行超时或被防火墙阻断，按脚本说明保留 `result: "FAIL"` 与错误，不要用模拟结果补成「真实实验完成」。
+
+## 六、复现与提交
+
+```sh
+python3 real-transport-lab.py --help
+python3 real-transport-lab.py udp
+python3 real-transport-lab.py tcp
+python3 real-transport-lab.py all --chunk 7 --output-dir ./evidence
+```
+
+`udp` / `tcp` 把有序 JSONL 事件打印到标准输出；`all` 在**同一次进程**里跑完两种模式，并写出 `evidence/` 下的四个文件，便于复现。脚本只用 Python 3 标准库，仅绑定并发送到 `127.0.0.1` 的临时端口，不需要管理员权限或外网；任一自检失败会以非零状态退出并记录错误。
+
+提交你的环境记录、UDP 零长度数据报的观察、TCP 发送切分与实际 `recv` 块长的对照、两条消息重建的依据，以及你对上面三个问题的独立解释。这里只要求你完成并如实记录自己的运行，不代表已经授课或学生已掌握。
+
+## 七、回顾与参考
+
+对照 [实验三：UDP 可靠性与 TCP 消息边界](/docs/network/lab-03-transport/) 的「三类证据」表，说明本课的「真实页回放」与那里的「真实本机运行」是什么关系、与 `simulate` 又是什么关系。继续参考 [UDP 与套接字](/docs/network/18-udp-and-sockets/)、[TCP 字节流与状态](/docs/network/20-tcp-stream-and-state/) 和 [计时与窗口](/docs/network/21-tcp-flow-control/)。
+
+工具依据：[UDP RFC 768](https://www.rfc-editor.org/rfc/rfc768.html)、[TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html)；工具说明见 [网络实验台 README](/network-lab/README.md) 与 [证据说明](/network-labs/evidence/README.md)。

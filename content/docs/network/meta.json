@@ -47,6 +47,7 @@
     "---动手实验---",
     "lab-01-http-observation",
     "lab-02-lan-routing",
-    "lab-03-transport"
+    "lab-03-transport",
+    "lab-real-transport"
   ]
 }

@@ -140,3 +140,12 @@ v0.3、v0.4 源码与离线包及本次阅读改版前的界面备份保存在�
 - `request.count`：UDP 数据报个数（1–50）。大于 1 时连发并统计服务端收到、客户端收到回应、丢失编号与乱序次数；不重传，端口无监听时报 `UDP_PORT_UNREACHABLE`。等于 1 时沿用原单包流程。
 - `transport.jitter`：每跳传输时延附加 0–N ms 的确定性抖动（受随机种子控制），可让 UDP 乱序，也会让 TCP 出现乱序段。0 时不消耗随机数，原预设结果不变。
 - `transport.congestion`：开启后 TCP 发送端按 `min(cwnd, 接收窗口)` 发送；慢启动（cwnd 逐 ACK 增加）、拥塞避免（每轮约 +1 MSS）、超时塌缩到 1 MSS、3 个重复 ACK 快速重传并减半。仅为 Reno 风格教学简化：不含 SACK、选项协商、RTT 估计与快速恢复期间的窗口膨胀。默认关闭，原有预设行为不变。
+
+## 真实传输实验（与模拟并列，但不替代）
+
+`index.html` 顶栏新增「真实传输实验」链接，指向 `real-lab.html`。这是**另加的独立页面**，不改动主实验台的任何预设、不加载 `src/*.js` 与 `vendor/simulator.bundle.js`，也不重建离线 bundle。
+
+- **真实**：`real-lab.html` 回放一次真实运行的 Python 3 标准库 UDP / TCP 回环套接字实验，标注「真实 · 127.0.0.1 回环套接字」。证据由 `../network-labs/real-transport-lab.py` 真实运行生成，保存在 `../network-labs/evidence/`（`environment.json`、`udp-real.jsonl`、`tcp-real.jsonl`、`real-transport.json` 与 `README.md`）；`real-evidence.js` 把同一份 `real-transport.json` 赋给 `window.REAL_TRANSPORT_EVIDENCE`，因为是普通脚本，`file://` 下也能读取（不需要 `fetch()`）。
+- **模拟**：主实验台（含上文 23 个预设与 UDP/TCP 行为扩展）仍是 JavaScript 离散事件模型，标注「模拟 · 离散事件模型」，**不创建任何真实 socket**，用虚拟时间推演；新增的拥塞控制、ARP、UDP 连发等预设同样属于模拟，不是链路实测。请继续把它当作模拟。
+- **边界**：真实页观察的是 socket API 返回值，不是抓包，不产生 `.pcap`，不是完整 TCP 实现（无拥塞控制、重传、窗口、内核内省）。本机 127.0.0.1 成功**不能证明**公网/校园网的丢包、延迟、乱序或拥塞；端口、时间戳、`recv()` 块长每次运行都不同。真实与模拟是两类证据，互不替代。
+- 页面完全离线：只用本目录的 CSS / JS，无 CDN、无后端、无外部依赖；缺少证据文件时会给出明确提示，不会用模拟数据冒充真实结果。课程页见 `/docs/network/lab-real-transport/`，协议参考见 [UDP RFC 768](https://www.rfc-editor.org/rfc/rfc768.html) 与 [TCP RFC 9293](https://www.rfc-editor.org/rfc/rfc9293.html)。
